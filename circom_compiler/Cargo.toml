@@ -1,12 +1,13 @@
 [package]
-name = "circom_algebra"
-version = "2.0.0"
+name = "circom_compiler"
+version = "2.0.1"
 authors = ["hermeGarcia <hermegarcianavarro@gmail.com>"]
 edition = "2018"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-num-bigint-dig = "0.6.0"
-num-traits = "0.2.6"
 constant_tracking = { package = "circom_constant_tracking", path = "../circom_constant_tracking", version = "2" }
+program_structure = { package = "circom_program_structure", path = "../circom_program_structure", version = "2" }
+code_producers = { package = "circom_code_producers", path = "../circom_code_producers", version = "2" }
+num-bigint-dig = "0.6.0"

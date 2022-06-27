@@ -1,5 +1,5 @@
 [package]
-name = "constant_tracking"
+name = "circom_constant_tracking"
 version = "2.0.0"
 authors = ["hermeGarcia <hermegarcianavarro@gmail.com>"]
 edition = "2018"

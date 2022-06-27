@@ -7,13 +7,13 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-parser = { path = "../parser", version = "2" }
-program_structure = { path = "../program_structure", version = "2" }
-type_analysis = { path = "../type_analysis", version = "2" }
-constraint_generation = { path = "../constraint_generation", version = "2" }
-constraint_writers = { path = "../constraint_writers", version = "2" }
-compiler = { path = "../compiler", version = "2" }
-dag = { path = "../dag", version = "2" }
+parser = { package = "circom_parser", path = "../circom_parser", version = "2" }
+program_structure = { package = "circom_program_structure", path = "../circom_program_structure", version = "2" }
+type_analysis = { package = "circom_type_analysis", path = "../circom_type_analysis", version = "2" }
+constraint_generation = { package = "circom_constraint_generation", path = "../circom_constraint_generation", version = "2" }
+constraint_writers = { package = "circom_constraint_writers", path = "../circom_constraint_writers", version = "2" }
+compiler = { package = "circom_compiler", path = "../circom_compiler", version = "2" }
+dag = { package = "circom_dag", path = "../circom_dag", version = "2" }
 clap = "2.33.0"
 ansi_term = "0.12.1"
 wast = "39.0.0"
