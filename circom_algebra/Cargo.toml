@@ -9,4 +9,4 @@ edition = "2018"
 [dependencies]
 num-bigint-dig = "0.6.0"
 num-traits = "0.2.6"
-constant_tracking = {path = "../constant_tracking" }
+constant_tracking = { path = "../constant_tracking", version = "2" }

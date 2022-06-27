@@ -8,9 +8,9 @@ edition = "2018"
 ansi_term = "0.12.1"
 num-traits = "0.2.6"
 num-bigint-dig = "0.6.0"
-compiler = { path = "../compiler" }
-circom_algebra = { path = "../circom_algebra" }
-program_structure = { path = "../program_structure" }
-constraint_writers = { path = "../constraint_writers" }
-constraint_list = { path = "../constraint_list" }
-dag = { path = "../dag" }
+compiler = { path = "../compiler", version = "2" }
+circom_algebra = { path = "../circom_algebra", version = "2" }
+program_structure = { path = "../program_structure", version = "2" }
+constraint_writers = { path = "../constraint_writers", version = "2" }
+constraint_list = { path = "../constraint_list", version = "2" }
+dag = { path = "../dag", version = "2" }

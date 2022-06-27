@@ -7,9 +7,9 @@ edition = "2018"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-constraint_writers = { path = "../constraint_writers" }
-circom_algebra = { path = "../circom_algebra" }
-program_structure = { path = "../program_structure" }
+constraint_writers = { path = "../constraint_writers", version = "2" }
+circom_algebra = { path = "../circom_algebra", version = "2" }
+program_structure = { path = "../program_structure", version = "2" }
 json = "0.12.4"
 threadpool = "1.0"
 num_cpus = "1.0"
