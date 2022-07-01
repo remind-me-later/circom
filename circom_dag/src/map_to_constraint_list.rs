@@ -43,12 +43,12 @@ fn produce_encoding(
 ) -> DAGEncoding {
     let mut adjacency = Vec::new();
     let mut nodes = Vec::new();
-    let mut id = 0;
-    for node in dag_nodes {
+
+    for (id, node) in dag_nodes.into_iter().enumerate() {
         let encoded = map_node_to_encoding(id, node);
         Vec::push(&mut nodes, encoded);
-        id += 1;
     }
+
     for edges in dag_edges {
         let mut encoded = Vec::new();
         for edge in edges {
@@ -57,6 +57,7 @@ fn produce_encoding(
         }
         Vec::push(&mut adjacency, encoded);
     }
+
     DAGEncoding { init, no_constraints, nodes, adjacency }
 }
 

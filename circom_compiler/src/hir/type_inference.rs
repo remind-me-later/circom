@@ -31,13 +31,11 @@ fn infer_type_stmt(stmt: &Statement, state: &State, context: &mut SearchInfo) ->
         infer_type_while(stmt, state, context)
     } else if stmt.is_declaration() {
         infer_type_declaration(stmt, state, context)
-    } else if stmt.is_substitution() {
-        Option::None
-    } else if stmt.is_constraint_equality() {
-        Option::None
-    } else if stmt.is_log_call() {
-        Option::None
-    } else if stmt.is_assert() {
+    } else if stmt.is_substitution()
+        || stmt.is_constraint_equality()
+        || stmt.is_log_call()
+        || stmt.is_assert()
+    {
         Option::None
     } else {
         unreachable!()
@@ -136,11 +134,7 @@ fn infer_type_expresion(expr: &Expression, state: &State, context: &mut SearchIn
         infer_type_array(expr, state, context)
     } else if expr.is_switch() {
         infer_type_switch(expr, state, context)
-    } else if expr.is_infix() {
-        Option::Some(VCT::with_capacity(0))
-    } else if expr.is_prefix() {
-        Option::Some(VCT::with_capacity(0))
-    } else if expr.is_number() {
+    } else if expr.is_infix() || expr.is_prefix() || expr.is_number() {
         Option::Some(VCT::with_capacity(0))
     } else {
         unreachable!()
@@ -193,17 +187,11 @@ fn infer_type_call(expr: &Expression, state: &State, context: &mut SearchInfo) -
         } else {
             context.open_calls.insert(id.clone());
             context.environment.add_variable_block();
-            let mut index = 0;
             let body = &state.generic_functions.get(id).unwrap().body;
             let names = &state.generic_functions.get(id).unwrap().params_names;
-            let arg_types = infer_args(args, state, context);
-            if arg_types.is_none() {
-                return Option::None;
-            }
-            let arg_types = arg_types.unwrap();
-            for arg_type in arg_types {
+            let arg_types = infer_args(args, state, context)?;
+            for (index, arg_type) in arg_types.into_iter().enumerate() {
                 context.environment.add_variable(&names[index], arg_type);
-                index += 1;
             }
             let inferred = infer_type_stmt(body, state, context);
             context.environment.remove_variable_block();

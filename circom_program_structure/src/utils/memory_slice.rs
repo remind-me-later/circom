@@ -36,7 +36,7 @@ impl<C: Default + Clone + Display + Eq> Display for MemorySlice<C> {
             for i in 1..self.values.len() {
                 msg.push_str(&format!(",{}", self.values[i]));
             }
-            msg.push_str("]");
+            msg.push(']');
             f.write_str(&msg)
         }
     }
@@ -212,7 +212,7 @@ mod tests {
                 if let Result::Ok(v) = result {
                     assert_eq!(*v, 0);
                 } else {
-                    assert!(false);
+                    panic!();
                 }
             }
         }
@@ -225,7 +225,7 @@ mod tests {
         if let Result::Ok(val) = memory_response {
             assert_eq!(*val, 4);
         } else {
-            assert!(false);
+            panic!();
         }
     }
     #[test]
@@ -235,17 +235,17 @@ mod tests {
         let new_row = U32Slice::new_with_route(&[4], &4);
 
         let res = U32Slice::insert_values(&mut slice, &[2], &new_row);
-        if let Result::Ok(_) = res {
+        if res.is_ok() {
             for c in 0..4 {
                 let memory_result = U32Slice::get_reference_to_single_value(&slice, &[2, c]);
                 if let Result::Ok(val) = memory_result {
                     assert_eq!(*val, 4);
                 } else {
-                    assert!(false);
+                    panic!()
                 }
             }
         } else {
-            assert!(false);
+            panic!();
         }
     }
 }

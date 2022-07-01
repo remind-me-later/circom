@@ -73,7 +73,12 @@ fn argument_into_slice(argument: &Argument) -> AExpressionSlice {
     AExpressionSlice::new_array(dimensions, arithmetic_expressions)
 }
 
-fn treat_statement(stmt: &mut Statement, context: &Context, reports: &mut ReportCollection, flag_verbose: bool) {
+fn treat_statement(
+    stmt: &mut Statement,
+    context: &Context,
+    reports: &mut ReportCollection,
+    flag_verbose: bool,
+) {
     if stmt.is_initialization_block() {
         treat_init_block(stmt, context, reports, flag_verbose)
     } else if stmt.is_block() {
@@ -86,7 +91,12 @@ fn treat_statement(stmt: &mut Statement, context: &Context, reports: &mut Report
     }
 }
 
-fn treat_init_block(stmt: &mut Statement, context: &Context, reports: &mut ReportCollection, flag_verbose: bool) {
+fn treat_init_block(
+    stmt: &mut Statement,
+    context: &Context,
+    reports: &mut ReportCollection,
+    flag_verbose: bool,
+) {
     use Statement::InitializationBlock;
     if let InitializationBlock { initializations, .. } = stmt {
         for init in initializations {
@@ -99,7 +109,12 @@ fn treat_init_block(stmt: &mut Statement, context: &Context, reports: &mut Repor
     }
 }
 
-fn treat_block(stmt: &mut Statement, context: &Context, reports: &mut ReportCollection, flag_verbose: bool) {
+fn treat_block(
+    stmt: &mut Statement,
+    context: &Context,
+    reports: &mut ReportCollection,
+    flag_verbose: bool,
+) {
     use Statement::Block;
     if let Block { stmts, .. } = stmt {
         for s in stmts {
@@ -110,7 +125,12 @@ fn treat_block(stmt: &mut Statement, context: &Context, reports: &mut ReportColl
     }
 }
 
-fn treat_while(stmt: &mut Statement, context: &Context, reports: &mut ReportCollection, flag_verbose: bool) {
+fn treat_while(
+    stmt: &mut Statement,
+    context: &Context,
+    reports: &mut ReportCollection,
+    flag_verbose: bool,
+) {
     use Statement::While;
     if let While { stmt, .. } = stmt {
         treat_statement(stmt, context, reports, flag_verbose);
@@ -119,7 +139,12 @@ fn treat_while(stmt: &mut Statement, context: &Context, reports: &mut ReportColl
     }
 }
 
-fn treat_conditional(stmt: &mut Statement, context: &Context, reports: &mut ReportCollection, flag_verbose: bool) {
+fn treat_conditional(
+    stmt: &mut Statement,
+    context: &Context,
+    reports: &mut ReportCollection,
+    flag_verbose: bool,
+) {
     use Statement::IfThenElse;
     if let IfThenElse { if_case, else_case, .. } = stmt {
         treat_statement(if_case, context, reports, flag_verbose);
@@ -131,7 +156,12 @@ fn treat_conditional(stmt: &mut Statement, context: &Context, reports: &mut Repo
     }
 }
 
-fn treat_declaration(stmt: &mut Statement, context: &Context, reports: &mut ReportCollection, flag_verbose: bool) {
+fn treat_declaration(
+    stmt: &mut Statement,
+    context: &Context,
+    reports: &mut ReportCollection,
+    flag_verbose: bool,
+) {
     use Statement::Declaration;
     if let Declaration { meta, dimensions, .. } = stmt {
         let mut concrete_dimensions = vec![];
@@ -153,7 +183,7 @@ fn treat_dimension(
     dim: &Expression,
     context: &Context,
     reports: &mut ReportCollection,
-    flag_verbose: bool
+    flag_verbose: bool,
 ) -> Option<usize> {
     use crate::execute::execute_constant_expression;
     if context.inside_template && !dim.is_number() {

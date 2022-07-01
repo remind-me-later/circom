@@ -47,7 +47,7 @@ fn obtain_linear_combination_block<T>(
     field_size: usize,
 ) -> (Vec<u8>, usize)
 where
-    T: AsRef<[u8]>  + std::cmp::Ord + std::hash::Hash,
+    T: AsRef<[u8]> + std::cmp::Ord + std::hash::Hash,
 {
     let mut block = Vec::new();
     let non_zero_factors = BigInt::from(linear_combination.len());
@@ -136,8 +136,7 @@ pub struct SignalSection {
 impl R1CSWriter {
     pub fn new(output_file: String, field_size: usize) -> Result<R1CSWriter, ()> {
         let sections = [false; 3];
-        let mut writer =
-            File::create(&output_file).map_err(|_err| {}).map(|f| BufWriter::new(f))?;
+        let mut writer = File::create(&output_file).map_err(|_| ()).map(BufWriter::new)?;
         initialize_file(&mut writer)?;
         Result::Ok(R1CSWriter { writer, sections, field_size })
     }

@@ -11,9 +11,7 @@ pub fn build_main_component(public: Vec<String>, call: Expression) -> MainCompon
     (public, call)
 }
 
-
 pub type Version = (usize, usize, usize);
-
 
 #[derive(Clone)]
 pub struct Meta {
@@ -122,14 +120,7 @@ pub fn build_template(
     body: Statement,
     parallel: bool,
 ) -> Definition {
-    Definition::Template {
-        meta,
-        name,
-        args,
-        arg_location,
-        body,
-        parallel,
-    }
+    Definition::Template { meta, name, args, arg_location, body, parallel }
 }
 
 pub fn build_function(

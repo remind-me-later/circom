@@ -31,7 +31,7 @@ fn analyse_statement(stmt: &Statement) -> bool {
     }
 }
 
-fn analyse_block(block: &Vec<Statement>) -> bool {
+fn analyse_block(block: &[Statement]) -> bool {
     let mut has_return_path = false;
     for stmt in block.iter() {
         has_return_path = has_return_path || analyse_statement(stmt);

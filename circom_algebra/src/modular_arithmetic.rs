@@ -41,7 +41,7 @@ pub fn sub(left: &BigInt, right: &BigInt, field: &BigInt) -> BigInt {
 pub fn div(left: &BigInt, right: &BigInt, field: &BigInt) -> Result<BigInt, ArithmeticError> {
     let right_inverse = right
         .mod_inverse(field)
-        .map_or(Result::Err(ArithmeticError::DivisionByZero), |a| Result::Ok(a))?;
+        .map_or(Result::Err(ArithmeticError::DivisionByZero), Result::Ok)?;
     let res = mul(left, &right_inverse, field);
     Result::Ok(res)
 }
@@ -90,9 +90,8 @@ pub fn shift_l(left: &BigInt, right: &BigInt, field: &BigInt) -> Result<BigInt, 
     let two = BigInt::from(2);
     let top = field / &two;
     if right <= &top {
-        let usize_repr = right
-            .to_usize()
-            .map_or(Result::Err(ArithmeticError::DivisionByZero), |a| Result::Ok(a))?;
+        let usize_repr =
+            right.to_usize().map_or(Result::Err(ArithmeticError::DivisionByZero), Result::Ok)?;
         let value = modulus(&((left * &num_traits::pow(two, usize_repr)) & &mask(field)), field);
         Result::Ok(value)
     } else {
@@ -103,9 +102,8 @@ pub fn shift_r(left: &BigInt, right: &BigInt, field: &BigInt) -> Result<BigInt, 
     let two = BigInt::from(2);
     let top = field / &two;
     if right <= &top {
-        let usize_repr = right
-            .to_usize()
-            .map_or(Result::Err(ArithmeticError::DivisionByZero), |a| Result::Ok(a))?;
+        let usize_repr =
+            right.to_usize().map_or(Result::Err(ArithmeticError::DivisionByZero), Result::Ok)?;
         let value = left / &num_traits::pow(two, usize_repr);
         Result::Ok(value)
     } else {
@@ -221,7 +219,7 @@ mod tests {
         if let Result::Ok(res) = mod_op(&a, &b, &field) {
             assert_eq!(a, res)
         } else {
-            assert!(false);
+            panic!();
         }
     }
     #[test]

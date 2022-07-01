@@ -48,7 +48,7 @@ impl WriteWasm for ReturnBucket {
         let mut instructions = vec![];
         if producer.needs_comments() {
             instructions.push(";; return bucket".to_string());
-	}
+        }
         if self.with_size == 1 {
             instructions.push(get_local(producer.get_result_address_tag())); //result address
             let mut instructions_value = self.value.produce_wasm(producer);
@@ -88,7 +88,7 @@ impl WriteWasm for ReturnBucket {
         instructions.push(add_return());
         if producer.needs_comments() {
             instructions.push(";; end of return bucket".to_string());
-	}
+        }
         instructions
     }
 }
@@ -96,8 +96,7 @@ impl WriteWasm for ReturnBucket {
 impl WriteC for ReturnBucket {
     fn produce_c(&self, producer: &CProducer) -> (Vec<String>, String) {
         use c_code_generator::*;
-        let mut instructions = vec![];
-        instructions.push("// return bucket".to_string());
+        let mut instructions = vec!["// return bucket".to_string()];
         let (mut instructions_value, src) = self.value.produce_c(producer);
         instructions.append(&mut instructions_value);
         if self.with_size > 1 {

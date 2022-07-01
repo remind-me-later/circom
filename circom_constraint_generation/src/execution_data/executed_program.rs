@@ -56,7 +56,7 @@ impl ExecutedProgram {
         if let Option::Some(index) = possible_index {
             return index;
         }
-        self.template_to_nodes.entry(node.template_name().clone()).or_insert_with(|| vec![]);
+        self.template_to_nodes.entry(node.template_name().clone()).or_insert_with(Vec::new);
         let nodes_for_template = self.template_to_nodes.get_mut(node.template_name()).unwrap();
         let node_index = self.model.len();
         self.model.push(node);
@@ -101,12 +101,10 @@ impl ExecutedProgram {
         crate::compute_constants::manage_functions(&mut program, flag_verbose)?;
         crate::compute_constants::compute_vct(&mut temp_instances, &program, flag_verbose)?;
         let mut mixed = vec![];
-        let mut index = 0;
-        for in_mixed in mixed_instances {
+        for (index, in_mixed) in mixed_instances.into_iter().enumerate() {
             if in_mixed {
                 mixed.push(index);
             }
-            index += 1;
         }
         let config = VCPConfig {
             stats: dag_stats,
@@ -136,7 +134,8 @@ fn produce_dags_stats(dag: &DAG) -> Stats {
         all_needed_subcomponents_indexes[index] += node.number_of_subcomponents_indexes();
         for c in dag.get_edges(index).unwrap() {
             all_created_cmp[index] += all_created_cmp[c.get_goes_to()];
-            all_needed_subcomponents_indexes[index] += all_needed_subcomponents_indexes[c.get_goes_to()];
+            all_needed_subcomponents_indexes[index] +=
+                all_needed_subcomponents_indexes[c.get_goes_to()];
             all_signals[index] += all_signals[c.get_goes_to()];
             all_io[index] += all_io[c.get_goes_to()];
         }

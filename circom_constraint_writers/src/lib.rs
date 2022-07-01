@@ -1,3 +1,5 @@
+#![allow(clippy::result_unit_err)]
+
 pub mod debug_writer;
 pub mod json_writer;
 pub mod log_writer;

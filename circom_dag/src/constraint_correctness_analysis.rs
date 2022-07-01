@@ -1,3 +1,5 @@
+#![allow(clippy::new_ret_no_self)]
+
 use super::Node;
 use circom_algebra::algebra::Constraint;
 use program_structure::error_code::ReportCode;
@@ -5,13 +7,13 @@ use program_structure::error_definition::{Report, ReportCollection};
 use std::collections::{HashMap, HashSet};
 
 type C = Constraint<usize>;
-const UNCONSTRAINED_SIGNAL: &'static str = "Unconstrained signal.";
+const UNCONSTRAINED_SIGNAL: &str = "Unconstrained signal.";
 const UNCONSTRAINED_SIGNAL_CODE: ReportCode = ReportCode::UnconstrainedSignal;
 
-const ONE_CONSTRAINT_INTERMEDIATE: &'static str = "One constraint intermediate:";
+const ONE_CONSTRAINT_INTERMEDIATE: &str = "One constraint intermediate:";
 const ONE_CONSTRAINT_INTERMEDIATE_CODE: ReportCode = ReportCode::OneConstraintIntermediate;
 
-const NO_OUTPUT: &'static str = "There is no output signal";
+const NO_OUTPUT: &str = "There is no output signal";
 const NO_OUTPUT_CODE: ReportCode = ReportCode::NoOutputInInstance;
 
 struct UnconstrainedSignal;

@@ -1,3 +1,4 @@
+#[derive(Default)]
 pub struct Log {
     pub no_linear: usize,
     pub no_non_linear: usize,
@@ -11,16 +12,7 @@ pub struct Log {
 
 impl Log {
     pub fn new() -> Log {
-        Log {
-            no_linear: 0,
-            no_non_linear: 0,
-            no_public_inputs: 0,
-            no_private_inputs: 0,
-            no_public_outputs: 0,
-            no_private_outputs: 0,
-            no_wires: 0,
-            no_labels: 0,
-        }
+        Log::default()
     }
 
     pub fn print(log: &Log) {

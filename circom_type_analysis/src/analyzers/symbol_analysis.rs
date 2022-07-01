@@ -14,7 +14,7 @@ pub fn check_naming_correctness(program_archive: &ProgramArchive) -> Result<(), 
     let function_info = program_archive.get_functions();
     let mut reports = ReportCollection::new();
     let mut instances = Vec::new();
-    for (_, data) in template_info {
+    for data in template_info.values() {
         let instance = (
             data.get_file_id(),
             data.get_param_location(),
@@ -23,7 +23,7 @@ pub fn check_naming_correctness(program_archive: &ProgramArchive) -> Result<(), 
         );
         instances.push(instance);
     }
-    for (_, data) in function_info {
+    for data in function_info.values() {
         let instance = (
             data.get_file_id(),
             data.get_param_location(),
@@ -32,8 +32,7 @@ pub fn check_naming_correctness(program_archive: &ProgramArchive) -> Result<(), 
         );
         instances.push(instance);
     }
-    {
-    }
+    {}
 
     if let Err(mut r) = analyze_main(program_archive) {
         reports.append(&mut r);
@@ -67,11 +66,11 @@ fn analyze_main(program: &ProgramArchive) -> Result<(), Vec<Report>> {
     let mut reports = vec![];
     if let Expression::Call { id, .. } = call {
         if program.contains_template(id) {
-            let inputs  =  program.get_template_data(id).get_inputs();
+            let inputs = program.get_template_data(id).get_inputs();
             for signal in signals {
                 if !inputs.contains_key(signal) {
                     let mut report = Report::error(
-                        format!("Invalid public list"),
+                        "Invalid public list".to_string(),
                         ReportCode::SameSymbolDeclaredTwice,
                     );
                     report.add_primary(
@@ -94,7 +93,11 @@ fn analyze_main(program: &ProgramArchive) -> Result<(), Vec<Report>> {
         &environment,
     );
 
-    if reports.is_empty() { Ok(()) } else { Err(reports) }
+    if reports.is_empty() {
+        Ok(())
+    } else {
+        Err(reports)
+    }
 }
 
 pub fn analyze_symbols(
@@ -107,20 +110,16 @@ pub fn analyze_symbols(
 ) -> Result<(), ReportCollection> {
     let mut param_name_collision = false;
     let mut reports = ReportCollection::new();
-    let mut environment = Environment::new();
-    environment.push(Block::new());
+    let mut environment = vec![Block::new()];
+
     for param in params_names.iter() {
         let success = add_symbol_to_block(&mut environment, param);
         param_name_collision = param_name_collision || !success;
     }
     if param_name_collision {
         let mut report =
-            Report::error(format!("Symbol declared twice"), ReportCode::SameSymbolDeclaredTwice);
-        report.add_primary(
-            param_location.clone(),
-            file_id.clone(),
-            format!("Declaring same symbol twice"),
-        );
+            Report::error("Symbol declared twice".to_string(), ReportCode::SameSymbolDeclaredTwice);
+        report.add_primary(param_location, file_id, "Declaring same symbol twice".to_string());
         reports.push(report);
     }
     for stmt in body.iter() {
@@ -212,13 +211,13 @@ fn analyze_statement(
             }
             if !add_symbol_to_block(environment, name) {
                 let mut report = Report::error(
-                    format!("Symbol declared twice"),
+                    "Symbol declared twice".to_string(),
                     ReportCode::SameSymbolDeclaredTwice,
                 );
                 report.add_primary(
                     meta.location.clone(),
-                    file_id.clone(),
-                    format!("Declaring same symbol twice"),
+                    file_id,
+                    "Declaring same symbol twice".to_string(),
                 );
                 reports.push(report);
             }
@@ -264,10 +263,11 @@ fn analyze_statement(
     }
 }
 
+#[allow(clippy::too_many_arguments)]
 fn treat_variable(
     meta: &Meta,
     name: &String,
-    access: &Vec<Access>,
+    access: &[Access],
     file_id: FileID,
     function_info: &FunctionInfo,
     template_info: &TemplateInfo,
@@ -275,11 +275,12 @@ fn treat_variable(
     environment: &Environment,
 ) {
     if !symbol_in_environment(environment, name) {
-        let mut report = Report::error(format!("Undeclared symbol"), ReportCode::NonExistentSymbol);
+        let mut report =
+            Report::error("Undeclared symbol".to_string(), ReportCode::NonExistentSymbol);
         report.add_primary(
             file_definition::generate_file_location(meta.get_start(), meta.get_end()),
-            file_id.clone(),
-            format!("Using unknown symbol"),
+            file_id,
+            "Using unknown symbol".to_string(),
         );
         reports.push(report);
     }
@@ -338,11 +339,11 @@ fn analyze_expression(
         Expression::Call { meta, id, args, .. } => {
             if !function_info.contains_key(id) && !template_info.contains_key(id) {
                 let mut report =
-                    Report::error(format!("Calling symbol"), ReportCode::NonExistentSymbol);
+                    Report::error("Calling symbol".to_string(), ReportCode::NonExistentSymbol);
                 report.add_primary(
                     file_definition::generate_file_location(meta.get_start(), meta.get_end()),
-                    file_id.clone(),
-                    format!("Calling unknown symbol"),
+                    file_id,
+                    "Calling unknown symbol".to_string(),
                 );
                 reports.push(report);
                 return;
@@ -354,12 +355,12 @@ fn analyze_expression(
             };
             if args.len() != expected_num_of_params {
                 let mut report = Report::error(
-                    format!("Calling function with wrong number of arguments"),
+                    "Calling function with wrong number of arguments".to_string(),
                     ReportCode::FunctionWrongNumberOfArguments,
                 );
                 report.add_primary(
                     file_definition::generate_file_location(meta.get_start(), meta.get_end()),
-                    file_id.clone(),
+                    file_id,
                     format!("Got {} params, {} where expected", args.len(), expected_num_of_params),
                 );
                 reports.push(report);

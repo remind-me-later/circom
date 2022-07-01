@@ -14,6 +14,8 @@ type CompressedExpr = Vec<(CID, S)>;
 type CompressedConstraint = (CompressedExpr, CompressedExpr, CompressedExpr); // A, B, C
 
 pub type ConstraintID = usize;
+
+#[derive(Default)]
 pub struct ConstraintStorage {
     field_tracker: FieldTracker,
     constraints: Vec<CompressedConstraint>,
@@ -21,7 +23,7 @@ pub struct ConstraintStorage {
 
 impl ConstraintStorage {
     pub fn new() -> ConstraintStorage {
-        ConstraintStorage { field_tracker: FieldTracker::new(), constraints: Vec::new() }
+        ConstraintStorage::default()
     }
 
     pub fn add_constraint(&mut self, constraint: C) -> ConstraintID {

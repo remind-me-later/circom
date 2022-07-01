@@ -2,6 +2,8 @@ use std::collections::HashMap;
 use std::hash::Hash;
 
 pub type CID = usize;
+
+#[derive(Default)]
 pub struct ConstantTracker<C>
 where
     C: Hash,

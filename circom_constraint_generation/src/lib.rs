@@ -1,3 +1,5 @@
+#![allow(clippy::result_unit_err)]
+
 extern crate num_bigint_dig as num_bigint;
 extern crate num_traits;
 
@@ -56,7 +58,7 @@ pub fn build_circuit(program: ProgramArchive, config: BuildConfig) -> BuildRespo
 
 type InstantiationResponse = Result<ExecutedProgram, ReportCollection>;
 fn instantiation(program: &ProgramArchive, flag_verbose: bool) -> InstantiationResponse {
-    let execution_result = execute::constraint_execution(&program, flag_verbose);
+    let execution_result = execute::constraint_execution(program, flag_verbose);
     match execution_result {
         Ok(program_exe) => {
             let no_nodes = program_exe.number_of_nodes();
@@ -70,8 +72,7 @@ fn instantiation(program: &ProgramArchive, flag_verbose: bool) -> InstantiationR
 }
 
 fn export(exe: ExecutedProgram, program: ProgramArchive, flag_verbose: bool) -> ExportResult {
-    let exported = exe.export(program, flag_verbose);
-    exported
+    exe.export(program, flag_verbose)
 }
 
 fn sync_dag_and_vcp(vcp: &mut VCP, dag: &mut DAG) {

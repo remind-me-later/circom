@@ -3,7 +3,6 @@ use program_structure::error_definition::Report;
 use program_structure::program_archive::ProgramArchive;
 use crate::VERSION;
 
-
 pub fn parse_project(input_info: &Input) -> Result<ProgramArchive, ()> {
     let initial_file = input_info.input_file().to_string();
     let result_program_archive = parser::run_parser(initial_file, VERSION);

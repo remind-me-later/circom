@@ -69,7 +69,7 @@ impl WriteWasm for FunctionCodeInfo {
         instructions.append(&mut reserve_stack_fr_code); //gives value to $cstack
         if producer.needs_comments() {
             instructions.push(";; start of the function code".to_string());
-	}
+        }
         //generate code
 
         for t in &self.body {

@@ -3,6 +3,7 @@ use crate::execution_data::type_definitions::NodePointer;
 use crate::execution_data::ExecutedProgram;
 use std::collections::HashMap;
 
+#[derive(Default)]
 pub struct ComponentRepresentation {
     pub node_pointer: Option<NodePointer>,
     unassigned_inputs: HashMap<String, SliceCapacity>,
@@ -10,16 +11,6 @@ pub struct ComponentRepresentation {
     outputs: HashMap<String, SignalSlice>,
 }
 
-impl Default for ComponentRepresentation {
-    fn default() -> Self {
-        ComponentRepresentation {
-            node_pointer: Option::None,
-            unassigned_inputs: HashMap::new(),
-            inputs: HashMap::new(),
-            outputs: HashMap::new(),
-        }
-    }
-}
 impl Clone for ComponentRepresentation {
     fn clone(&self) -> Self {
         ComponentRepresentation {
@@ -49,9 +40,8 @@ impl ComponentRepresentation {
         for (symbol, route) in node.inputs() {
             let signal_slice = SignalSlice::new_with_route(route, &false);
             let signal_slice_size = SignalSlice::get_number_of_cells(&signal_slice);
-            if signal_slice_size > 0{
-                unassigned_inputs
-                    .insert(symbol.clone(), signal_slice_size);
+            if signal_slice_size > 0 {
+                unassigned_inputs.insert(symbol.clone(), signal_slice_size);
             }
             inputs.insert(symbol.clone(), signal_slice);
         }

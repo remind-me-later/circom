@@ -52,7 +52,7 @@ impl WriteWasm for LoopBucket {
         let mut instructions = vec![];
         if producer.needs_comments() {
             instructions.push(format!(";; loop bucket. Line {}", self.line)); //.to_string()
-	}
+        }
         instructions.push(add_block());
         instructions.push(add_loop());
         let mut instructions_continue = self.continue_condition.produce_wasm(producer);
@@ -69,7 +69,7 @@ impl WriteWasm for LoopBucket {
         instructions.push(add_end());
         if producer.needs_comments() {
             instructions.push(";; end of loop bucket".to_string());
-	}
+        }
         instructions
     }
 }

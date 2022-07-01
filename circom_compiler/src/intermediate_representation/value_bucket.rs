@@ -40,7 +40,7 @@ impl ToString for ValueBucket {
         let template_id = self.message_id.to_string();
         let parse_as = self.parse_as.to_string();
         let op_aux_number = self.op_aux_no.to_string();
-        let value = self.value.clone();
+        let value = self.value;
         format!(
             "VALUE(line:{},template_id:{},as:{},op_number:{},value:{})",
             line, template_id, parse_as, op_aux_number, value
@@ -54,7 +54,7 @@ impl WriteWasm for ValueBucket {
         let mut instructions = vec![];
         if producer.needs_comments() {
             instructions.push(";; value bucket".to_string());
-	}
+        }
         match &self.parse_as {
             ValueType::U32 => {
                 instructions.push(set_constant(&self.value.to_string()));
@@ -68,7 +68,7 @@ impl WriteWasm for ValueBucket {
         }
         if producer.needs_comments() {
             instructions.push(";; end of value bucket".to_string());
-	}
+        }
         instructions
     }
 }

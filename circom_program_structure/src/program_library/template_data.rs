@@ -21,6 +21,7 @@ pub struct TemplateData {
 }
 
 impl TemplateData {
+    #[allow(clippy::too_many_arguments)]
     pub fn new(
         name: String,
         file_id: FileID,
@@ -122,19 +123,22 @@ fn fill_inputs_and_outputs(
                 fill_inputs_and_outputs(initialization, input_signals, output_signals);
             }
         }
-        Statement::Declaration { xtype, name, dimensions, .. } => {
-            if let ast::VariableType::Signal(stype, tag) = xtype {
-                let signal_name = name.clone();
-                let dim = dimensions.len();
-                match stype {
-                    ast::SignalType::Input => {
-                        input_signals.insert(signal_name, (dim, *tag));
-                    }
-                    ast::SignalType::Output => {
-                        output_signals.insert(signal_name, (dim, *tag));
-                    }
-                    _ => {} //no need to deal with intermediate signals
+        Statement::Declaration {
+            xtype: ast::VariableType::Signal(stype, tag),
+            name,
+            dimensions,
+            ..
+        } => {
+            let signal_name = name.clone();
+            let dim = dimensions.len();
+            match stype {
+                ast::SignalType::Input => {
+                    input_signals.insert(signal_name, (dim, *tag));
                 }
+                ast::SignalType::Output => {
+                    output_signals.insert(signal_name, (dim, *tag));
+                }
+                _ => {} //no need to deal with intermediate signals
             }
         }
         _ => {}

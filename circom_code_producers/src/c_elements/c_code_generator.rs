@@ -3,7 +3,7 @@ use num_bigint_dig::{BigInt, Sign};
 use serde_json::json;
 use std::fs::File;
 use std::io::prelude::*;
-use std::path::PathBuf;
+use std::path::{PathBuf, Path};
 
 // Types
 const T_U64: &str = "u64";
@@ -84,7 +84,7 @@ pub fn declare_ctx_index() -> CInstruction {
 }
 
 pub fn ctx_index() -> CInstruction {
-    format!("{}", CTX_INDEX)
+    CTX_INDEX.to_string()
 }
 pub fn store_ctx_index(value: CInstruction) -> CInstruction {
     format!("{} = {}", ctx_index(), value)
@@ -127,12 +127,12 @@ pub fn declare_circom_calc_wit() -> CInstruction {
     format!("Circom_CalcWit* {}", CIRCOM_CALC_WIT)
 }
 pub fn circom_calc_wit() -> CInstruction {
-    format!("{}", CIRCOM_CALC_WIT)
+    CIRCOM_CALC_WIT.to_string()
 }
 
 pub const TEMP_INS_2_IO_INFO: &str = "templateInsId2IOSignalInfo";
 pub fn template_ins_2_io_info() -> CInstruction {
-    format!("{}", TEMP_INS_2_IO_INFO)
+    TEMP_INS_2_IO_INFO.to_string()
 }
 
 pub fn template_id_in_component(idx: CInstruction) -> CInstruction {
@@ -146,7 +146,7 @@ pub fn declare_my_signal_start() -> CInstruction {
     )
 }
 pub fn my_signal_start() -> CInstruction {
-    format!("{}", MY_SIGNAL_START)
+    MY_SIGNAL_START.to_string()
 }
 
 pub const MY_TEMPLATE_NAME: &str = "myTemplateName";
@@ -157,15 +157,11 @@ pub fn declare_my_template_name() -> CInstruction {
     )
 }
 pub fn declare_my_template_name_function(name: &String) -> CInstruction {
-    format!(
-        "std::string {} = \"{}\"",
-        MY_TEMPLATE_NAME, name.to_string()
-    )
+    format!("std::string {} = \"{}\"", MY_TEMPLATE_NAME, name)
 }
 pub fn my_template_name() -> CInstruction {
-    format!("{}", MY_TEMPLATE_NAME)
+    MY_TEMPLATE_NAME.to_string()
 }
-
 
 pub const MY_COMPONENT_NAME: &str = "myComponentName";
 pub fn declare_my_component_name() -> CInstruction {
@@ -175,34 +171,28 @@ pub fn declare_my_component_name() -> CInstruction {
     )
 }
 pub fn my_component_name() -> CInstruction {
-    format!("{}", MY_COMPONENT_NAME)
+    MY_COMPONENT_NAME.to_string()
 }
 
 pub const MY_FATHER: &str = "myFather";
 pub fn declare_my_father() -> CInstruction {
-    format!(
-        "u64 {} = {}->componentMemory[{}].idFather",
-        MY_FATHER, CIRCOM_CALC_WIT, CTX_INDEX
-    )
+    format!("u64 {} = {}->componentMemory[{}].idFather", MY_FATHER, CIRCOM_CALC_WIT, CTX_INDEX)
 }
 pub fn my_father() -> CInstruction {
-    format!("{}", MY_FATHER)
+    MY_FATHER.to_string()
 }
 
 pub const MY_ID: &str = "myId";
 pub fn declare_my_id() -> CInstruction {
-    format!(
-        "u64 {} = {}",
-        MY_ID, CTX_INDEX
-    )
+    format!("u64 {} = {}", MY_ID, CTX_INDEX)
 }
 pub fn my_id() -> CInstruction {
-    format!("{}", MY_ID)
+    MY_ID.to_string()
 }
 
 pub const FUNCTION_TABLE: &str = "_functionTable";
 pub fn function_table() -> CInstruction {
-    format!("{}", FUNCTION_TABLE)
+    FUNCTION_TABLE.to_string()
 }
 
 pub const SIGNAL_VALUES: &str = "signalValues";
@@ -279,7 +269,7 @@ pub fn declare_my_subcomponents() -> CInstruction {
     )
 }
 pub fn my_subcomponents() -> CInstruction {
-    format!("{}", MY_SUBCOMPONENTS)
+    MY_SUBCOMPONENTS.to_string()
 }
 
 pub const CIRCUIT_CONSTANTS: &str = "circuitConstants";
@@ -298,7 +288,7 @@ pub fn declare_free_position_in_component_memory() -> CInstruction {
     format!("u32 {} = {}->{}", FREE_IN_COMPONENT_MEM, CIRCOM_CALC_WIT, FREE_IN_COMPONENT_MEM)
 }
 pub fn free_position_in_component_memory() -> CInstruction {
-    format!("{}", FREE_IN_COMPONENT_MEM)
+    FREE_IN_COMPONENT_MEM.to_string()
 }
 pub fn store_free_position_in_component_memory(value: String) -> CInstruction {
     format!("{} = {}", FREE_IN_COMPONENT_MEM, value)
@@ -312,7 +302,7 @@ pub fn declare_list_of_template_messages_use() -> CInstruction {
     )
 }
 pub fn list_of_template_messages_use() -> CInstruction {
-    format!("{}", LIST_OF_TEMPLATE_MESSAGES)
+    LIST_OF_TEMPLATE_MESSAGES.to_string()
 }
 
 pub fn build_callable(header: String, params: Vec<String>, body: Vec<String>) -> String {
@@ -343,32 +333,36 @@ pub fn set_list(elems: Vec<usize>) -> String {
         set_string = format!("{}{},", set_string, elem);
     }
     set_string.pop();
-    set_string .push('}');
+    set_string.push('}');
     set_string
 }
-
 
 pub fn add_return() -> String {
     "return;".to_string()
 }
 
-pub fn generate_my_array_position(aux_dimensions: String, len_dimensions: String, param: String) -> String {
-    format!("{}->generate_position_array({}, {}, {})", CIRCOM_CALC_WIT, aux_dimensions, len_dimensions, param)
+pub fn generate_my_array_position(
+    aux_dimensions: String,
+    len_dimensions: String,
+    param: String,
+) -> String {
+    format!(
+        "{}->generate_position_array({}, {}, {})",
+        CIRCOM_CALC_WIT, aux_dimensions, len_dimensions, param
+    )
 }
 
 pub fn generate_my_trace() -> String {
     format!("{}->getTrace({})", CIRCOM_CALC_WIT, MY_ID)
 }
 
-pub fn build_failed_assert_message(line: usize) -> String{
-    
+pub fn build_failed_assert_message(line: usize) -> String {
     format!("std::cout << \"Failed assert in template/function \" << {} << \" line {}. \" <<  \"Followed trace of components: \" << {} << std::endl" ,
         MY_TEMPLATE_NAME,
         line,
         generate_my_trace()
      )
 }
-
 
 pub fn build_conditional(
     cond: Vec<String>,
@@ -395,8 +389,8 @@ pub fn collect_template_headers(instances: &TemplateList) -> Vec<String> {
         let params_run = argument_list(params_run);
         let run_header = format!("void {}_run({});", instance, params_run);
         let params_create = vec![
-            declare_signal_offset(), 
-            declare_component_offset(), 
+            declare_signal_offset(),
+            declare_component_offset(),
             declare_circom_calc_wit(),
             declare_component_name(),
             declare_component_father(),
@@ -432,14 +426,16 @@ pub fn generate_hash_map(signal_name_list: &Vec<(String, usize, usize)>) -> Vec<
     assert!(signal_name_list.len() <= 256);
     let len = 256;
     let mut hash_map = vec![(0, 0, 0); len];
-    for i in 0..signal_name_list.len() {
-        let h = hasher(&signal_name_list[i].0);
+
+    for signal_name in signal_name_list {
+        let h = hasher(&signal_name.0);
         let mut p = (h % 256) as usize;
         while hash_map[p].1 != 0 {
             p = (p + 1) % 256;
         }
-        hash_map[p] = (h, signal_name_list[i].1 as u64, signal_name_list[i].2 as u64);
+        hash_map[p] = (h, signal_name.1 as u64, signal_name.2 as u64);
     }
+
     hash_map
 }
 
@@ -480,17 +476,17 @@ pub fn generate_dat_constant_list(producer: &CProducer, constant_list: &Vec<Stri
         let p = producer.get_prime().parse::<BigInt>().unwrap();
         let b = ((p.bits() + 63) / 64) * 64;
         let mut r = BigInt::from(1);
-        r = r << b;
-        n = n % BigInt::clone(&p);
-        n = n + BigInt::clone(&p);
-        n = n % BigInt::clone(&p);
+        r <<= b;
+        n %= BigInt::clone(&p);
+        n += BigInt::clone(&p);
+        n %= BigInt::clone(&p);
         let hp = BigInt::clone(&p) / 2;
-        let mut nn;
-        if BigInt::clone(&n) > hp {
-            nn = BigInt::clone(&n) - BigInt::clone(&p);
+
+        let mut nn = if BigInt::clone(&n) > hp {
+            BigInt::clone(&n) - BigInt::clone(&p)
         } else {
-            nn = BigInt::clone(&n);
-        }
+            BigInt::clone(&n)
+        };
 
         if min_int <= nn && nn <= max_int {
             // It is short. We have it in short & Montgomery
@@ -506,7 +502,7 @@ pub fn generate_dat_constant_list(producer: &CProducer, constant_list: &Vec<Stri
                 constant_list_data.push(0);
             }
             //short Montgomery
-            let sm = 0x40000000 as u32;
+            let sm = 0x40000000_u32;
             let mut v: Vec<u8> = sm.to_be_bytes().to_vec();
             v.reverse();
             constant_list_data.append(&mut v);
@@ -515,7 +511,7 @@ pub fn generate_dat_constant_list(producer: &CProducer, constant_list: &Vec<Stri
             for _i in 0..4 {
                 constant_list_data.push(0);
             }
-            let lm = 0xC0000000 as u32;
+            let lm = 0xC0000000_u32;
             let mut v: Vec<u8> = lm.to_be_bytes().to_vec();
             v.reverse();
             constant_list_data.append(&mut v);
@@ -541,14 +537,14 @@ pub fn generate_dat_io_signals_info(
 ) -> Vec<u8> {
     // println!("size: {}",io_map.len());
     let mut io_signals_info = vec![];
-    for (t_ins, _) in io_map {
+    for t_ins in io_map.keys() {
         //println!("info: {}",t_ins);
         let t32 = *t_ins as u32;
         let mut v: Vec<u8> = t32.to_be_bytes().to_vec();
         v.reverse();
         io_signals_info.append(&mut v);
     }
-    for (_, l_io_def) in io_map {
+    for l_io_def in io_map.values() {
         //println!("io_def_len: {}",l_io_def.len());
         let l32 = l_io_def.len() as u32;
         let mut v: Vec<u8> = l32.to_be_bytes().to_vec();
@@ -560,12 +556,7 @@ pub fn generate_dat_io_signals_info(
             let mut v: Vec<u8> = l32.to_be_bytes().to_vec();
             v.reverse();
             io_signals_info.append(&mut v);
-            let n32: u32;
-            if s.lengths.len() > 0 {
-                n32 = (s.lengths.len() - 1) as u32;
-            } else {
-                n32 = 0;
-            }
+            let n32: u32 = if !s.lengths.is_empty() { (s.lengths.len() - 1) as u32 } else { 0 };
             // println!("dims-1: {}",n32);
             let mut v: Vec<u8> = n32.to_be_bytes().to_vec();
             v.reverse();
@@ -612,7 +603,7 @@ pub fn generate_dat_file(dat_file: &mut dyn Write, producer: &CProducer) -> std:
     //dfile.flush()?;
 
     let aux = producer.get_main_input_list();
-    let map = generate_hash_map(&aux);
+    let map = generate_hash_map(aux);
     let hashmap = generate_dat_from_hash_map(&map); //bytes u64 --> u64
                                                     //let hml = 256 as u32;
                                                     //dfile.write_all(&hml.to_be_bytes())?;
@@ -628,7 +619,7 @@ pub fn generate_dat_file(dat_file: &mut dyn Write, producer: &CProducer) -> std:
     dat_file.flush()?;
     //let ioml = producer.get_io_map().len() as u64;
     //dfile.write_all(&ioml.to_be_bytes())?;
-    let iomap = generate_dat_io_signals_info(&producer, producer.get_io_map());
+    let iomap = generate_dat_io_signals_info(producer, producer.get_io_map());
     dat_file.write_all(&iomap)?;
     dat_file.flush()?;
     /*
@@ -648,10 +639,10 @@ pub fn generate_dat_file(dat_file: &mut dyn Write, producer: &CProducer) -> std:
 
 pub fn generate_function_list(_producer: &CProducer, list: &TemplateList) -> String {
     let mut func_list = "".to_string();
-    if list.len() > 0 {
+    if !list.is_empty() {
         func_list.push_str(&format!("\n{}_run", list[0]));
-        for i in 1..list.len() {
-            func_list.push_str(&format!(",\n{}_run", list[i]));
+        for t in list.iter().skip(1) {
+            func_list.push_str(&format!(",\n{}_run", t));
         }
     }
     func_list
@@ -663,10 +654,10 @@ pub fn generate_message_list_def(_producer: &CProducer, message_list: &MessageLi
     let start = format!("std::string {}1 [] = {{\n", list_of_messages);
     // let start = format!("{}1 [] = {{\n",producer.get_list_of_messages_name());
     instructions.push(start);
-    if message_list.len() > 0 {
+    if !message_list.is_empty() {
         instructions.push(format!("\"{}\"", message_list[0]));
-        for i in 1..message_list.len() {
-            instructions.push(format!(",\n\"{}\"", message_list[i]));
+        for m in message_list.iter().skip(1) {
+            instructions.push(format!(",\n\"{}\"", m));
         }
         instructions.push("\n".to_string());
     }
@@ -675,9 +666,9 @@ pub fn generate_message_list_def(_producer: &CProducer, message_list: &MessageLi
     instructions
 }
 
-pub fn generate_main_cpp_file(c_folder: &PathBuf) -> std::io::Result<()> {
+pub fn generate_main_cpp_file(c_folder: &Path) -> std::io::Result<()> {
     use std::io::BufWriter;
-    let mut file_path = c_folder.clone();
+    let mut file_path = PathBuf::from(c_folder);
     file_path.push("main");
     file_path.set_extension("cpp");
     let file_name = file_path.to_str().unwrap();
@@ -692,9 +683,9 @@ pub fn generate_main_cpp_file(c_folder: &PathBuf) -> std::io::Result<()> {
     Ok(())
 }
 
-pub fn generate_circom_hpp_file(c_folder: &PathBuf) -> std::io::Result<()> {
+pub fn generate_circom_hpp_file(c_folder: &Path) -> std::io::Result<()> {
     use std::io::BufWriter;
-    let mut file_path = c_folder.clone();
+    let mut file_path = PathBuf::from(c_folder);
     file_path.push("circom");
     file_path.set_extension("hpp");
     let file_name = file_path.to_str().unwrap();
@@ -709,9 +700,9 @@ pub fn generate_circom_hpp_file(c_folder: &PathBuf) -> std::io::Result<()> {
     Ok(())
 }
 
-pub fn generate_fr_hpp_file(c_folder: &PathBuf) -> std::io::Result<()> {
+pub fn generate_fr_hpp_file(c_folder: &Path) -> std::io::Result<()> {
     use std::io::BufWriter;
-    let mut file_path = c_folder.clone();
+    let mut file_path = PathBuf::from(c_folder);
     file_path.push("fr");
     file_path.set_extension("hpp");
     let file_name = file_path.to_str().unwrap();
@@ -726,9 +717,9 @@ pub fn generate_fr_hpp_file(c_folder: &PathBuf) -> std::io::Result<()> {
     Ok(())
 }
 
-pub fn generate_calcwit_hpp_file(c_folder: &PathBuf) -> std::io::Result<()> {
+pub fn generate_calcwit_hpp_file(c_folder: &Path) -> std::io::Result<()> {
     use std::io::BufWriter;
-    let mut file_path = c_folder.clone();
+    let mut file_path = PathBuf::from(c_folder);
     file_path.push("calcwit");
     file_path.set_extension("hpp");
     let file_name = file_path.to_str().unwrap();
@@ -743,9 +734,9 @@ pub fn generate_calcwit_hpp_file(c_folder: &PathBuf) -> std::io::Result<()> {
     Ok(())
 }
 
-pub fn generate_fr_cpp_file(c_folder: &PathBuf) -> std::io::Result<()> {
+pub fn generate_fr_cpp_file(c_folder: &Path) -> std::io::Result<()> {
     use std::io::BufWriter;
-    let mut file_path = c_folder.clone();
+    let mut file_path = PathBuf::from(c_folder);
     file_path.push("fr");
     file_path.set_extension("cpp");
     let file_name = file_path.to_str().unwrap();
@@ -760,9 +751,9 @@ pub fn generate_fr_cpp_file(c_folder: &PathBuf) -> std::io::Result<()> {
     Ok(())
 }
 
-pub fn generate_calcwit_cpp_file(c_folder: &PathBuf) -> std::io::Result<()> {
+pub fn generate_calcwit_cpp_file(c_folder: &Path) -> std::io::Result<()> {
     use std::io::BufWriter;
-    let mut file_path = c_folder.clone();
+    let mut file_path = PathBuf::from(c_folder);
     file_path.push("calcwit");
     file_path.set_extension("cpp");
     let file_name = file_path.to_str().unwrap();
@@ -777,9 +768,9 @@ pub fn generate_calcwit_cpp_file(c_folder: &PathBuf) -> std::io::Result<()> {
     Ok(())
 }
 
-pub fn generate_fr_asm_file(c_folder: &PathBuf) -> std::io::Result<()> {
+pub fn generate_fr_asm_file(c_folder: &Path) -> std::io::Result<()> {
     use std::io::BufWriter;
-    let mut file_path = c_folder.clone();
+    let mut file_path = PathBuf::from(c_folder);
     file_path.push("fr");
     file_path.set_extension("asm");
     let file_name = file_path.to_str().unwrap();
@@ -795,7 +786,7 @@ pub fn generate_fr_asm_file(c_folder: &PathBuf) -> std::io::Result<()> {
 }
 
 pub fn generate_make_file(
-    c_folder: &PathBuf,
+    c_folder: &Path,
     run_name: &str,
     producer: &CProducer,
 ) -> std::io::Result<()> {
@@ -814,7 +805,7 @@ pub fn generate_make_file(
         )
         .expect("must render");
 
-    let mut file_path = c_folder.clone();
+    let mut file_path = PathBuf::from(c_folder);
     file_path.push("Makefile");
     let file_name = file_path.to_str().unwrap();
     let mut c_file = BufWriter::new(File::create(file_name).unwrap());
@@ -869,7 +860,7 @@ mod tests {
     use std::path::Path;
     //    use std::fs::File;
     use super::*;
-    const LOCATION: &'static str = "../target/code_generator_test";
+    const LOCATION: &str = "../target/code_generator_test";
 
     fn create_producer() -> CProducer {
         CProducer::default()
@@ -884,9 +875,9 @@ mod tests {
         let producer = create_producer();
         let mut dat_file = File::create(path + ".dat").unwrap();
         let _rd = generate_dat_file(&mut dat_file, &producer);
-        assert!(true);
+        // assert!(true);
         let pathc = format!("{}/code", LOCATION);
         let _rc = generate_c_file(pathc, &producer);
-        assert!(true);
+        // assert!(true);
     }
 }

@@ -16,10 +16,9 @@ fn rm_statement(stmt: &mut Statement) {
         rm_block(stmt);
     } else if stmt.is_initialization_block() {
         rm_init(stmt);
-    } else if stmt.is_substitution(){ 
+    } else if stmt.is_substitution() {
         rm_substitution(stmt);
-    }
-    else{
+    } else {
     }
 }
 
@@ -76,11 +75,11 @@ fn rm_init(stmt: &mut Statement) {
     }
 }
 
-fn rm_substitution(stmt: &mut Statement){
+fn rm_substitution(stmt: &mut Statement) {
     use Statement::{Block, Substitution};
-    if should_be_removed(stmt){
-        if let Substitution { meta, .. } = stmt{
-            *stmt = Block{ meta: meta.clone(), stmts: Vec::new() };
+    if should_be_removed(stmt) {
+        if let Substitution { meta, .. } = stmt {
+            *stmt = Block { meta: meta.clone(), stmts: Vec::new() };
         }
     }
 }

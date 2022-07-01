@@ -63,8 +63,7 @@ pub fn preprocess(expr: &str, file_id: FileID) -> Result<String, Report> {
                             pp.push(' ');
                         }
                     }
-                    None => {
-                    }
+                    None => {}
                 }
             }
             (_, c) => {
@@ -74,12 +73,10 @@ pub fn preprocess(expr: &str, file_id: FileID) -> Result<String, Report> {
             }
         }
     }
-    if state == 2{
-        let error =
-            UnclosedCommentError { location: block_start..block_start, file_id };
+    if state == 2 {
+        let error = UnclosedCommentError { location: block_start..block_start, file_id };
         Err(UnclosedCommentError::produce_report(error))
-    }
-    else{
+    } else {
         Ok(pp)
     }
 }
@@ -106,5 +103,5 @@ pub fn parse_file(src: &str, file_id: FileID) -> Result<AST, Report> {
             },
             _ => ParsingError { file_id, msg: format!("{:?}", parse_error), location: 0..0 },
         })
-        .map_err(|parsing_error| ParsingError::produce_report(parsing_error))
+        .map_err(ParsingError::produce_report)
 }

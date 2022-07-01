@@ -67,7 +67,7 @@ fn treat_constraint(
         let out = out.unwrap();
         signals.delete(out);
         let substitution = C::clear_signal_from_linear(work, &out, field);
-        let in_conflict = substitutions.get(&substitution.from()).cloned();
+        let in_conflict = substitutions.get(substitution.from()).cloned();
         if in_conflict.is_none() {
             substitutions.insert(*substitution.from(), substitution);
             break;

@@ -184,8 +184,7 @@ fn initialize_constants(state: &mut State, constants: Vec<Argument>) {
         let symbol_info =
             SymbolInfo { access_instruction: address_instruction.clone(), dimensions };
         state.environment.add_variable(&arg.name, symbol_info);
-        let mut index = 0;
-        for value in arg.values {
+        for (index, value) in arg.values.into_iter().enumerate() {
             let cid = bigint_to_cid(&mut state.field_tracker, &value);
             let offset_instruction = ValueBucket {
                 line: 0,
@@ -226,7 +225,6 @@ fn initialize_constants(state: &mut State, constants: Vec<Argument>) {
             }
             .allocate();
             state.code.push(store_instruction);
-            index += 1;
         }
     }
 }
@@ -283,13 +281,13 @@ fn create_components(state: &mut State, triggers: &[Trigger], clusters: Vec<Trig
 }
 
 fn create_uniform_components(state: &mut State, triggers: &[Trigger], cluster: TriggerCluster) {
-    fn compute_number_cmp(lengths: &Vec<usize>) -> usize {
+    fn compute_number_cmp(lengths: &[usize]) -> usize {
         lengths.iter().fold(1, |p, c| p * (*c))
     }
-    fn compute_jump(lengths: &Vec<usize>, indexes: &[usize]) -> usize {
+    fn compute_jump(lengths: &[usize], indexes: &[usize]) -> usize {
         let mut jump = 0;
         let mut full_length = lengths.iter().fold(1, |p, c| p * (*c));
-        let mut lengths = lengths.clone();
+        let mut lengths = lengths.to_vec();
         lengths.reverse();
         for index in indexes {
             let length = lengths.pop().unwrap();
@@ -310,16 +308,20 @@ fn create_uniform_components(state: &mut State, triggers: &[Trigger], cluster: T
             message_id: state.message_id,
             symbol: c_info.runs.clone(),
             name_subcomponent: c_info.component_name.clone(),
-            defined_positions: cluster.defined_positions.into_iter().map(|x| compute_jump(&symbol.dimensions, &x)).collect(),
+            defined_positions: cluster
+                .defined_positions
+                .into_iter()
+                .map(|x| compute_jump(&symbol.dimensions, &x))
+                .collect(),
             cmp_unique_id: id,
             sub_cmp_id: symbol.access_instruction.clone(),
             template_id: c_info.template_id,
             signal_offset: c_info.offset,
-	        component_offset: c_info.component_offset,
+            component_offset: c_info.component_offset,
             number_of_cmp: compute_number_cmp(&symbol.dimensions),
             dimensions: symbol.dimensions,
             signal_offset_jump: offset_jump,
-	     component_offset_jump: component_offset_jump,
+            component_offset_jump,
         }
         .allocate();
         state.code.push(creation_instr);
@@ -329,10 +331,10 @@ fn create_uniform_components(state: &mut State, triggers: &[Trigger], cluster: T
 }
 
 fn create_mixed_components(state: &mut State, triggers: &[Trigger], cluster: TriggerCluster) {
-    fn compute_jump(lengths: &Vec<usize>, indexes: &[usize]) -> usize {
+    fn compute_jump(lengths: &[usize], indexes: &[usize]) -> usize {
         let mut jump = 0;
         let mut full_length = lengths.iter().fold(1, |p, c| p * (*c));
-        let mut lengths = lengths.clone();
+        let mut lengths = lengths.to_vec();
         lengths.reverse();
         for index in indexes {
             let length = lengths.pop().unwrap();
@@ -369,17 +371,25 @@ fn create_mixed_components(state: &mut State, triggers: &[Trigger], cluster: Tri
             is_parallel: state.is_parallel,
             message_id: state.message_id,
             symbol: c_info.runs.clone(),
-            name_subcomponent: format!("{}{}",c_info.component_name.clone(), c_info.indexed_with.iter().fold(String::new(), |acc, &num| format!("{}[{}]", acc, &num.to_string()))),
+            name_subcomponent: format!(
+                "{}{}",
+                c_info.component_name.clone(),
+                c_info.indexed_with.iter().fold(String::new(), |acc, &num| format!(
+                    "{}[{}]",
+                    acc,
+                    &num.to_string()
+                ))
+            ),
             defined_positions: vec![0],
             dimensions: symbol.dimensions,
             cmp_unique_id: id,
             sub_cmp_id: location,
             template_id: c_info.template_id,
             signal_offset: c_info.offset,
-	    component_offset: c_info.component_offset,
+            component_offset: c_info.component_offset,
             number_of_cmp: 1,
             signal_offset_jump: 0,
-	    component_offset_jump: 0,
+            component_offset_jump: 0,
         }
         .allocate();
         state.code.push(creation_instr);
@@ -417,10 +427,10 @@ fn translate_if_then_else(stmt: Statement, state: &mut State, context: &Context)
     use Statement::IfThenElse;
     if let IfThenElse { meta, cond, if_case, else_case, .. } = stmt {
         let starts_at = context.files.get_line(meta.start, meta.get_file_id()).unwrap();
-        let main_program = std::mem::replace(&mut state.code, vec![]);
+        let main_program = std::mem::take(&mut state.code);
         let cond_translation = translate_expression(cond, state, context);
         translate_statement(*if_case, state, context);
-        let if_code = std::mem::replace(&mut state.code, vec![]);
+        let if_code = std::mem::take(&mut state.code);
         if let Option::Some(else_case) = else_case {
             translate_statement(*else_case, state, context);
         }
@@ -442,7 +452,7 @@ fn translate_while(stmt: Statement, state: &mut State, context: &Context) {
     use Statement::While;
     if let While { meta, cond, stmt, .. } = stmt {
         let starts_at = context.files.get_line(meta.start, meta.get_file_id()).unwrap();
-        let main_program = std::mem::replace(&mut state.code, vec![]);
+        let main_program = std::mem::take(&mut state.code);
         let cond_translation = translate_expression(cond, state, context);
         translate_statement(*stmt, state, context);
         let loop_code = std::mem::replace(&mut state.code, main_program);
@@ -462,7 +472,7 @@ fn translate_substitution(stmt: Statement, state: &mut State, context: &Context)
     use Statement::Substitution;
     if let Substitution { meta, var, access, rhe, .. } = stmt {
         debug_assert!(!meta.get_type_knowledge().is_component());
-        let def = SymbolDef { meta: meta.clone(), symbol: var, acc: access };
+        let def = SymbolDef { meta, symbol: var, acc: access };
         let str_info =
             StoreInfo { prc_symbol: ProcessedSymbol::new(def, state, context), src: rhe };
         let store_instruction = if str_info.src.is_call() {
@@ -489,7 +499,7 @@ fn translate_call_case(
     use Expression::Call;
     if let Call { id, args, .. } = info.src {
         let args_instr = translate_call_arguments(args, state, context);
-        info.prc_symbol.into_call_assign(id, args_instr, &state)
+        info.prc_symbol.into_call_assign(id, args_instr, state)
     } else {
         unreachable!()
     }
@@ -588,8 +598,9 @@ fn translate_log(stmt: Statement, state: &mut State, context: &Context) {
             line,
             message_id: state.message_id,
             print: code,
-            is_parallel: state.is_parallel
-        }.allocate();
+            is_parallel: state.is_parallel,
+        }
+        .allocate();
         state.code.push(log);
     }
 }
@@ -625,9 +636,7 @@ fn translate_expression(
         translate_number(expression, state, context)
     } else if expression.is_call() {
         translate_call(expression, state, context)
-    } else if expression.is_array() {
-        unreachable!("This expression is syntactic sugar")
-    } else if expression.is_switch() {
+    } else if expression.is_array() || expression.is_switch() {
         unreachable!("This expression is syntactic sugar")
     } else {
         unreachable!("Unknown expression")
@@ -857,13 +866,7 @@ impl ProcessedSymbol {
             }
         }
         let signal_location = signal.map(|signal_name| {
-            build_signal_location(
-                &signal_name,
-                &symbol_name,
-                af_index,
-                context,
-                state,
-            )
+            build_signal_location(&signal_name, &symbol_name, af_index, context, state)
         });
         ProcessedSymbol {
             xtype: meta.get_type_knowledge().get_reduces_to(),
@@ -874,23 +877,18 @@ impl ProcessedSymbol {
             name: symbol_name,
             before_signal: bf_index,
             signal: signal_location,
-            signal_type
+            signal_type,
         }
     }
 
-    fn into_call_assign(
-        self,
-        id: String,
-        args: ArgData,
-        state: &State,
-    ) -> InstructionPointer {
+    fn into_call_assign(self, id: String, args: ArgData, state: &State) -> InstructionPointer {
         let data = if let Option::Some(signal) = self.signal {
             let dest_type = AddressType::SubcmpSignal {
                 is_parallel: *state.component_to_parallel.get(&self.name).unwrap(),
                 cmp_address: compute_full_address(state, self.symbol, self.before_signal),
                 is_output: self.signal_type.unwrap() == SignalType::Output,
-                input_information : match self.signal_type.unwrap() {
-                    SignalType::Input => InputInformation::Input { status: StatusInput:: Unknown},
+                input_information: match self.signal_type.unwrap() {
+                    SignalType::Input => InputInformation::Input { status: StatusInput::Unknown },
                     _ => InputInformation::NoInput,
                 },
             };
@@ -932,8 +930,8 @@ impl ProcessedSymbol {
                 is_parallel: *state.component_to_parallel.get(&self.name).unwrap(),
                 cmp_address: compute_full_address(state, self.symbol, self.before_signal),
                 is_output: self.signal_type.unwrap() == SignalType::Output,
-                input_information : match self.signal_type.unwrap() {
-                    SignalType::Input => InputInformation::Input { status:StatusInput:: Unknown},
+                input_information: match self.signal_type.unwrap() {
+                    SignalType::Input => InputInformation::Input { status: StatusInput::Unknown },
                     _ => InputInformation::NoInput,
                 },
             };
@@ -974,8 +972,8 @@ impl ProcessedSymbol {
                 is_parallel: *state.component_to_parallel.get(&self.name).unwrap(),
                 cmp_address: compute_full_address(state, self.symbol, self.before_signal),
                 is_output: self.signal_type.unwrap() == SignalType::Output,
-                input_information : match self.signal_type.unwrap() {
-                    SignalType::Input => InputInformation::Input { status: StatusInput:: Unknown},
+                input_information: match self.signal_type.unwrap() {
+                    SignalType::Input => InputInformation::Input { status: StatusInput::Unknown },
                     _ => InputInformation::NoInput,
                 },
             };
@@ -1061,7 +1059,7 @@ fn indexing_instructions_filter(
             Value(mut v) if v.parse_as == ValueType::BigInt => {
                 v.parse_as = ValueType::U32;
                 let field = state.field_tracker.get_constant(v.value).unwrap();
-                v.value = usize::from_str_radix(field, 10).unwrap_or_else(|_| usize::MAX);
+                v.value = field.parse::<usize>().unwrap_or(usize::MAX);
                 index_stack.push(v.allocate());
             }
             Compute(mut v) if v.op == OperatorType::Add => {
@@ -1090,9 +1088,13 @@ fn indexing_instructions_filter(
     index_stack
 }
 
-fn fold(using: OperatorType, mut stack: Vec<InstructionPointer>, state: &State) -> InstructionPointer {
+fn fold(
+    using: OperatorType,
+    mut stack: Vec<InstructionPointer>,
+    state: &State,
+) -> InstructionPointer {
     let instruction = stack.pop().unwrap();
-    if stack.len() == 0 {
+    if stack.is_empty() {
         instruction
     } else {
         ComputeBucket {
@@ -1188,7 +1190,6 @@ pub fn translate_code(body: Statement, code_info: CodeInfo) -> CodeOutput {
 
     let mut code = ir_processing::reduce_intermediate_operations(state.code);
     let expression_depth = ir_processing::build_auxiliary_stack(&mut code);
-    
 
     CodeOutput {
         code,

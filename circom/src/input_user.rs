@@ -1,4 +1,4 @@
-use std::path::PathBuf;
+use std::path::{PathBuf, Path};
 
 pub struct Input {
     pub input_program: PathBuf,
@@ -31,16 +31,15 @@ pub struct Input {
     pub flag_verbose: bool,
 }
 
-const P_0: &'static str =
-    "21888242871839275222246405745257275088548364400416034343698204186575808495617";
-const R1CS: &'static str = "r1cs";
-const WAT: &'static str = "wat";
-const WASM: &'static str = "wasm";
-const CPP: &'static str = "cpp";
-const JS: &'static str = "js";
-const DAT: &'static str = "dat";
-const SYM: &'static str = "sym";
-const JSON: &'static str = "json";
+const P_0: &str = "21888242871839275222246405745257275088548364400416034343698204186575808495617";
+const R1CS: &str = "r1cs";
+const WAT: &str = "wat";
+const WASM: &str = "wasm";
+const CPP: &str = "cpp";
+const JS: &str = "js";
+const DAT: &str = "dat";
+const SYM: &str = "sym";
+const JSON: &str = "json";
 
 impl Input {
     pub fn new() -> Result<Input, ()> {
@@ -58,10 +57,10 @@ impl Input {
             out_r1cs: Input::build_output(&output_path, &file_name, R1CS),
             out_wat_code: Input::build_output(&output_js_path, &file_name, WAT),
             out_wasm_code: Input::build_output(&output_js_path, &file_name, WASM),
-	    out_js_folder: output_js_path.clone(),
-	    out_wasm_name: file_name.clone(),
-	    out_c_folder: output_c_path.clone(),
-	    out_c_run_name: file_name.clone(),
+            out_js_folder: output_js_path.clone(),
+            out_wasm_name: file_name.clone(),
+            out_c_folder: output_c_path.clone(),
+            out_c_run_name: file_name.clone(),
             out_c_code: Input::build_output(&output_c_path, &file_name, CPP),
             out_c_dat: Input::build_output(&output_c_path, &file_name, DAT),
             out_sym: Input::build_output(&output_path, &file_name, SYM),
@@ -70,7 +69,7 @@ impl Input {
                 &format!("{}_constraints", file_name),
                 JSON,
             ),
-            wat_flag:input_processing::get_wat(&matches),
+            wat_flag: input_processing::get_wat(&matches),
             wasm_flag: input_processing::get_wasm(&matches),
             c_flag: input_processing::get_c(&matches),
             r1cs_flag: input_processing::get_r1cs(&matches),
@@ -84,25 +83,25 @@ impl Input {
             reduced_simplification_flag: o_style == SimplificationStyle::O1,
             parallel_simplification_flag: input_processing::get_parallel_simplification(&matches),
             inspect_constraints_flag: input_processing::get_inspect_constraints(&matches),
-            flag_verbose: input_processing::get_flag_verbose(&matches)
+            flag_verbose: input_processing::get_flag_verbose(&matches),
         })
     }
 
-    fn build_folder(output_path: &PathBuf, filename: &str, ext: &str) -> PathBuf {
-        let mut file = output_path.clone();
-	let folder_name = format!("{}_{}",filename,ext);
-	file.push(folder_name);
-	file
+    fn build_folder(output_path: &Path, filename: &str, ext: &str) -> PathBuf {
+        let mut file = PathBuf::from(output_path);
+        let folder_name = format!("{}_{}", filename, ext);
+        file.push(folder_name);
+        file
     }
-    
-    fn build_output(output_path: &PathBuf, filename: &str, ext: &str) -> PathBuf {
-        let mut file = output_path.clone();
-        file.push(format!("{}.{}",filename,ext));
+
+    fn build_output(output_path: &Path, filename: &str, ext: &str) -> PathBuf {
+        let mut file = PathBuf::from(output_path);
+        file.push(format!("{}.{}", filename, ext));
         file
     }
 
     pub fn input_file(&self) -> &str {
-        &self.input_program.to_str().unwrap()
+        self.input_program.to_str().unwrap()
     }
     pub fn r1cs_file(&self) -> &str {
         self.out_r1cs.to_str().unwrap()
@@ -196,7 +195,8 @@ mod input_processing {
         if route.is_file() {
             Result::Ok(route)
         } else {
-            Result::Err(eprintln!("{}", Colour::Red.paint("invalid input file")))
+            eprintln!("{}", Colour::Red.paint("invalid input file"));
+            Result::Err(())
         }
     }
 
@@ -205,30 +205,33 @@ mod input_processing {
         if route.is_dir() {
             Result::Ok(route)
         } else {
-            Result::Err(eprintln!("{}", Colour::Red.paint("invalid output path")))
+            eprintln!("{}", Colour::Red.paint("invalid output path"));
+            Result::Err(())
         }
     }
 
     #[derive(Copy, Clone, Eq, PartialEq)]
-    pub enum SimplificationStyle { O0, O1, O2(usize) }
+    pub enum SimplificationStyle {
+        O0,
+        O1,
+        O2(usize),
+    }
     pub fn get_simplification_style(matches: &ArgMatches) -> Result<SimplificationStyle, ()> {
-
         let o_0 = matches.is_present("no_simplification");
         let o_1 = matches.is_present("reduced_simplification");
         let o_2 = matches.is_present("full_simplification");
         let o_2_argument = matches.value_of("full_simplification").unwrap();
         let no_rounds =
-            if o_2_argument == "full" {
-                Ok(usize::MAX) }
-            else {
-                usize::from_str_radix(o_2_argument, 10)
-            };
+            if o_2_argument == "full" { Ok(usize::MAX) } else { o_2_argument.parse::<usize>() };
         match (o_0, o_1, o_2, no_rounds) {
             (true, _, _, _) => Ok(SimplificationStyle::O0),
             (_, true, _, _) => Ok(SimplificationStyle::O1),
             (_, _, true, Ok(no_rounds)) => Ok(SimplificationStyle::O2(no_rounds)),
             (false, false, false, _) => Ok(SimplificationStyle::O1),
-            _ => Result::Err(eprintln!("{}", Colour::Red.paint("invalid number of rounds")))
+            _ => {
+                eprintln!("{}", Colour::Red.paint("invalid number of rounds"));
+                Result::Err(())
+            }
         }
     }
 
@@ -295,14 +298,14 @@ mod input_processing {
                     .long("O0")
                     .hidden(false)
                     .takes_value(false)
-                    .help("No simplification is applied")
+                    .help("No simplification is applied"),
             )
             .arg(
                 Arg::with_name("reduced_simplification")
                     .long("O1")
                     .hidden(false)
                     .takes_value(false)
-                    .help("Only applies var to var and var to constant simplification")
+                    .help("Only applies var to var and var to constant simplification"),
             )
             .arg(
                 Arg::with_name("full_simplification")

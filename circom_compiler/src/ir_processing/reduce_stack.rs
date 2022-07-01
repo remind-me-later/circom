@@ -28,17 +28,16 @@ pub fn reduce_instruction(instr: Instruction) -> Instruction {
 pub fn reduce_compute(mut bucket: ComputeBucket) -> Instruction {
     use OperatorType::*;
     bucket.stack = reduce_list(bucket.stack);
-    if !bucket.op.is_address_op() || bucket.op == ToAddress { 
+    if !bucket.op.is_address_op() || bucket.op == ToAddress {
         return IntoInstruction::into_instruction(bucket);
     }
-    
+
     let op0 = *bucket.stack[0].clone();
     let op1 = *bucket.stack[1].clone();
-    let res = reduce_operands(op0, op1)
-    .map(|(a, b)| match bucket.op {
+    let res = reduce_operands(op0, op1).map(|(a, b)| match bucket.op {
         MulAddress => a * b,
         AddAddress => a + b,
-        _ => unreachable!()
+        _ => unreachable!(),
     });
     if let Some(value) = res {
         let v_bucket = ValueBucket {

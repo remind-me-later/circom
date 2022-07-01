@@ -265,7 +265,7 @@ fn type_statement(
             } else {
                 return;
             };
-            let ret_type = analysis_information.return_type.clone().unwrap();
+            let ret_type = analysis_information.return_type.unwrap();
             debug_assert!(!value_type.is_template());
             if ret_type != value_type.dim() {
                 add_report(
@@ -496,7 +496,7 @@ fn type_expression(
                 std::mem::replace(&mut analysis_information.environment, new_environment);
             let returned_type = if program_archive.contains_function(id) {
                 type_function(id, &concrete_types, meta, analysis_information, program_archive)
-                    .map(|val| FoldedType::arithmetic_type(val))
+                    .map(FoldedType::arithmetic_type)
             } else {
                 let r_val =
                     type_template(id, &concrete_types, analysis_information, program_archive);

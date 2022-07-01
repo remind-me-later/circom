@@ -27,7 +27,7 @@ fn produce_vcf(vcp: &VCP, state: &mut State) {
     let mut index = 0;
     while index < state.vcf_collector.len() {
         state.external_signals = build_component_info(&vec![]);
-        let mut env = build_environment(&vec![], &state.vcf_collector[index].params_types);
+        let mut env = build_environment(&[], &state.vcf_collector[index].params_types);
         let body = state.vcf_collector[index].body.clone();
         produce_vcf_stmt(&body, state, &mut env);
         index += 1;
@@ -36,7 +36,7 @@ fn produce_vcf(vcp: &VCP, state: &mut State) {
 
 fn link_circuit(vcp: &mut VCP, state: &mut State) {
     for node in &mut vcp.templates {
-        let mut env = build_environment(&node.header, &vec![]);
+        let mut env = build_environment(&node.header, &[]);
         state.external_signals = build_component_info(&node.triggers);
         link_stmt(&mut node.code, state, &mut env);
     }

@@ -10,8 +10,8 @@ pub struct UnclosedCommentError {
 
 impl UnclosedCommentError {
     pub fn produce_report(error: Self) -> Report {
-        let mut report = Report::error(format!("unterminated /* */"), ReportCode::ParseFail);
-        report.add_primary(error.location, error.file_id, format!("Comment starts here"));
+        let mut report = Report::error("unterminated /* */".to_string(), ReportCode::ParseFail);
+        report.add_primary(error.location, error.file_id, "Comment starts here".to_string());
         report
     }
 }
@@ -25,7 +25,7 @@ pub struct ParsingError {
 impl ParsingError {
     pub fn produce_report(error: Self) -> Report {
         let mut report = Report::error(error.msg, ReportCode::ParseFail);
-        report.add_primary(error.location, error.file_id, format!("Invalid syntax"));
+        report.add_primary(error.location, error.file_id, "Invalid syntax".to_string());
         report
     }
 }
@@ -33,6 +33,7 @@ impl ParsingError {
 pub struct FileOsError {
     pub path: String,
 }
+
 impl FileOsError {
     pub fn produce_report(error: Self) -> Report {
         Report::error(format!("Could not open file {}", error.path), ReportCode::ParseFail)
@@ -40,30 +41,33 @@ impl FileOsError {
 }
 
 pub struct NoMainError;
+
 impl NoMainError {
     pub fn produce_report() -> Report {
         Report::error(
-            format!("No main specified in the project structure"),
+            "No main specified in the project structure".to_string(),
             ReportCode::NoMainFoundInProject,
         )
     }
 }
 
 pub struct MultipleMainError;
+
 impl MultipleMainError {
     pub fn produce_report() -> Report {
         Report::error(
-            format!("Multiple main components in the project structure"),
+            "Multiple main components in the project structure".to_string(),
             ReportCode::MultipleMainInComponent,
         )
     }
 }
 
-pub struct CompilerVersionError{
+pub struct CompilerVersionError {
     pub path: String,
     pub required_version: Version,
     pub version: Version,
 }
+
 impl CompilerVersionError {
     pub fn produce_report(error: Self) -> Report {
         Report::error(
@@ -73,14 +77,18 @@ impl CompilerVersionError {
     }
 }
 
-pub struct NoCompilerVersionWarning{
+pub struct NoCompilerVersionWarning {
     pub path: String,
     pub version: Version,
 }
+
 impl NoCompilerVersionWarning {
     pub fn produce_report(error: Self) -> Report {
         Report::warning(
-            format!("File {} does not include pragma version. Assuming pragma version {:?}", error.path, error.version),
+            format!(
+                "File {} does not include pragma version. Assuming pragma version {:?}",
+                error.path, error.version
+            ),
             ReportCode::NoCompilerVersionWarning,
         )
     }

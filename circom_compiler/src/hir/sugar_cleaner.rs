@@ -420,7 +420,7 @@ fn split_return(stmt: Statement, id: usize) -> ReturnSplit {
         let mut declaration_meta = meta.clone();
         let mut substitution_meta = meta.clone();
         let mut variable_meta = meta.clone();
-        let return_meta = meta.clone();
+        let return_meta = meta;
         declaration_meta.get_mut_memory_knowledge().set_concrete_dimensions(lengths.clone());
         declaration_meta.get_mut_type_knowledge().set_reduces_to(TypeReduction::Variable);
         substitution_meta.get_mut_type_knowledge().set_reduces_to(TypeReduction::Variable);
@@ -461,32 +461,35 @@ fn into_single_substitution(stmt: Statement, stmts: &mut Vec<Statement>) {
 fn rhe_switch_case(stmt: Statement, stmts: &mut Vec<Statement>) {
     use Expression::InlineSwitchOp;
     use Statement::{Block, IfThenElse, Substitution};
-    if let Substitution { var, access, op, rhe, meta } = stmt {
-        if let InlineSwitchOp { cond, if_true, if_false, .. } = rhe {
-            let mut if_assigns = vec![];
-            let sub_if = Substitution {
-                meta: meta.clone(),
-                var: var.clone(),
-                access: access.clone(),
-                op: op.clone(),
-                rhe: *if_true,
-            };
-            if_assigns.push(sub_if);
-            let mut else_assigns = vec![];
-            let sub_else = Substitution { op, var, access, meta: meta.clone(), rhe: *if_false };
-            else_assigns.push(sub_else);
-            let if_body = Block { stmts: if_assigns, meta: meta.clone() };
-            let else_body = Block { stmts: else_assigns, meta: meta.clone() };
-            let stmt = IfThenElse {
-                meta,
-                cond: *cond,
-                if_case: Box::new(if_body),
-                else_case: Option::Some(Box::new(else_body)),
-            };
-            stmts.push(stmt);
-        } else {
-            unreachable!()
-        }
+    if let Substitution {
+        var,
+        access,
+        op,
+        rhe: InlineSwitchOp { cond, if_true, if_false, .. },
+        meta,
+    } = stmt
+    {
+        let mut if_assigns = vec![];
+        let sub_if = Substitution {
+            meta: meta.clone(),
+            var: var.clone(),
+            access: access.clone(),
+            op,
+            rhe: *if_true,
+        };
+        if_assigns.push(sub_if);
+        let mut else_assigns = vec![];
+        let sub_else = Substitution { op, var, access, meta: meta.clone(), rhe: *if_false };
+        else_assigns.push(sub_else);
+        let if_body = Block { stmts: if_assigns, meta: meta.clone() };
+        let else_body = Block { stmts: else_assigns, meta: meta.clone() };
+        let stmt = IfThenElse {
+            meta,
+            cond: *cond,
+            if_case: Box::new(if_body),
+            else_case: Option::Some(Box::new(else_body)),
+        };
+        stmts.push(stmt);
     } else {
         unreachable!()
     }
@@ -496,28 +499,22 @@ fn rhe_array_case(stmt: Statement, stmts: &mut Vec<Statement>) {
     use num_bigint_dig::BigInt;
     use Expression::{ArrayInLine, Number};
     use Statement::Substitution;
-    if let Substitution { var, access, op, rhe, meta } = stmt {
-        if let ArrayInLine { values, .. } = rhe {
-            let mut index = 0;
-            for v in values {
-                let mut index_meta = meta.clone();
-                index_meta.get_mut_memory_knowledge().set_concrete_dimensions(vec![]);
-                let expr_index = Number(index_meta, BigInt::from(index));
-                let as_access = Access::ArrayAccess(expr_index);
-                let mut accessed_with = access.clone();
-                accessed_with.push(as_access);
-                let sub = Substitution {
-                    op,
-                    var: var.clone(),
-                    access: accessed_with,
-                    meta: meta.clone(),
-                    rhe: v,
-                };
-                stmts.push(sub);
-                index += 1;
-            }
-        } else {
-            unreachable!()
+    if let Substitution { var, access, op, rhe: ArrayInLine { values, .. }, meta } = stmt {
+        for (index, v) in values.into_iter().enumerate() {
+            let mut index_meta = meta.clone();
+            index_meta.get_mut_memory_knowledge().set_concrete_dimensions(vec![]);
+            let expr_index = Number(index_meta, BigInt::from(index));
+            let as_access = Access::ArrayAccess(expr_index);
+            let mut accessed_with = access.clone();
+            accessed_with.push(as_access);
+            let sub = Substitution {
+                op,
+                var: var.clone(),
+                access: accessed_with,
+                meta: meta.clone(),
+                rhe: v,
+            };
+            stmts.push(sub);
         }
     } else {
         unreachable!()

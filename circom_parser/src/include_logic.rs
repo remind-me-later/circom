@@ -21,7 +21,7 @@ impl FileStack {
         crr.push(path.clone());
         let path = std::fs::canonicalize(crr)
             .map_err(|_| FileOsError { path: path.clone() })
-            .map_err(|e| FileOsError::produce_report(e))?;
+            .map_err(FileOsError::produce_report)?;
         if !f_stack.black_paths.contains(&path) {
             f_stack.stack.push(path);
         }
