@@ -1,4 +1,5 @@
 use super::ir_interface::*;
+use std::fmt::Write;
 use crate::translating_traits::*;
 use code_producers::c_elements::*;
 use code_producers::wasm_elements::*;
@@ -113,7 +114,7 @@ impl WriteC for BranchBucket {
         }
         let mut conditional = format!("if({}){{\n{}}}", condition_result, merge_code(if_body));
         if !else_body.is_empty() {
-            conditional.push_str(&format!("else{{\n{}}}", merge_code(else_body)));
+            write!(conditional, "else{{\n{}}}", merge_code(else_body)).unwrap();
         }
         let mut c_branch = condition_code;
         c_branch.push(conditional);

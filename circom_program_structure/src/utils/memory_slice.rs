@@ -1,4 +1,5 @@
 use num_bigint_dig::BigInt;
+use std::fmt::Write;
 use std::fmt::{Display, Formatter};
 pub enum MemoryError {
     OutOfBoundsError,
@@ -30,11 +31,12 @@ impl<C: Default + Clone + Display + Eq> Display for MemorySlice<C> {
         if self.values.is_empty() {
             f.write_str("[]")
         } else if self.values.len() == 1 {
-            f.write_str(&format!("{}", self.values[0]))
+            f.write_str(self.values[0].to_string().as_str())
         } else {
+            // TODO: join?
             let mut msg = format!("[{}", self.values[0]);
             for i in 1..self.values.len() {
-                msg.push_str(&format!(",{}", self.values[i]));
+                write!(msg, ",{}", self.values[i])?;
             }
             msg.push(']');
             f.write_str(&msg)

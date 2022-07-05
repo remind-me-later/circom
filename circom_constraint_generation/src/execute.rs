@@ -9,6 +9,7 @@ use super::environment_utils::{
         ComponentSlice, MemoryError, MemorySlice, SignalSlice, SliceCapacity,
     },
 };
+use std::fmt::Write;
 use super::execution_data::analysis::Analysis;
 use super::execution_data::{ExecutedProgram, ExecutedTemplate, NodePointer};
 use super::{
@@ -998,7 +999,7 @@ fn execute_template_call(
     debug_assert_eq!(args_names.len(), parameter_values.len());
     let mut instantiation_name = format!("{}(", id);
     for (name, value) in args_names.iter().zip(parameter_values) {
-        instantiation_name.push_str(&format!("{},", value));
+        write!(instantiation_name, "{},", value).unwrap();
         args_to_values.insert(name.clone(), value.clone());
     }
     if !parameter_values.is_empty() {

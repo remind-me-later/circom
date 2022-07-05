@@ -2,6 +2,7 @@ use super::*;
 use num_bigint_dig::{BigInt, Sign};
 use serde_json::json;
 use std::fs::File;
+use std::fmt::Write as _;
 use std::io::prelude::*;
 use std::path::{PathBuf, Path};
 
@@ -372,7 +373,7 @@ pub fn build_conditional(
     assert_eq!(cond.len(), 1);
     let mut conditional = format!("if({}){{\n{}\n}}", cond[0], merge_code(if_body));
     if !else_body.is_empty() {
-        conditional.push_str(&format!("else{{\n{}\n}}", merge_code(else_body)));
+        write!(conditional, "else{{\n{}\n}}", merge_code(else_body)).unwrap();
     }
     conditional
 }
@@ -640,9 +641,10 @@ pub fn generate_dat_file(dat_file: &mut dyn Write, producer: &CProducer) -> std:
 pub fn generate_function_list(_producer: &CProducer, list: &TemplateList) -> String {
     let mut func_list = "".to_string();
     if !list.is_empty() {
-        func_list.push_str(&format!("\n{}_run", list[0]));
+        // TODO: join?
+        write!(func_list, "\n{}_run", list[0]).unwrap();
         for t in list.iter().skip(1) {
-            func_list.push_str(&format!(",\n{}_run", t));
+            write!(func_list, ",\n{}_run", t).unwrap();
         }
     }
     func_list
