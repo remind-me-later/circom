@@ -11,3 +11,4 @@ constant_tracking = { package = "circom_constant_tracking", path = "../circom_co
 program_structure = { package = "circom_program_structure", path = "../circom_program_structure", version = "2" }
 code_producers = { package = "circom_code_producers", path = "../circom_code_producers", version = "2" }
 num-bigint-dig = "0.6.0"
+circom_error = { path = "../circom_error" }

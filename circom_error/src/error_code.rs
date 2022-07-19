@@ -1,11 +1,19 @@
 use core::fmt;
 use std::fmt::Formatter;
 
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub enum ReportCode {
-    AssertWrongType,
+    // Parser Errors
     ParseFail,
+    NoMainFoundInProject,
+    NoCompilerVersionWarning,
     CompilerVersionError,
+    FileOsError,
+    UnclosedComment,
+    MultipleMainInComponent,
+
+    // Others...
+    AssertWrongType,
     WrongTypesInAssignOperation,
     WrongNumberOfArguments(usize, usize),
     UndefinedFunction,
@@ -31,9 +39,7 @@ pub enum ReportCode {
     NonCompatibleBranchTypes,
     NonEqualTypesInExpression,
     NonExistentSymbol,
-    NoMainFoundInProject,
-    NoCompilerVersionWarning,
-    MultipleMainInComponent,
+
     TemplateCallAsArgument,
     TemplateWrongNumberOfArguments,
     TemplateWithReturnStatement,
@@ -69,10 +75,14 @@ pub enum ReportCode {
     NoOutputInInstance,
     ErrorWat2Wasm,
 }
+
+// TODO: ask for code
 impl fmt::Display for ReportCode {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         use self::ReportCode::*;
         let string_format = match self {
+            UnclosedComment => "P998",
+            FileOsError => "P999",
             ParseFail => "P1000",
             NoMainFoundInProject => "P1001",
             MultipleMainInComponent => "P1002",

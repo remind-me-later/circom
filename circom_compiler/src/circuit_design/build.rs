@@ -6,7 +6,7 @@ use crate::intermediate_representation::translate;
 use crate::intermediate_representation::translate::{CodeInfo, FieldTracker, TemplateDB};
 use code_producers::c_elements::*;
 use code_producers::wasm_elements::*;
-use program_structure::file_definition::FileLibrary;
+use circom_error::file_definition::FileLibrary;
 use std::collections::HashMap;
 
 #[cfg(debug_assertions)]

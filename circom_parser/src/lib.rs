@@ -1,23 +1,19 @@
-extern crate num_bigint_dig as num_bigint;
-extern crate num_traits;
-extern crate serde;
-extern crate serde_derive;
-#[macro_use]
-extern crate lalrpop_util;
-
-lalrpop_mod!(pub lang);
-
 mod errors;
 mod include_logic;
 mod parser_logic;
+mod test;
+
+use errors::ParseError;
 use include_logic::FileStack;
-use program_structure::error_definition::{Report, ReportCollection};
-use program_structure::file_definition::{FileLibrary};
-use program_structure::program_archive::ProgramArchive;
+use circom_error::error_definition::{Report, ReportCollection};
+use circom_error::file_definition::{FileLibrary};
+use circom_program_structure::program_archive::ProgramArchive;
+use circom_program_structure::ast::Version;
 use std::path::PathBuf;
 use std::str::FromStr;
+use lalrpop_util::lalrpop_mod;
 
-pub type Version = (usize, usize, usize);
+lalrpop_mod!(pub lang);
 
 pub fn run_parser(
     file: String,
@@ -29,7 +25,7 @@ pub fn run_parser(
     let mut file_stack = FileStack::new(PathBuf::from(file));
     let mut warnings = Vec::new();
 
-    while let Some(crr_file) = FileStack::take_next(&mut file_stack) {
+    while let Some(crr_file) = file_stack.take_next() {
         let (path, src) = open_file(crr_file).map_err(|e| (file_library.clone(), vec![e]))?;
         let file_id = file_library.add_file(path.clone(), src.clone());
         let program =
@@ -41,8 +37,7 @@ pub fn run_parser(
         let includes = program.includes;
         definitions.push((file_id, program.definitions));
         for include in includes {
-            FileStack::add_include(&mut file_stack, include)
-                .map_err(|e| (file_library.clone(), vec![e]))?;
+            file_stack.add_include(include).map_err(|e| (file_library.clone(), vec![e]))?;
         }
         warnings.append(
             &mut check_number_version(
@@ -55,10 +50,10 @@ pub fn run_parser(
     }
 
     if main_components.is_empty() {
-        let report = errors::NoMainError::produce_report();
+        let report = ParseError::NoMainError.produce_report();
         Err((file_library, vec![report]))
     } else if main_components.len() > 1 {
-        let report = errors::MultipleMainError::produce_report();
+        let report = ParseError::MultipleMainError.produce_report();
         Err((file_library, vec![report]))
     } else {
         let (main_id, main_component) = main_components.pop().unwrap();
@@ -72,23 +67,23 @@ pub fn run_parser(
 }
 
 fn open_file(path: PathBuf) -> Result<(String, String), Report> /* path, src*/ {
-    use errors::FileOsError;
+    use ParseError::FileOsError;
     use std::fs::read_to_string;
     let path_str = format!("{:?}", path);
     read_to_string(path)
         .map(|contents| (path_str.clone(), contents))
         .map_err(|_| FileOsError { path: path_str.clone() })
-        .map_err(FileOsError::produce_report)
+        .map_err(ParseError::produce_report)
 }
 
 fn parse_number_version(version: &str) -> Version {
     let version_splitted: Vec<&str> = version.split('.').collect();
 
-    (
-        usize::from_str(version_splitted[0]).unwrap(),
-        usize::from_str(version_splitted[1]).unwrap(),
-        usize::from_str(version_splitted[2]).unwrap(),
-    )
+    Version {
+        version: usize::from_str(version_splitted[0]).unwrap(),
+        subversion: usize::from_str(version_splitted[1]).unwrap(),
+        subsubversion: usize::from_str(version_splitted[2]).unwrap(),
+    }
 }
 
 fn check_number_version(
@@ -96,23 +91,22 @@ fn check_number_version(
     version_file: Option<Version>,
     version_compiler: Version,
 ) -> Result<ReportCollection, Report> {
-    use errors::{CompilerVersionError, NoCompilerVersionWarning};
+    use errors::{ParseError::CompilerVersionError, ParseError::NoCompilerVersionWarning};
     if let Some(required_version) = version_file {
-        if required_version.0 == version_compiler.0
-            && required_version.1 == version_compiler.1
-            && required_version.2 <= version_compiler.2
+        if required_version.version == version_compiler.version
+            && required_version.subversion == version_compiler.subversion
+            && required_version.subsubversion <= version_compiler.subsubversion
         {
             Ok(vec![])
         } else {
-            let report = CompilerVersionError::produce_report(CompilerVersionError {
+            Err(ParseError::produce_report(CompilerVersionError {
                 path: file_path,
                 required_version,
                 version: version_compiler,
-            });
-            Err(report)
+            }))
         }
     } else {
-        let report = NoCompilerVersionWarning::produce_report(NoCompilerVersionWarning {
+        let report = ParseError::produce_report(NoCompilerVersionWarning {
             path: file_path,
             version: version_compiler,
         });

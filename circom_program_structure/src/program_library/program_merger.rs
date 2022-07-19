@@ -1,7 +1,7 @@
 use super::ast::Definition;
-use super::error_code::ReportCode;
-use super::error_definition::Report;
-use super::file_definition::FileID;
+use circom_error::error_code::ReportCode;
+use circom_error::error_definition::Report;
+use circom_error::file_definition::FileID;
 use super::function_data::{FunctionData, FunctionInfo};
 use super::template_data::{TemplateData, TemplateInfo};
 

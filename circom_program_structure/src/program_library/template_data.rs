@@ -1,7 +1,7 @@
 use super::ast;
 use super::ast::{FillMeta, SignalElementType, Statement};
-use super::file_definition::FileID;
-use crate::file_definition::FileLocation;
+use circom_error::file_definition::FileID;
+use circom_error::file_definition::FileLocation;
 use std::collections::hash_map::HashMap;
 
 pub type TemplateInfo = HashMap<String, TemplateData>;

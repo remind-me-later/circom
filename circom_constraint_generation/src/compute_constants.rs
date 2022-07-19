@@ -4,7 +4,7 @@ use circom_algebra::algebra::ArithmeticExpression;
 use compiler::hir::very_concrete_program::{Argument, TemplateInstance};
 use num_bigint::BigInt;
 use program_structure::ast::{Expression, Meta, Statement};
-use program_structure::error_definition::ReportCollection;
+use circom_error::error_definition::ReportCollection;
 use program_structure::program_archive::ProgramArchive;
 use std::collections::HashMap;
 
@@ -217,8 +217,8 @@ fn transform_big_int_to_usize(v: BigInt) -> Option<usize> {
 }
 
 fn report_invalid_dimension(meta: &Meta, reports: &mut ReportCollection) {
-    use program_structure::error_code::ReportCode;
-    use program_structure::error_definition::Report;
+    use circom_error::error_code::ReportCode;
+    use circom_error::error_definition::Report;
     let error_code = ReportCode::InvalidArraySize;
     let msg = "Invalid array size".to_string();
     let mut report = Report::error(msg, error_code);

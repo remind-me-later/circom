@@ -3,9 +3,9 @@ use program_structure::ast::{
     Statement, VariableType,
 };
 use program_structure::environment::CircomEnvironment;
-use program_structure::error_code::ReportCode;
-use program_structure::error_definition::{Report, ReportCollection};
-use program_structure::file_definition::{generate_file_location, FileID};
+use circom_error::error_code::ReportCode;
+use circom_error::error_definition::{Report, ReportCollection};
+use circom_error::file_definition::{generate_file_location, FileID};
 use program_structure::program_archive::ProgramArchive;
 use program_structure::template_data::TemplateData;
 use std::collections::HashMap;
@@ -20,30 +20,19 @@ enum ExpressionResult {
 pub fn tag_analysis(
     template_name: &str,
     program_archive: &ProgramArchive,
-) -> Result<(), ReportCollection> {
+    reports: &mut ReportCollection,
+) {
     let template_body = program_archive.get_template_data(template_name).get_body_as_vec();
     let file_id = program_archive.get_template_data(template_name).get_file_id();
     let template_info = program_archive.get_templates();
 
     let mut environment = Environment::new();
-    let args = program_archive.get_template_data(template_name).get_name_of_params().clone();
-    for arg in args.iter() {
-        environment.add_variable(arg, SignalElementType::FieldElement);
-    }
 
-    let mut reports = ReportCollection::new();
-    treat_sequence_of_statements(
-        template_body,
-        file_id,
-        template_info,
-        &mut reports,
-        &mut environment,
-    );
-    if reports.is_empty() {
-        Result::Ok(())
-    } else {
-        Result::Err(reports)
-    }
+    program_archive.get_template_data(template_name).get_name_of_params().iter().for_each(|arg| {
+        environment.add_variable(arg, SignalElementType::FieldElement);
+    });
+
+    treat_sequence_of_statements(template_body, file_id, template_info, reports, &mut environment);
 }
 
 fn statement_inspection(
@@ -174,9 +163,9 @@ fn treat_sequence_of_statements(
     reports: &mut ReportCollection,
     environment: &mut Environment,
 ) {
-    for stmt in stmts {
+    stmts.iter().for_each(|stmt| {
         statement_inspection(stmt, file_id, template_info, reports, environment);
-    }
+    });
 }
 //************************************************* Expression support *************************************************
 

@@ -1,20 +1,14 @@
 use program_structure::ast::{Statement, VariableType};
-use program_structure::error_code::ReportCode;
-use program_structure::error_definition::{Report, ReportCollection};
-use program_structure::file_definition::{self, FileID};
+use circom_error::error_code::ReportCode;
+use circom_error::error_definition::{Report, ReportCollection};
+use circom_error::file_definition::{self, FileID};
 use program_structure::template_data::TemplateData;
 
-pub fn check_signal_correctness(template_data: &TemplateData) -> Result<(), ReportCollection> {
+pub fn check_signal_correctness(template_data: &TemplateData, reports: &mut ReportCollection) {
     let template_id = template_data.get_file_id();
     let template_body = template_data.get_body_as_vec();
-    let mut reports = ReportCollection::new();
-    for stmt in template_body.iter() {
-        treat_statement(stmt, true, template_id, &mut reports);
-    }
-    if reports.is_empty() {
-        Result::Ok(())
-    } else {
-        Result::Err(reports)
+    for stmt in template_body {
+        treat_statement(stmt, true, template_id, reports);
     }
 }
 

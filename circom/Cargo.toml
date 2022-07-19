@@ -17,3 +17,4 @@ dag = { package = "circom_dag", path = "../circom_dag", version = "2" }
 clap = "2.33.0"
 ansi_term = "0.12.1"
 wast = "39.0.0"
+circom_error = { path = "../circom_error" }

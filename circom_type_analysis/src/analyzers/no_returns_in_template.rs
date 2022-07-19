@@ -1,19 +1,13 @@
 use program_structure::ast::Statement;
-use program_structure::error_code::ReportCode;
-use program_structure::error_definition::{Report, ReportCollection};
-use program_structure::file_definition::{self, FileID};
+use circom_error::error_code::ReportCode;
+use circom_error::error_definition::{Report, ReportCollection};
+use circom_error::file_definition::{self, FileID};
 use program_structure::template_data::TemplateData;
 
-pub fn free_of_returns(template_data: &TemplateData) -> Result<(), ReportCollection> {
+pub fn free_of_returns(template_data: &TemplateData, reports: &mut ReportCollection) {
     let file_id = template_data.get_file_id();
     let template_body = template_data.get_body();
-    let mut reports = ReportCollection::new();
-    look_for_return(template_body, file_id, &mut reports);
-    if reports.is_empty() {
-        Result::Ok(())
-    } else {
-        Result::Err(reports)
-    }
+    look_for_return(template_body, file_id, reports);
 }
 
 fn look_for_return(stmt: &Statement, file_id: FileID, reports: &mut ReportCollection) {

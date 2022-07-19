@@ -462,8 +462,6 @@ Expression0: Expression = {
 // Terminals
 // ====================================================================
 
-
-
 ParseExpressionPrefixOpcode: ExpressionPrefixOpcode = {
     "!" => ExpressionPrefixOpcode::BoolNot,
     "~" => ExpressionPrefixOpcode::Complement,
@@ -551,6 +549,6 @@ SMALL_DECNUMBER: usize = {
 // Version used by pragma to describe the compiler, its syntax is Number1.Number2.Number3...
 Version : Version = {
     <version: SMALL_DECNUMBER> "." <subversion:SMALL_DECNUMBER> "." <subsubversion:SMALL_DECNUMBER> => {
-        (version, subversion, subsubversion)
+        Version {version, subversion, subsubversion}
     }
 };

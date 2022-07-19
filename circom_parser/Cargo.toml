@@ -6,17 +6,11 @@ edition = "2018"
 build = "build.rs"
 
 [build-dependencies]
-rustc-hex = "2.0.1"
 lalrpop = { version = "0.18.1", features = ["lexer"] }
-num-bigint-dig = "0.6.0"
-num-traits = "0.2.6"
+num-bigint = { package = "num-bigint-dig", version = "0.6.0" }
 
 [dependencies]
-program_structure = { package = "circom_program_structure", path = "../circom_program_structure", version = "2" }
+circom_error = { path = "../circom_error" }
+circom_program_structure = { path = "../circom_program_structure", version = "2" }
 lalrpop-util = "0.18.1"
-regex = "1.1.2"
-rustc-hex = "2.0.1"
-num-bigint-dig = "0.6.0"
-num-traits = "0.2.6"
-serde = "1.0.82"
-serde_derive = "1.0.91"
+num-bigint = { package = "num-bigint-dig", version = "0.6.0" }

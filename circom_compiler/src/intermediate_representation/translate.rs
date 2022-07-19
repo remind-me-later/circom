@@ -3,7 +3,7 @@ use crate::hir::very_concrete_program::*;
 use constant_tracking::ConstantTracker;
 use num_bigint_dig::BigInt;
 use program_structure::ast::*;
-use program_structure::file_definition::FileLibrary;
+use circom_error::file_definition::FileLibrary;
 use program_structure::utils::environment::VarEnvironment;
 use std::collections::HashMap;
 

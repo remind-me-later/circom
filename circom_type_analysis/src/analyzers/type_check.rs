@@ -2,9 +2,9 @@ use super::type_given_function::type_given_function;
 use super::type_register::TypeRegister;
 use program_structure::ast::*;
 use program_structure::environment::CircomEnvironment;
-use program_structure::error_code::ReportCode;
-use program_structure::error_definition::{Report, ReportCollection};
-use program_structure::file_definition::{generate_file_location, FileID};
+use circom_error::error_code::ReportCode;
+use circom_error::error_definition::{Report, ReportCollection};
+use circom_error::file_definition::{generate_file_location, FileID};
 use program_structure::program_archive::ProgramArchive;
 use std::collections::HashSet;
 
@@ -13,10 +13,10 @@ type ComponentInfo = (Option<String>, ArithmeticType);
 type TypingEnvironment = CircomEnvironment<ComponentInfo, ArithmeticType, ArithmeticType>;
 type CallRegister = TypeRegister<ArithmeticType>;
 
-struct AnalysisInformation {
+struct AnalysisInformation<'a> {
     file_id: FileID,
     reached: HashSet<String>,
-    reports: ReportCollection,
+    reports: &'a mut ReportCollection,
     registered_calls: CallRegister,
     environment: TypingEnvironment,
     return_type: Option<ArithmeticType>,
@@ -61,34 +61,34 @@ pub struct OutInfo {
     pub reached: HashSet<String>,
 }
 
-pub fn type_check(program_archive: &ProgramArchive) -> Result<OutInfo, ReportCollection> {
+pub fn type_check(
+    program_archive: &ProgramArchive,
+    reports: &mut ReportCollection,
+) -> Result<OutInfo, ()> {
     let mut analysis_information = AnalysisInformation {
         reached: HashSet::new(),
         file_id: *program_archive.get_file_id_main(),
-        reports: ReportCollection::new(),
+        reports,
         registered_calls: CallRegister::new(),
         environment: TypingEnvironment::new(),
         return_type: Option::None,
     };
     let initial_expression = program_archive.get_main_expression();
-    let type_analysis_response =
-        type_expression(initial_expression, program_archive, &mut analysis_information);
-    let first_type = if let Result::Ok(t) = type_analysis_response {
-        t
-    } else {
-        return Result::Err(analysis_information.reports);
-    };
+
+    let first_type =
+        type_expression(initial_expression, program_archive, &mut analysis_information)?;
+
     if !first_type.is_template() {
         add_report(
             ReportCode::WrongTypesInAssignOperation,
             initial_expression.get_meta(),
-            &mut analysis_information.reports,
+            analysis_information.reports,
         );
     }
     if analysis_information.reports.is_empty() {
-        Result::Ok(OutInfo { reached: analysis_information.reached })
+        Ok(OutInfo { reached: analysis_information.reached })
     } else {
-        Result::Err(analysis_information.reports)
+        Err(())
     }
 }
 
@@ -111,7 +111,7 @@ fn type_statement(
                     add_report(
                         ReportCode::InvalidArraySize,
                         dim_expression.get_meta(),
-                        &mut analysis_information.reports,
+                        analysis_information.reports,
                     );
                 }
             }
@@ -135,7 +135,7 @@ fn type_statement(
         }
         Substitution { var, access, op, rhe, meta, .. } => {
             let rhe_response = type_expression(rhe, program_archive, analysis_information);
-            let rhe_type = if let Result::Ok(r_type) = rhe_response {
+            let rhe_type = if let Ok(r_type) = rhe_response {
                 r_type
             } else {
                 return;
@@ -143,7 +143,7 @@ fn type_statement(
 
             let access_information_result =
                 treat_access(access, meta, program_archive, analysis_information);
-            let access_information = if let Result::Ok(info) = access_information_result {
+            let access_information = if let Ok(info) = access_information_result {
                 info
             } else {
                 return;
@@ -153,10 +153,10 @@ fn type_statement(
                 meta,
                 access_information,
                 &analysis_information.environment,
-                &mut analysis_information.reports,
+                analysis_information.reports,
                 program_archive,
             );
-            let symbol_information = if let Result::Ok(s_type) = symbol_type_result {
+            let symbol_information = if let Ok(s_type) = symbol_type_result {
                 s_type
             } else {
                 return;
@@ -171,7 +171,7 @@ fn type_statement(
                     return add_report(
                         ReportCode::WrongTypesInAssignOperation,
                         meta,
-                        &mut analysis_information.reports,
+                        analysis_information.reports,
                     );
                 }
             }
@@ -193,14 +193,14 @@ fn type_statement(
                         add_report(
                             ReportCode::WrongTypesInAssignOperation,
                             meta,
-                            &mut analysis_information.reports,
+                            analysis_information.reports,
                         )
                     }
                 }
                 SymbolInformation::Signal(dim) if dim > 0 => add_report(
                     ReportCode::MustBeSingleArithmetic,
                     rhe.get_meta(),
-                    &mut analysis_information.reports,
+                    analysis_information.reports,
                 ),
                 SymbolInformation::Signal(dim)
                     if dim == rhe_type.dim() && !rhe_type.is_template() => {}
@@ -210,19 +210,19 @@ fn type_statement(
                 _ => add_report(
                     ReportCode::WrongTypesInAssignOperation,
                     meta,
-                    &mut analysis_information.reports,
+                    analysis_information.reports,
                 ),
             }
         }
         ConstraintEquality { lhe, rhe, .. } => {
             let lhe_response = type_expression(lhe, program_archive, analysis_information);
             let rhe_response = type_expression(rhe, program_archive, analysis_information);
-            let lhe_type = if let Result::Ok(f) = lhe_response {
+            let lhe_type = if let Ok(f) = lhe_response {
                 f
             } else {
                 return;
             };
-            let rhe_type = if let Result::Ok(f) = rhe_response {
+            let rhe_type = if let Ok(f) = rhe_response {
                 f
             } else {
                 return;
@@ -231,36 +231,32 @@ fn type_statement(
                 add_report(
                     ReportCode::MustBeSingleArithmetic,
                     lhe.get_meta(),
-                    &mut analysis_information.reports,
+                    analysis_information.reports,
                 );
             }
             if rhe_type.is_template() || rhe_type.dim() > 0 {
                 add_report(
                     ReportCode::MustBeSingleArithmetic,
                     rhe.get_meta(),
-                    &mut analysis_information.reports,
+                    analysis_information.reports,
                 );
             }
         }
         LogCall { arg, meta } | Assert { arg, meta } => {
             let arg_response = type_expression(arg, program_archive, analysis_information);
-            let arg_type = if let Result::Ok(t) = arg_response {
+            let arg_type = if let Ok(t) = arg_response {
                 t
             } else {
                 return;
             };
             if arg_type.is_template() || arg_type.dim() > 0 {
-                add_report(
-                    ReportCode::MustBeSingleArithmetic,
-                    meta,
-                    &mut analysis_information.reports,
-                )
+                add_report(ReportCode::MustBeSingleArithmetic, meta, analysis_information.reports)
             }
         }
         Return { value, meta } => {
             debug_assert!(analysis_information.return_type.is_some());
             let value_response = type_expression(value, program_archive, analysis_information);
-            let value_type = if let Result::Ok(f) = value_response {
+            let value_type = if let Ok(f) = value_response {
                 f
             } else {
                 return;
@@ -271,7 +267,7 @@ fn type_statement(
                 add_report(
                     ReportCode::ExpectedDimDiffGotDim(ret_type, value_type.dim()),
                     meta,
-                    &mut analysis_information.reports,
+                    analysis_information.reports,
                 );
             }
         }
@@ -281,7 +277,7 @@ fn type_statement(
             if let Option::Some(else_stmt) = else_case {
                 type_statement(else_stmt, program_archive, analysis_information);
             }
-            let cond_type = if let Result::Ok(t) = cond_response {
+            let cond_type = if let Ok(t) = cond_response {
                 t
             } else {
                 return;
@@ -290,14 +286,14 @@ fn type_statement(
                 add_report(
                     ReportCode::MustBeSingleArithmetic,
                     cond.get_meta(),
-                    &mut analysis_information.reports,
+                    analysis_information.reports,
                 )
             }
         }
         While { cond, stmt, .. } => {
             let cond_response = type_expression(cond, program_archive, analysis_information);
             type_statement(stmt, program_archive, analysis_information);
-            let cond_type = if let Result::Ok(t) = cond_response {
+            let cond_type = if let Ok(t) = cond_response {
                 t
             } else {
                 return;
@@ -306,7 +302,7 @@ fn type_statement(
                 add_report(
                     ReportCode::MustBeSingleArithmetic,
                     cond.get_meta(),
-                    &mut analysis_information.reports,
+                    analysis_information.reports,
                 )
             }
         }
@@ -326,7 +322,7 @@ fn type_expression(
 ) -> Result<FoldedType, ()> {
     use Expression::*;
     match expression {
-        Number(..) => Result::Ok(FoldedType::arithmetic_type(0)),
+        Number(..) => Ok(FoldedType::arithmetic_type(0)),
         ArrayInLine { meta, values } => {
             let values_types =
                 type_array_of_expressions(values, program_archive, analysis_information)?;
@@ -334,7 +330,7 @@ fn type_expression(
                 return add_report_and_end(
                     ReportCode::EmptyArrayInlineDeclaration,
                     meta,
-                    &mut analysis_information.reports,
+                    analysis_information.reports,
                 );
             }
             let inferred_dim = values_types[0].dim();
@@ -343,40 +339,40 @@ fn type_expression(
                     add_report(
                         ReportCode::InvalidArrayType,
                         expression.get_meta(),
-                        &mut analysis_information.reports,
+                        analysis_information.reports,
                     );
                 } else if inferred_dim != value_type.dim() {
                     add_report(
                         ReportCode::NonHomogeneousArray,
                         expression.get_meta(),
-                        &mut analysis_information.reports,
+                        analysis_information.reports,
                     );
                 }
             }
-            Result::Ok(FoldedType::arithmetic_type(inferred_dim + 1))
+            Ok(FoldedType::arithmetic_type(inferred_dim + 1))
         }
         InfixOp { lhe, rhe, .. } => {
             let lhe_response = type_expression(lhe, program_archive, analysis_information);
             let rhe_response = type_expression(rhe, program_archive, analysis_information);
             let lhe_type = lhe_response?;
             let rhe_type = rhe_response?;
-            let mut successful = Result::Ok(());
+            let mut successful = Ok(());
             if lhe_type.is_template() || lhe_type.dim() > 0 {
                 successful = add_report_and_end(
                     ReportCode::InfixOperatorWithWrongTypes,
                     lhe.get_meta(),
-                    &mut analysis_information.reports,
+                    analysis_information.reports,
                 );
             }
             if rhe_type.is_template() || rhe_type.dim() > 0 {
                 successful = add_report_and_end(
                     ReportCode::InfixOperatorWithWrongTypes,
                     rhe.get_meta(),
-                    &mut analysis_information.reports,
+                    analysis_information.reports,
                 );
             }
             successful?;
-            Result::Ok(FoldedType::arithmetic_type(0))
+            Ok(FoldedType::arithmetic_type(0))
         }
         PrefixOp { rhe, .. } => {
             let rhe_type = type_expression(rhe, program_archive, analysis_information)?;
@@ -384,10 +380,10 @@ fn type_expression(
                 add_report_and_end(
                     ReportCode::PrefixOperatorWithWrongTypes,
                     rhe.get_meta(),
-                    &mut analysis_information.reports,
+                    analysis_information.reports,
                 )
             } else {
-                Result::Ok(FoldedType::arithmetic_type(0))
+                Ok(FoldedType::arithmetic_type(0))
             }
         }
         InlineSwitchOp { cond, if_true, if_false, .. } => {
@@ -397,32 +393,32 @@ fn type_expression(
                 type_expression(if_false, program_archive, analysis_information);
             let if_true_type = if_true_response?;
 
-            let cond_type = if let Result::Ok(f) = cond_response {
+            let cond_type = if let Ok(f) = cond_response {
                 f
             } else {
-                return Result::Ok(if_true_type);
+                return Ok(if_true_type);
             };
             if cond_type.is_template() || cond_type.dim() > 0 {
                 add_report(
                     ReportCode::MustBeSingleArithmetic,
                     cond.get_meta(),
-                    &mut analysis_information.reports,
+                    analysis_information.reports,
                 );
             }
 
-            let if_false_type = if let Result::Ok(f) = if_false_response {
+            let if_false_type = if let Ok(f) = if_false_response {
                 f
             } else {
-                return Result::Ok(if_true_type);
+                return Ok(if_true_type);
             };
             if !FoldedType::same_type(&if_true_type, &if_false_type) {
                 add_report(
                     ReportCode::NonCompatibleBranchTypes,
                     if_false.get_meta(),
-                    &mut analysis_information.reports,
+                    analysis_information.reports,
                 );
             }
-            Result::Ok(if_true_type)
+            Ok(if_true_type)
         }
         Variable { name, access, meta, .. } => {
             debug_assert!(analysis_information.environment.has_symbol(name));
@@ -440,10 +436,10 @@ fn type_expression(
             )?;
             match symbol_information {
                 SymbolInformation::Component(possible_template) if possible_template.is_some() => {
-                    Result::Ok(FoldedType::template(&possible_template.unwrap()))
+                    Ok(FoldedType::template(&possible_template.unwrap()))
                 }
                 SymbolInformation::Var(dim) | SymbolInformation::Signal(dim) => {
-                    Result::Ok(FoldedType::arithmetic_type(dim))
+                    Ok(FoldedType::arithmetic_type(dim))
                 }
                 SymbolInformation::Component(possible_template) if possible_template.is_none() => {
                     add_report_and_end(ReportCode::UninitializedSymbolInExpression, meta, reports)
@@ -456,23 +452,23 @@ fn type_expression(
             let typing_response =
                 type_array_of_expressions(args, program_archive, analysis_information);
             if program_archive.contains_template(id) && typing_response.is_err() {
-                return Result::Ok(FoldedType::template(id));
+                return Ok(FoldedType::template(id));
             }
             let arg_types = typing_response?;
             let mut concrete_types = Vec::new();
-            let mut success = Result::Ok(());
+            let mut success = Ok(());
             for (arg_expr, arg_type) in args.iter().zip(arg_types.iter()) {
                 if arg_type.is_template() {
                     success = add_report_and_end(
                         ReportCode::InvalidArgumentInCall,
                         arg_expr.get_meta(),
-                        &mut analysis_information.reports,
+                        analysis_information.reports,
                     );
                 }
                 concrete_types.push(arg_type.dim());
             }
             if program_archive.contains_template(id) && success.is_err() {
-                return Result::Ok(FoldedType::template(id));
+                return Ok(FoldedType::template(id));
             }
             success?;
             let previous_file_id = analysis_information.file_id;
@@ -486,10 +482,10 @@ fn type_expression(
                 id,
                 &concrete_types,
                 program_archive,
-                &mut analysis_information.reports,
+                analysis_information.reports,
             );
             if new_environment.is_err() {
-                return Result::Ok(FoldedType::template(id));
+                return Ok(FoldedType::template(id));
             }
             let new_environment = new_environment?;
             let previous_environment =
@@ -500,12 +496,12 @@ fn type_expression(
             } else {
                 let r_val =
                     type_template(id, &concrete_types, analysis_information, program_archive);
-                Result::Ok(FoldedType::template(&r_val))
+                Ok(FoldedType::template(&r_val))
             };
             analysis_information.environment = previous_environment;
             analysis_information.file_id = previous_file_id;
             let folded_value = returned_type?;
-            Result::Ok(folded_value)
+            Ok(folded_value)
         }
     }
 }
@@ -532,7 +528,7 @@ fn treat_access(
 ) -> Result<AccessInfo, ()> {
     use Access::*;
     let mut access_info: AccessInfo = (0, Option::None);
-    let mut successful = Result::Ok(());
+    let mut successful = Ok(());
     for access in accesses {
         match access {
             ArrayAccess(index) => {
@@ -542,12 +538,12 @@ fn treat_access(
                 } else {
                     access_info.0 += 1;
                 }
-                if let Result::Ok(index_type) = index_response {
+                if let Ok(index_type) = index_response {
                     if index_type.is_template() || index_type.dim() > 0 {
                         add_report(
                             ReportCode::InvalidArraySize,
                             index.get_meta(),
-                            &mut analysis_information.reports,
+                            analysis_information.reports,
                         );
                     }
                 }
@@ -557,7 +553,7 @@ fn treat_access(
                     successful = add_report_and_end(
                         ReportCode::InvalidSignalAccess,
                         meta,
-                        &mut analysis_information.reports,
+                        analysis_information.reports,
                     );
                 } else {
                     access_info.1 = Option::Some((signal_name.clone(), 0));
@@ -566,7 +562,7 @@ fn treat_access(
         }
     }
     successful?;
-    Result::Ok(access_info)
+    Ok(access_info)
 }
 
 enum SymbolInformation {
@@ -612,14 +608,14 @@ fn apply_access_to_symbol(
         if dims_accessed > current_dim {
             add_report_and_end(ReportCode::InvalidArrayAccess, meta, reports)
         } else {
-            Result::Ok(SymbolInformation::Signal(current_dim - dims_accessed))
+            Ok(SymbolInformation::Signal(current_dim - dims_accessed))
         }
     } else if environment.has_variable(symbol) {
-        Result::Ok(SymbolInformation::Var(current_dim))
+        Ok(SymbolInformation::Var(current_dim))
     } else if environment.has_signal(symbol) {
-        Result::Ok(SymbolInformation::Signal(current_dim))
+        Ok(SymbolInformation::Signal(current_dim))
     } else if environment.has_component(symbol) && current_dim == 0 {
-        Result::Ok(SymbolInformation::Component(current_template))
+        Ok(SymbolInformation::Component(current_template))
     } else {
         add_report_and_end(ReportCode::InvalidPartialArray, meta, reports)
     }
@@ -634,16 +630,16 @@ fn type_array_of_expressions(
     let mut successful_typing = true;
     for expression in expressions {
         let typing_result = type_expression(expression, program_archive, analysis_information);
-        if let Result::Ok(expression_type) = typing_result {
+        if let Ok(expression_type) = typing_result {
             types.push(expression_type);
         } else {
             successful_typing = false;
         }
     }
     if successful_typing {
-        Result::Ok(types)
+        Ok(types)
     } else {
-        Result::Err(())
+        Err(())
     }
 }
 
@@ -667,7 +663,7 @@ fn prepare_environment_for_call(
     for (name, dim) in args_names.iter().zip(args_dims.iter()) {
         environment.add_variable(name, *dim);
     }
-    Result::Ok(environment)
+    Ok(environment)
 }
 
 fn type_template(
@@ -696,7 +692,7 @@ fn type_function(
     if let Option::Some(instance) =
         analysis_information.registered_calls.get_instance(call_id, args_dims)
     {
-        return Result::Ok(*instance.returns());
+        return Ok(*instance.returns());
     }
     let mut given_type = type_given_function(call_id, program_archive.get_functions(), args_dims);
     if let Option::Some(raw) = &given_type {
@@ -705,7 +701,7 @@ fn type_function(
         return add_report_and_end(
             ReportCode::UnableToTypeFunction,
             meta,
-            &mut analysis_information.reports,
+            analysis_information.reports,
         );
     }
     let stmts = program_archive.get_function_data(call_id).get_body_as_vec();
@@ -714,7 +710,7 @@ fn type_function(
     given_type = std::mem::replace(&mut analysis_information.return_type, previous_type);
     debug_assert!(given_type.is_some());
     let raw_type = given_type.unwrap();
-    Result::Ok(raw_type)
+    Ok(raw_type)
 }
 
 //************************************************* Report handling *************************************************
@@ -724,7 +720,7 @@ fn add_report_and_end<Ok>(
     reports: &mut ReportCollection,
 ) -> Result<Ok, ()> {
     add_report(error_code, meta, reports);
-    Result::Err(())
+    Err(())
 }
 
 fn add_report(error_code: ReportCode, meta: &Meta, reports: &mut ReportCollection) {

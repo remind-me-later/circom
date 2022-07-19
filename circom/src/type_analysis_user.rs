@@ -1,4 +1,4 @@
-use program_structure::error_definition::Report;
+use circom_error::error_definition::Report;
 use program_structure::program_archive::ProgramArchive;
 use type_analysis::check_types::check_types;
 

@@ -1,9 +1,12 @@
-use super::errors::{ParsingError, UnclosedCommentError};
-use super::lang;
-use program_structure::ast::AST;
-use program_structure::error_definition::Report;
-use program_structure::file_definition::FileID;
+use crate::errors::ParseError;
 
+use super::lang;
+use circom_program_structure::ast::AST;
+use circom_error::error_definition::Report;
+use circom_error::file_definition::FileID;
+
+// Delete comments before passing them to the parser, currently LALRPOP
+// doesn't handle comments
 pub fn preprocess(expr: &str, file_id: FileID) -> Result<String, Report> {
     let mut pp = String::new();
     let mut state = 0;
@@ -74,8 +77,9 @@ pub fn preprocess(expr: &str, file_id: FileID) -> Result<String, Report> {
         }
     }
     if state == 2 {
-        let error = UnclosedCommentError { location: block_start..block_start, file_id };
-        Err(UnclosedCommentError::produce_report(error))
+        let error =
+            ParseError::UnclosedCommentError { location: block_start..block_start, file_id };
+        Err(error.produce_report())
     } else {
         Ok(pp)
     }
@@ -86,22 +90,26 @@ pub fn parse_file(src: &str, file_id: FileID) -> Result<AST, Report> {
     lang::ParseAstParser::new()
         .parse(&preprocess(src, file_id)?)
         .map_err(|parse_error| match parse_error {
-            InvalidToken { location } => ParsingError {
+            InvalidToken { location } => ParseError::ParsingError {
                 file_id,
                 msg: format!("{:?}", parse_error),
                 location: location..location,
             },
-            UnrecognizedToken { ref token, .. } => ParsingError {
+            UnrecognizedToken { ref token, .. } => ParseError::ParsingError {
                 file_id,
                 msg: format!("{:?}", parse_error),
                 location: token.0..token.2,
             },
-            ExtraToken { ref token } => ParsingError {
+            ExtraToken { ref token } => ParseError::ParsingError {
                 file_id,
                 msg: format!("{:?}", parse_error),
                 location: token.0..token.2,
             },
-            _ => ParsingError { file_id, msg: format!("{:?}", parse_error), location: 0..0 },
+            _ => ParseError::ParsingError {
+                file_id,
+                msg: format!("{:?}", parse_error),
+                location: 0..0,
+            },
         })
-        .map_err(ParsingError::produce_report)
+        .map_err(ParseError::produce_report)
 }

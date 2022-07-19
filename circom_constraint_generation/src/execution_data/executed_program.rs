@@ -4,7 +4,7 @@ use super::type_definitions::*;
 use compiler::hir::very_concrete_program::{Stats, VCPConfig, VCP};
 use dag::DAG;
 use program_structure::program_archive::ProgramArchive;
-use program_structure::program_library::error_definition::ReportCollection;
+use circom_error::error_definition::ReportCollection;
 use std::collections::HashMap;
 
 pub type ExportResult = Result<(DAG, VCP, ReportCollection), ReportCollection>;

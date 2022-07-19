@@ -18,9 +18,9 @@ use execution_data::executed_program::ExportResult;
 use execution_data::ExecutedProgram;
 use program_structure::ast::{self};
 use program_structure::constants::UsefulConstants;
-use program_structure::error_code::ReportCode;
-use program_structure::error_definition::{Report, ReportCollection};
-use program_structure::file_definition::FileID;
+use circom_error::error_code::ReportCode;
+use circom_error::error_definition::{Report, ReportCollection};
+use circom_error::file_definition::FileID;
 use program_structure::program_archive::ProgramArchive;
 use std::rc::Rc;
 

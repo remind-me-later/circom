@@ -11,7 +11,7 @@ use constraint_list::ConstraintList;
 use constraint_writers::debug_writer::DebugWriter;
 use constraint_writers::ConstraintExporter;
 use program_structure::constants::UsefulConstants;
-use program_structure::error_definition::ReportCollection;
+use circom_error::error_definition::ReportCollection;
 use std::collections::{HashMap, HashSet};
 
 type Signal = usize;

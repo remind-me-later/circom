@@ -1,19 +1,22 @@
 use program_structure::ast::{Access, Expression, Meta, Statement};
-use program_structure::error_code::ReportCode;
-use program_structure::error_definition::{Report, ReportCollection};
-use program_structure::file_definition::{self, FileID, FileLocation};
+use circom_error::error_code::ReportCode;
+use circom_error::error_definition::{Report, ReportCollection};
+use circom_error::file_definition::{self, FileID, FileLocation};
 use program_structure::function_data::FunctionInfo;
 use program_structure::program_archive::ProgramArchive;
 use program_structure::template_data::TemplateInfo;
 use std::collections::HashSet;
+
 type Block = HashSet<String>;
 type Environment = Vec<Block>;
 
-pub fn check_naming_correctness(program_archive: &ProgramArchive) -> Result<(), ReportCollection> {
+pub fn check_naming_correctness(program_archive: &ProgramArchive, reports: &mut ReportCollection) {
     let template_info = program_archive.get_templates();
     let function_info = program_archive.get_functions();
-    let mut reports = ReportCollection::new();
+
+    // TODO: WTF????
     let mut instances = Vec::new();
+
     for data in template_info.values() {
         let instance = (
             data.get_file_id(),
@@ -23,6 +26,7 @@ pub fn check_naming_correctness(program_archive: &ProgramArchive) -> Result<(), 
         );
         instances.push(instance);
     }
+
     for data in function_info.values() {
         let instance = (
             data.get_file_id(),
@@ -32,38 +36,28 @@ pub fn check_naming_correctness(program_archive: &ProgramArchive) -> Result<(), 
         );
         instances.push(instance);
     }
-    {}
 
-    if let Err(mut r) = analyze_main(program_archive) {
-        reports.append(&mut r);
-    }
+    analyze_main(program_archive, reports);
+
     for (file_id, param_location, params_names, body) in instances {
-        let res = analyze_symbols(
+        analyze_symbols(
             file_id,
             param_location,
             params_names,
             body,
             function_info,
             template_info,
+            reports,
         );
-        if let Result::Err(mut r) = res {
-            reports.append(&mut r);
-        }
-    }
-    if reports.is_empty() {
-        Result::Ok(())
-    } else {
-        Result::Err(reports)
     }
 }
 
-fn analyze_main(program: &ProgramArchive) -> Result<(), Vec<Report>> {
+fn analyze_main(program: &ProgramArchive, reports: &mut ReportCollection) {
     let call = program.get_main_expression();
     let signals = program.get_public_inputs_main_component();
     let template_info = program.get_templates();
     let function_info = program.get_functions();
 
-    let mut reports = vec![];
     if let Expression::Call { id, .. } = call {
         if program.contains_template(id) {
             let inputs = program.get_template_data(id).get_inputs();
@@ -89,27 +83,21 @@ fn analyze_main(program: &ProgramArchive) -> Result<(), Vec<Report>> {
         call.get_meta().get_file_id(),
         function_info,
         template_info,
-        &mut reports,
+        reports,
         &environment,
     );
-
-    if reports.is_empty() {
-        Ok(())
-    } else {
-        Err(reports)
-    }
 }
 
-pub fn analyze_symbols(
+fn analyze_symbols(
     file_id: FileID,
     param_location: FileLocation,
     params_names: &[String],
     body: &[Statement],
     function_info: &FunctionInfo,
     template_info: &TemplateInfo,
-) -> Result<(), ReportCollection> {
+    reports: &mut ReportCollection,
+) {
     let mut param_name_collision = false;
-    let mut reports = ReportCollection::new();
     let mut environment = vec![Block::new()];
 
     for param in params_names.iter() {
@@ -123,37 +111,23 @@ pub fn analyze_symbols(
         reports.push(report);
     }
     for stmt in body.iter() {
-        analyze_statement(
-            stmt,
-            file_id,
-            function_info,
-            template_info,
-            &mut reports,
-            &mut environment,
-        );
-    }
-    if reports.is_empty() {
-        Result::Ok(())
-    } else {
-        Result::Err(reports)
+        analyze_statement(stmt, file_id, function_info, template_info, reports, &mut environment);
     }
 }
 
 fn symbol_in_environment(environment: &Environment, symbol: &String) -> bool {
-    for block in environment.iter() {
-        if block.contains(symbol) {
-            return true;
-        }
-    }
-    false
+    environment.iter().any(|block| block.contains(symbol))
 }
 
 fn add_symbol_to_block(environment: &mut Environment, symbol: &String) -> bool {
     let last_block = environment.last_mut().unwrap();
+
     if last_block.contains(symbol) {
         return false;
     }
-    last_block.insert(symbol.clone());
+
+    last_block.insert(symbol.to_owned());
+
     true
 }
 

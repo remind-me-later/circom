@@ -1,7 +1,7 @@
 use num_bigint::BigInt;
 use program_structure::ast::*;
-use program_structure::error_code::ReportCode;
-use program_structure::error_definition::{Report, ReportCollection};
+use circom_error::error_code::ReportCode;
+use circom_error::error_definition::{Report, ReportCollection};
 use program_structure::expression_builders::*;
 use program_structure::utils::environment::VarEnvironment;
 use program_structure::{function_data::FunctionData, template_data::TemplateData};
@@ -10,18 +10,18 @@ use std::collections::HashSet;
 type Constants = VarEnvironment<bool>;
 type ExpressionHolder = VarEnvironment<Expression>;
 
-pub fn handle_function_constants(function: &mut FunctionData) -> ReportCollection {
+pub fn handle_function_constants(function: &mut FunctionData, reports: &mut ReportCollection) {
     let mut environment = Constants::new();
     let mut expression_holder = ExpressionHolder::new();
     for p in function.get_name_of_params() {
         environment.add_variable(p, false);
     }
     statement_constant_inference(function.get_mut_body(), &mut environment);
-    let reports = statement_invariant_check(function.get_body(), &mut environment);
+    statement_invariant_check(function.get_body(), &mut environment, reports);
     expand_statement(function.get_mut_body(), &mut expression_holder);
-    reports
 }
-pub fn _handle_template_constants(template: &mut TemplateData) -> ReportCollection {
+
+pub fn _handle_template_constants(template: &mut TemplateData, reports: &mut ReportCollection) {
     let mut environment = Constants::new();
     let mut expression_holder = ExpressionHolder::new();
     for p in template.get_name_of_params() {
@@ -33,9 +33,8 @@ pub fn _handle_template_constants(template: &mut TemplateData) -> ReportCollecti
         expression_holder.add_variable(p, expression);
     }
     statement_constant_inference(template.get_mut_body(), &mut environment);
-    let reports = statement_invariant_check(template.get_body(), &mut environment);
+    statement_invariant_check(template.get_body(), &mut environment, reports);
     expand_statement(template.get_mut_body(), &mut expression_holder);
-    reports
 }
 
 // Set of functions used to infer the constant tag in variable declarations
@@ -132,44 +131,47 @@ fn block_constant_inference(stmts: &mut [Statement], environment: &mut Constants
 }
 
 // Set of functions whose purpose is to check the array length invariant
-fn statement_invariant_check(stmt: &Statement, environment: &mut Constants) -> ReportCollection {
+fn statement_invariant_check(
+    stmt: &Statement,
+    environment: &mut Constants,
+    reports: &mut ReportCollection,
+) {
     use Statement::*;
     match stmt {
         InitializationBlock { initializations, .. } => {
-            initialization_invariant_check(initializations, environment)
+            initialization_invariant_check(initializations, environment, reports)
         }
         IfThenElse { if_case, else_case, .. } => {
-            if_then_else_invariant_check(if_case, else_case, environment)
+            if_then_else_invariant_check(if_case, else_case, environment, reports)
         }
-        While { stmt, .. } => while_invariant_check(stmt, environment),
-        Block { stmts, .. } => block_invariant_check(stmts, environment),
-        _ => ReportCollection::new(),
+        While { stmt, .. } => while_invariant_check(stmt, environment, reports),
+        Block { stmts, .. } => block_invariant_check(stmts, environment, reports),
+        _ => (),
     }
 }
 
 fn declaration_invariant_check(
     dimensions: &[Expression],
     environment: &mut Constants,
-) -> ReportCollection {
-    let mut reports = ReportCollection::new();
+    reports: &mut ReportCollection,
+) {
     for d in dimensions {
         if !has_constant_value(d, environment) {
-            broken_invariant_error(d.get_meta(), &mut reports);
+            broken_invariant_error(d.get_meta(), reports);
         }
     }
-    reports
 }
 
 fn initialization_invariant_check(
     initializations: &[Statement],
     environment: &mut Constants,
-) -> ReportCollection {
+    reports: &mut ReportCollection,
+) {
     use Statement::Declaration;
-    let mut reports = ReportCollection::new();
+
     for init in initializations {
         if let Declaration { dimensions, .. } = init {
-            let mut r = declaration_invariant_check(dimensions, environment);
-            reports.append(&mut r);
+            declaration_invariant_check(dimensions, environment, reports);
         }
     }
     for init in initializations {
@@ -177,35 +179,38 @@ fn initialization_invariant_check(
             environment.add_variable(name, *is_constant);
         }
     }
-    reports
 }
 
 fn if_then_else_invariant_check(
     if_case: &Statement,
     else_case: &Option<Box<Statement>>,
     environment: &mut Constants,
-) -> ReportCollection {
-    let mut reports = statement_invariant_check(if_case, environment);
+    reports: &mut ReportCollection,
+) {
+    statement_invariant_check(if_case, environment, reports);
     if let Option::Some(s) = else_case {
-        let mut r = statement_invariant_check(s, environment);
-        reports.append(&mut r);
+        statement_invariant_check(s, environment, reports);
     }
-    reports
 }
 
-fn while_invariant_check(body: &Statement, environment: &mut Constants) -> ReportCollection {
-    statement_invariant_check(body, environment)
+fn while_invariant_check(
+    body: &Statement,
+    environment: &mut Constants,
+    reports: &mut ReportCollection,
+) {
+    statement_invariant_check(body, environment, reports)
 }
 
-fn block_invariant_check(stmts: &[Statement], environment: &mut Constants) -> ReportCollection {
-    let mut reports = ReportCollection::new();
+fn block_invariant_check(
+    stmts: &[Statement],
+    environment: &mut Constants,
+    reports: &mut ReportCollection,
+) {
     environment.add_variable_block();
     for s in stmts {
-        let mut r = statement_invariant_check(s, environment);
-        reports.append(&mut r);
+        statement_invariant_check(s, environment, reports);
     }
     environment.remove_variable_block();
-    reports
 }
 
 // Set of functions whose purpose is to determine if a expression is constant or not under some environment

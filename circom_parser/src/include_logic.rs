@@ -1,5 +1,5 @@
-use super::errors::FileOsError;
-use program_structure::error_definition::Report;
+use super::errors::ParseError;
+use circom_error::error_definition::Report;
 use std::collections::HashSet;
 use std::path::PathBuf;
 
@@ -16,31 +16,32 @@ impl FileStack {
         FileStack { current_location: location, black_paths: HashSet::new(), stack: vec![src] }
     }
 
-    pub fn add_include(f_stack: &mut FileStack, path: String) -> Result<(), Report> {
-        let mut crr = f_stack.current_location.clone();
-        crr.push(path.clone());
+    pub fn add_include(&mut self, path: String) -> Result<(), Report> {
+        let mut crr = self.current_location.clone();
+        crr.push(&path);
+
         let path = std::fs::canonicalize(crr)
-            .map_err(|_| FileOsError { path: path.clone() })
-            .map_err(FileOsError::produce_report)?;
-        if !f_stack.black_paths.contains(&path) {
-            f_stack.stack.push(path);
+            .map_err(|_| ParseError::FileOsError { path })
+            .map_err(ParseError::produce_report)?;
+
+        if !self.black_paths.contains(&path) {
+            self.stack.push(path);
         }
+
         Ok(())
     }
 
-    pub fn take_next(f_stack: &mut FileStack) -> Option<PathBuf> {
+    pub fn take_next(&mut self) -> Option<PathBuf> {
         loop {
-            match f_stack.stack.pop() {
-                None => {
-                    break None;
+            if let Some(file) = self.stack.pop() {
+                if !self.black_paths.contains(&file) {
+                    self.current_location = file.clone();
+                    self.current_location.pop();
+                    self.black_paths.insert(file.clone());
+                    return Some(file);
                 }
-                Some(file) if !f_stack.black_paths.contains(&file) => {
-                    f_stack.current_location = file.clone();
-                    f_stack.current_location.pop();
-                    f_stack.black_paths.insert(file.clone());
-                    break Some(file);
-                }
-                _ => {}
+            } else {
+                return None;
             }
         }
     }

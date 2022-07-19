@@ -2,8 +2,8 @@
 
 use super::Node;
 use circom_algebra::algebra::Constraint;
-use program_structure::error_code::ReportCode;
-use program_structure::error_definition::{Report, ReportCollection};
+use circom_error::error_code::ReportCode;
+use circom_error::error_definition::{Report, ReportCollection};
 use std::collections::{HashMap, HashSet};
 
 type C = Constraint<usize>;

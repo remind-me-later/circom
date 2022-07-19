@@ -14,3 +14,4 @@ program_structure = { package = "circom_program_structure", path = "../circom_pr
 constraint_writers = { package = "circom_constraint_writers", path = "../circom_constraint_writers", version = "2" }
 constraint_list = { package = "circom_constraint_list", path = "../circom_constraint_list", version = "2" }
 dag = { package = "circom_dag", path = "../circom_dag", version = "2" }
+circom_error = { path = "../circom_error" }

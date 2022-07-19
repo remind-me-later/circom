@@ -12,4 +12,5 @@ members = [
     "circom_constant_tracking",
     "circom_code_producers",
     "circom_dag",
+    "circom_error",
 ]

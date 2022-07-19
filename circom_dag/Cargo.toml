@@ -7,6 +7,7 @@ edition = "2018"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+circom_error = { path = "../circom_error" }
 constraint_list = { package = "circom_constraint_list", path = "../circom_constraint_list", version = "2" }
 constraint_writers = { package = "circom_constraint_writers", path = "../circom_constraint_writers", version = "2" }
 circom_algebra = { path = "../circom_algebra", version = "2" }

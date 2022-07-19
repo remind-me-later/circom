@@ -8,23 +8,25 @@ pub type DiagnosticCode = String;
 type ReportLabel = Label<FileID>;
 type ReportNote = String;
 
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, Debug)]
 enum MessageCategory {
     Error,
     Warning,
 }
+
 impl MessageCategory {
     fn is_error(&self) -> bool {
         use MessageCategory::*;
         matches!(self, Error)
     }
+
     fn is_warning(&self) -> bool {
         use MessageCategory::*;
         matches!(self, Warning)
     }
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct Report {
     category: MessageCategory,
     error_message: String,
@@ -33,6 +35,7 @@ pub struct Report {
     secondary: Vec<ReportLabel>,
     notes: Vec<ReportNote>,
 }
+
 impl Report {
     fn new(category: MessageCategory, error_message: String, error_code: ReportCode) -> Report {
         Report {
@@ -121,7 +124,7 @@ impl Report {
     fn get_message(&self) -> &String {
         &self.error_message
     }
-    fn get_code(&self) -> &ReportCode {
+    pub fn get_code(&self) -> &ReportCode {
         &self.error_code
     }
     fn get_primary(&self) -> &Vec<ReportLabel> {

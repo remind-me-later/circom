@@ -946,8 +946,7 @@ fn prepare_environment_for_call(
     arg_values: &[AExpressionSlice],
     program_archive: &ProgramArchive,
 ) -> ExecutionEnvironment {
-    let functions = program_archive.get_function_names();
-    let arg_names = if functions.contains(id) {
+    let arg_names = if program_archive.contains_function(id) {
         program_archive.get_function_data(id).get_name_of_params()
     } else {
         program_archive.get_template_data(id).get_name_of_params()

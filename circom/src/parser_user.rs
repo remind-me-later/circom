@@ -1,5 +1,5 @@
 use super::input_user::Input;
-use program_structure::error_definition::Report;
+use circom_error::error_definition::Report;
 use program_structure::program_archive::ProgramArchive;
 use crate::VERSION;
 

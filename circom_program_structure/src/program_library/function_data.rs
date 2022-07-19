@@ -1,6 +1,6 @@
 use super::ast::{FillMeta, Statement};
-use super::file_definition::FileID;
-use crate::file_definition::FileLocation;
+use circom_error::file_definition::FileID;
+use circom_error::file_definition::FileLocation;
 use std::collections::HashMap;
 
 pub type FunctionInfo = HashMap<String, FunctionData>;

@@ -1,8 +1,8 @@
 use program_structure::ast::*;
 use program_structure::environment::CircomEnvironment;
-use program_structure::error_code::ReportCode;
-use program_structure::error_definition::{Report, ReportCollection};
-use program_structure::file_definition::{generate_file_location, FileID};
+use circom_error::error_code::ReportCode;
+use circom_error::error_definition::{Report, ReportCollection};
+use circom_error::file_definition::{generate_file_location, FileID};
 use program_structure::program_archive::ProgramArchive;
 use std::collections::HashSet;
 use std::cmp::max;
@@ -13,7 +13,6 @@ struct EntryInformation {
     environment: Environment,
 }
 struct ExitInformation {
-    reports: ReportCollection,
     environment: Environment,
     constraints_declared: bool,
     modified_variables: HashSet<String>,
@@ -29,7 +28,8 @@ type Environment = CircomEnvironment<Tag, Tag, Tag>;
 pub fn unknown_known_analysis(
     template_name: &str,
     program_archive: &ProgramArchive,
-) -> Result<(), ReportCollection> {
+    reports: &mut ReportCollection,
+) {
     debug_assert!(Tag::Known < Tag::Unknown);
     let template_data = program_archive.get_template_data(template_name);
     let template_body = template_data.get_body();
@@ -40,41 +40,36 @@ pub fn unknown_known_analysis(
     }
 
     let entry = EntryInformation { file_id, environment };
-    let result = analyze(template_body, entry);
-    if result.reports.is_empty() {
-        Result::Ok(())
-    } else {
-        Result::Err(result.reports)
-    }
+    analyze(template_body, entry, reports);
 }
 
-fn analyze(stmt: &Statement, entry_information: EntryInformation) -> ExitInformation {
+fn analyze(
+    stmt: &Statement,
+    entry_information: EntryInformation,
+    reports: &mut ReportCollection,
+) -> ExitInformation {
     use Statement::*;
     use Symbol::*;
     use Tag::*;
 
     fn iterate_statements(
         stmts: &[Statement],
-        mut reports: ReportCollection,
+        reports: &mut ReportCollection,
         mut environment: Environment,
         file_id: FileID,
-    ) -> (bool, ReportCollection, Environment, HashSet<String>) {
+    ) -> (bool, Environment, HashSet<String>) {
         let mut constraints_declared = false;
         let mut modified_variables: HashSet<String> = HashSet::new();
         for stmt in stmts {
             let entry = EntryInformation { file_id, environment };
-            let exit = analyze(stmt, entry);
+            let exit = analyze(stmt, entry, reports);
             constraints_declared = constraints_declared || exit.constraints_declared;
             modified_variables.extend(exit.modified_variables);
-            for report in exit.reports {
-                reports.push(report);
-            }
             environment = exit.environment;
         }
-        (constraints_declared, reports, environment, modified_variables)
+        (constraints_declared, environment, modified_variables)
     }
     let file_id = entry_information.file_id;
-    let mut reports = ReportCollection::new();
     let mut environment = entry_information.environment;
     let mut modified_variables = HashSet::new();
     let mut constraints_declared = false;
@@ -95,7 +90,7 @@ fn analyze(stmt: &Statement, entry_information: EntryInformation) -> ExitInforma
                         ReportCode::UnknownDimension,
                         dimension.get_meta(),
                         file_id,
-                        &mut reports,
+                        reports,
                     );
                 }
             }
@@ -119,28 +114,28 @@ fn analyze(stmt: &Statement, entry_information: EntryInformation) -> ExitInforma
             } else if simplified_elem == Component {
                 constraints_declared = true;
                 if expression_tag == Unknown {
-                    add_report(ReportCode::UnknownTemplate, rhe.get_meta(), file_id, &mut reports);
+                    add_report(ReportCode::UnknownTemplate, rhe.get_meta(), file_id, reports);
                 }
                 if access_tag == Unknown {
-                    add_report(ReportCode::UnknownTemplate, meta, file_id, &mut reports);
+                    add_report(ReportCode::UnknownTemplate, meta, file_id, reports);
                 }
             } else if *op == AssignOp::AssignConstraintSignal {
                 constraints_declared = true;
                 if is_non_quadratic(rhe, &environment) {
-                    add_report(ReportCode::NonQuadratic, rhe.get_meta(), file_id, &mut reports);
+                    add_report(ReportCode::NonQuadratic, rhe.get_meta(), file_id, reports);
                 }
                 if access_tag == Unknown {
-                    add_report(ReportCode::NonQuadratic, meta, file_id, &mut reports);
+                    add_report(ReportCode::NonQuadratic, meta, file_id, reports);
                 }
             }
         }
         ConstraintEquality { lhe, rhe, .. } => {
             constraints_declared = true;
             if is_non_quadratic(lhe, &environment) {
-                add_report(ReportCode::NonQuadratic, lhe.get_meta(), file_id, &mut reports);
+                add_report(ReportCode::NonQuadratic, lhe.get_meta(), file_id, reports);
             }
             if is_non_quadratic(rhe, &environment) {
-                add_report(ReportCode::NonQuadratic, rhe.get_meta(), file_id, &mut reports);
+                add_report(ReportCode::NonQuadratic, rhe.get_meta(), file_id, reports);
             }
         }
         IfThenElse { cond, if_case, else_case, .. } => {
@@ -148,14 +143,13 @@ fn analyze(stmt: &Statement, entry_information: EntryInformation) -> ExitInforma
             let new_entry_else_case =
                 EntryInformation { environment: environment.clone(), file_id };
             let new_entry_if_case = EntryInformation { environment, file_id };
-            let if_case_info = analyze(if_case, new_entry_if_case);
+            let if_case_info = analyze(if_case, new_entry_if_case, reports);
             let else_case_info = if let Option::Some(else_stmt) = else_case {
-                analyze(else_stmt, new_entry_else_case)
+                analyze(else_stmt, new_entry_else_case, reports)
             } else {
                 ExitInformation {
                     constraints_declared: false,
                     environment: new_entry_else_case.environment,
-                    reports: ReportCollection::with_capacity(0),
                     modified_variables: HashSet::new(),
                 }
             };
@@ -163,12 +157,7 @@ fn analyze(stmt: &Statement, entry_information: EntryInformation) -> ExitInforma
                 else_case_info.constraints_declared || if_case_info.constraints_declared;
             modified_variables.extend(if_case_info.modified_variables);
             modified_variables.extend(else_case_info.modified_variables);
-            for report in if_case_info.reports {
-                reports.push(report);
-            }
-            for report in else_case_info.reports {
-                reports.push(report);
-            }
+
             environment =
                 Environment::merge(if_case_info.environment, else_case_info.environment, |a, b| {
                     max(a, b)
@@ -182,34 +171,27 @@ fn analyze(stmt: &Statement, entry_information: EntryInformation) -> ExitInforma
                 }
             }
             if tag_cond == Unknown && constraints_declared {
-                add_report(
-                    ReportCode::UnreachableConstraints,
-                    cond.get_meta(),
-                    file_id,
-                    &mut reports,
-                );
+                add_report(ReportCode::UnreachableConstraints, cond.get_meta(), file_id, reports);
             }
         }
         While { cond, stmt, .. } => {
             let mut entry_info = environment.clone();
             let mut entry = EntryInformation { file_id, environment };
-            let mut exit = analyze(stmt, entry);
+            let mut exit = analyze(stmt, entry, reports);
             let mut modified =
                 check_modified(entry_info, &mut exit.environment, &exit.modified_variables);
             environment = exit.environment;
             while modified {
                 entry_info = environment.clone();
                 entry = EntryInformation { file_id, environment };
-                exit = analyze(stmt, entry);
+                exit = analyze(stmt, entry, reports);
                 modified =
                     check_modified(entry_info, &mut exit.environment, &exit.modified_variables);
                 environment = exit.environment;
             }
 
             constraints_declared = exit.constraints_declared;
-            for report in exit.reports {
-                reports.push(report);
-            }
+
             let tag_out = tag(cond, &environment);
 
             if tag_out == Unknown {
@@ -220,34 +202,26 @@ fn analyze(stmt: &Statement, entry_information: EntryInformation) -> ExitInforma
             }
 
             if constraints_declared && tag_out == Unknown {
-                add_report(
-                    ReportCode::UnreachableConstraints,
-                    cond.get_meta(),
-                    file_id,
-                    &mut reports,
-                );
+                add_report(ReportCode::UnreachableConstraints, cond.get_meta(), file_id, reports);
             }
         }
         Block { stmts, .. } => {
             environment.add_variable_block();
-            let (nc, nr, ne, nm) = iterate_statements(stmts, reports, environment, file_id);
+            let (nc, ne, nm) = iterate_statements(stmts, reports, environment, file_id);
             constraints_declared = nc;
-            reports = nr;
             environment = ne;
             modified_variables = nm;
             environment.remove_variable_block();
         }
         InitializationBlock { initializations, .. } => {
-            let (nc, nr, ne, nm) =
-                iterate_statements(initializations, reports, environment, file_id);
+            let (nc, ne, nm) = iterate_statements(initializations, reports, environment, file_id);
             constraints_declared = nc;
-            reports = nr;
             environment = ne;
             modified_variables = nm;
         }
         _ => {}
     }
-    ExitInformation { reports, environment, constraints_declared, modified_variables }
+    ExitInformation { environment, constraints_declared, modified_variables }
 }
 
 fn tag(expression: &Expression, environment: &Environment) -> Tag {
