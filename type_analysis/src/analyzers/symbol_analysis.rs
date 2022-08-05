@@ -1,7 +1,7 @@
-use program_structure::ast::{Access, Expression, Meta, Statement};
-use program_structure::error_code::ReportCode;
-use program_structure::error_definition::{Report, ReportCollection};
-use program_structure::file_definition::{self, FileID, FileLocation};
+use circom_ast::{Access, Expression, Meta, Statement};
+use circom_error::error_code::ReportCode;
+use circom_error::error_definition::{Report, ReportCollection};
+use circom_error::file_definition::{self, FileID, FileLocation};
 use program_structure::function_data::FunctionInfo;
 use program_structure::program_archive::ProgramArchive;
 use program_structure::template_data::TemplateInfo;
@@ -91,7 +91,11 @@ fn analyze_main(program: &ProgramArchive) -> Result<(), Vec<Report>> {
         &environment,
     );
 
-    if reports.is_empty() { Ok(()) } else { Err(reports) }
+    if reports.is_empty() {
+        Ok(())
+    } else {
+        Err(reports)
+    }
 }
 
 pub fn analyze_symbols(

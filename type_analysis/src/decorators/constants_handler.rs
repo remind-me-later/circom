@@ -1,8 +1,8 @@
 use num_bigint::BigInt;
-use program_structure::ast::*;
-use program_structure::error_code::ReportCode;
-use program_structure::error_definition::{Report, ReportCollection};
-use program_structure::expression_builders::*;
+use circom_ast::*;
+use circom_error::error_code::ReportCode;
+use circom_error::error_definition::{Report, ReportCollection};
+use circom_ast::expression_builders::*;
 use program_structure::utils::environment::VarEnvironment;
 use program_structure::{function_data::FunctionData, template_data::TemplateData};
 use std::collections::HashSet;

@@ -1,4 +1,4 @@
-use super::ast::*;
+use crate::*;
 use Statement::*;
 
 pub fn build_conditional_block(

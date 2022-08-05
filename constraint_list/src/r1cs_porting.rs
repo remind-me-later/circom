@@ -1,5 +1,7 @@
 use super::{ConstraintList, C, EncodingIterator, SignalMap};
-use constraint_writers::r1cs_writer::{ConstraintSection, CustomGatesAppliedData, HeaderData, R1CSWriter, SignalSection};
+use constraint_writers::r1cs_writer::{
+    ConstraintSection, CustomGatesAppliedData, HeaderData, R1CSWriter, SignalSection,
+};
 
 pub fn port_r1cs(list: &ConstraintList, output: &str) -> Result<(), ()> {
     use constraint_writers::log_writer::Log;
@@ -55,7 +57,7 @@ pub fn port_r1cs(list: &ConstraintList, output: &str) -> Result<(), ()> {
             if node.is_custom_gate {
                 let mut name = node.name.clone();
                 occurring_order.push(name.clone());
-                while name.pop() != Some('(') {};
+                while name.pop() != Some('(') {}
                 usage_data.push((name, node.parameters.clone()));
             }
         }
@@ -68,7 +70,7 @@ pub fn port_r1cs(list: &ConstraintList, output: &str) -> Result<(), ()> {
     let application_data = {
         fn find_indexes(
             occurring_order: Vec<String>,
-            application_data: Vec<(String, Vec<usize>)>
+            application_data: Vec<(String, Vec<usize>)>,
         ) -> CustomGatesAppliedData {
             let mut new_application_data = vec![];
             for (custom_gate_name, signals) in application_data {
@@ -84,7 +86,7 @@ pub fn port_r1cs(list: &ConstraintList, output: &str) -> Result<(), ()> {
         fn iterate(
             iterator: EncodingIterator,
             map: &SignalMap,
-            application_data: &mut Vec<(String, Vec<usize>)>
+            application_data: &mut Vec<(String, Vec<usize>)>,
         ) {
             let node = &iterator.encoding.nodes[iterator.node_id];
             if node.is_custom_gate {

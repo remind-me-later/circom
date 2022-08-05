@@ -1,5 +1,5 @@
 use super::very_concrete_program::*;
-use program_structure::ast::*;
+use circom_ast::*;
 
 struct ExtendedSyntax {
     initializations: Vec<Statement>,

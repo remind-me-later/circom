@@ -1,5 +1,5 @@
 use crate::hir::very_concrete_program::*;
-use program_structure::ast::Statement;
+use circom_ast::Statement;
 use program_structure::environment::VarEnvironment;
 use program_structure::program_archive::ProgramArchive;
 use std::collections::HashMap;

@@ -1,4 +1,4 @@
-use super::ast::*;
+use crate::*;
 
 impl Statement {
     pub fn get_meta(&self) -> &Meta {

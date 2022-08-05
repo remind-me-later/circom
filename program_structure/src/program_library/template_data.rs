@@ -1,7 +1,6 @@
-use super::ast;
-use super::ast::{FillMeta, SignalElementType, Statement};
-use super::file_definition::FileID;
-use crate::file_definition::FileLocation;
+use circom_ast::{FillMeta, SignalElementType, Statement};
+use circom_error::file_definition::FileID;
+use circom_error::file_definition::FileLocation;
 use std::collections::hash_map::HashMap;
 
 pub type TemplateInfo = HashMap<String, TemplateData>;
@@ -129,14 +128,14 @@ fn fill_inputs_and_outputs(
             }
         }
         Statement::Declaration { xtype, name, dimensions, .. } => {
-            if let ast::VariableType::Signal(stype, tag) = xtype {
+            if let circom_ast::VariableType::Signal(stype, tag) = xtype {
                 let signal_name = name.clone();
                 let dim = dimensions.len();
                 match stype {
-                    ast::SignalType::Input => {
+                    circom_ast::SignalType::Input => {
                         input_signals.insert(signal_name, (dim, *tag));
                     }
-                    ast::SignalType::Output => {
+                    circom_ast::SignalType::Output => {
                         output_signals.insert(signal_name, (dim, *tag));
                     }
                     _ => {} //no need to deal with intermediate signals

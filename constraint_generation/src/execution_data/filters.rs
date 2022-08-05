@@ -1,5 +1,5 @@
 use super::analysis::Analysis;
-use program_structure::ast::*;
+use circom_ast::*;
 
 pub fn apply_unused(stmt: &mut Statement, analysis: &Analysis, prime: &String) {
     clean_dead_code(stmt, analysis, prime);
@@ -14,8 +14,11 @@ fn clean_dead_code(stmt: &mut Statement, analysis: &Analysis, prime: &String) ->
             let field = program_structure::constants::UsefulConstants::new(prime).get_p().clone();
             let empty_block = Box::new(Block { meta: meta.clone(), stmts: vec![] });
             let if_case_empty = clean_dead_code(if_case, analysis, prime);
-            let else_case_empty =
-                if let Some(case) = else_case { clean_dead_code(case, analysis, prime) } else { true };
+            let else_case_empty = if let Some(case) = else_case {
+                clean_dead_code(case, analysis, prime)
+            } else {
+                true
+            };
             if else_case_empty {
                 *else_case = None;
             }

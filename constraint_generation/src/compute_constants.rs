@@ -3,8 +3,8 @@ use crate::environment_utils::slice_types::AExpressionSlice;
 use circom_algebra::algebra::ArithmeticExpression;
 use compiler::hir::very_concrete_program::{Argument, TemplateInstance};
 use num_bigint::BigInt;
-use program_structure::ast::{Expression, Meta, Statement};
-use program_structure::error_definition::ReportCollection;
+use circom_ast::{Expression, Meta, Statement};
+use circom_error::error_definition::ReportCollection;
 use program_structure::program_archive::ProgramArchive;
 use std::collections::HashMap;
 
@@ -16,7 +16,11 @@ struct Context<'a> {
     program_archive: &'a ProgramArchive,
 }
 
-pub fn manage_functions(program_archive: &mut ProgramArchive, flag_verbose: bool, prime: &String) -> CCResult {
+pub fn manage_functions(
+    program_archive: &mut ProgramArchive,
+    flag_verbose: bool,
+    prime: &String,
+) -> CCResult {
     let mut reports = vec![];
     let mut processed = HashMap::new();
     for (name, data) in program_archive.get_functions() {
@@ -41,7 +45,7 @@ pub fn compute_vct(
     instances: &mut Vec<TemplateInstance>,
     program_archive: &ProgramArchive,
     flag_verbose: bool,
-    prime: &String
+    prime: &String,
 ) -> CCResult {
     let mut reports = vec![];
     for instance in instances {
@@ -74,7 +78,13 @@ fn argument_into_slice(argument: &Argument) -> AExpressionSlice {
     AExpressionSlice::new_array(dimensions, arithmetic_expressions)
 }
 
-fn treat_statement(stmt: &mut Statement, context: &Context, reports: &mut ReportCollection, flag_verbose: bool, prime: &String) {
+fn treat_statement(
+    stmt: &mut Statement,
+    context: &Context,
+    reports: &mut ReportCollection,
+    flag_verbose: bool,
+    prime: &String,
+) {
     if stmt.is_initialization_block() {
         treat_init_block(stmt, context, reports, flag_verbose, prime)
     } else if stmt.is_block() {
@@ -87,7 +97,13 @@ fn treat_statement(stmt: &mut Statement, context: &Context, reports: &mut Report
     }
 }
 
-fn treat_init_block(stmt: &mut Statement, context: &Context, reports: &mut ReportCollection, flag_verbose: bool, prime: &String) {
+fn treat_init_block(
+    stmt: &mut Statement,
+    context: &Context,
+    reports: &mut ReportCollection,
+    flag_verbose: bool,
+    prime: &String,
+) {
     use Statement::InitializationBlock;
     if let InitializationBlock { initializations, .. } = stmt {
         for init in initializations {
@@ -100,7 +116,13 @@ fn treat_init_block(stmt: &mut Statement, context: &Context, reports: &mut Repor
     }
 }
 
-fn treat_block(stmt: &mut Statement, context: &Context, reports: &mut ReportCollection, flag_verbose: bool, prime: &String) {
+fn treat_block(
+    stmt: &mut Statement,
+    context: &Context,
+    reports: &mut ReportCollection,
+    flag_verbose: bool,
+    prime: &String,
+) {
     use Statement::Block;
     if let Block { stmts, .. } = stmt {
         for s in stmts {
@@ -111,7 +133,13 @@ fn treat_block(stmt: &mut Statement, context: &Context, reports: &mut ReportColl
     }
 }
 
-fn treat_while(stmt: &mut Statement, context: &Context, reports: &mut ReportCollection, flag_verbose: bool, prime: &String) {
+fn treat_while(
+    stmt: &mut Statement,
+    context: &Context,
+    reports: &mut ReportCollection,
+    flag_verbose: bool,
+    prime: &String,
+) {
     use Statement::While;
     if let While { stmt, .. } = stmt {
         treat_statement(stmt, context, reports, flag_verbose, prime);
@@ -120,7 +148,13 @@ fn treat_while(stmt: &mut Statement, context: &Context, reports: &mut ReportColl
     }
 }
 
-fn treat_conditional(stmt: &mut Statement, context: &Context, reports: &mut ReportCollection, flag_verbose: bool, prime: &String) {
+fn treat_conditional(
+    stmt: &mut Statement,
+    context: &Context,
+    reports: &mut ReportCollection,
+    flag_verbose: bool,
+    prime: &String,
+) {
     use Statement::IfThenElse;
     if let IfThenElse { if_case, else_case, .. } = stmt {
         treat_statement(if_case, context, reports, flag_verbose, prime);
@@ -132,7 +166,13 @@ fn treat_conditional(stmt: &mut Statement, context: &Context, reports: &mut Repo
     }
 }
 
-fn treat_declaration(stmt: &mut Statement, context: &Context, reports: &mut ReportCollection, flag_verbose: bool, prime: &String) {
+fn treat_declaration(
+    stmt: &mut Statement,
+    context: &Context,
+    reports: &mut ReportCollection,
+    flag_verbose: bool,
+    prime: &String,
+) {
     use Statement::Declaration;
     if let Declaration { meta, dimensions, .. } = stmt {
         let mut concrete_dimensions = vec![];
@@ -154,7 +194,7 @@ fn treat_dimension(
     dim: &Expression,
     context: &Context,
     reports: &mut ReportCollection,
-    flag_verbose: bool, 
+    flag_verbose: bool,
     prime: &String,
 ) -> Option<usize> {
     use crate::execute::execute_constant_expression;
@@ -165,7 +205,8 @@ fn treat_dimension(
     } else {
         let program = context.program_archive;
         let env = context.environment;
-        let execution_result = execute_constant_expression(dim, program, env.clone(), flag_verbose, prime);
+        let execution_result =
+            execute_constant_expression(dim, program, env.clone(), flag_verbose, prime);
         match execution_result {
             Result::Err(mut r) => {
                 reports.append(&mut r);
@@ -189,8 +230,8 @@ fn transform_big_int_to_usize(v: BigInt) -> Option<usize> {
 }
 
 fn report_invalid_dimension(meta: &Meta, reports: &mut ReportCollection) {
-    use program_structure::error_code::ReportCode;
-    use program_structure::error_definition::Report;
+    use circom_error::error_code::ReportCode;
+    use circom_error::error_definition::Report;
     let error_code = ReportCode::InvalidArraySize;
     let msg = "Invalid array size".to_string();
     let mut report = Report::error(msg, error_code);

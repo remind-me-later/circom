@@ -1,7 +1,7 @@
-use program_structure::ast::{Statement, VariableType};
-use program_structure::error_code::ReportCode;
-use program_structure::error_definition::{Report, ReportCollection};
-use program_structure::file_definition::{self, FileID};
+use circom_ast::{Statement, VariableType};
+use circom_error::error_code::ReportCode;
+use circom_error::error_definition::{Report, ReportCollection};
+use circom_error::file_definition::{self, FileID};
 use program_structure::template_data::TemplateData;
 
 pub fn check_signal_correctness(template_data: &TemplateData) -> Result<(), ReportCollection> {

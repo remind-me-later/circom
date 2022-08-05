@@ -1,7 +1,7 @@
-use program_structure::error_code::ReportCode;
-use program_structure::error_definition::Report;
-use program_structure::file_definition::{FileID, FileLocation};
-use program_structure::abstract_syntax_tree::ast::Version;
+use circom_error::error_code::ReportCode;
+use circom_error::error_definition::Report;
+use circom_error::file_definition::{FileID, FileLocation};
+use circom_ast::Version;
 
 pub struct UnclosedCommentError {
     pub location: FileLocation,
@@ -59,7 +59,7 @@ impl MultipleMainError {
     }
 }
 
-pub struct CompilerVersionError{
+pub struct CompilerVersionError {
     pub path: String,
     pub required_version: Version,
     pub version: Version,
@@ -73,14 +73,17 @@ impl CompilerVersionError {
     }
 }
 
-pub struct NoCompilerVersionWarning{
+pub struct NoCompilerVersionWarning {
     pub path: String,
     pub version: Version,
 }
 impl NoCompilerVersionWarning {
     pub fn produce_report(error: Self) -> Report {
         Report::warning(
-            format!("File {} does not include pragma version. Assuming pragma version {:?}", error.path, error.version),
+            format!(
+                "File {} does not include pragma version. Assuming pragma version {:?}",
+                error.path, error.version
+            ),
             ReportCode::NoCompilerVersionWarning,
         )
     }

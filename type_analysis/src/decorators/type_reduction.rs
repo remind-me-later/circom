@@ -1,4 +1,4 @@
-use program_structure::ast::*;
+use circom_ast::*;
 use program_structure::environment::CircomEnvironment;
 use program_structure::function_data::FunctionData;
 use program_structure::template_data::TemplateData;

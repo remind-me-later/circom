@@ -4,7 +4,7 @@ use super::type_definitions::*;
 use compiler::hir::very_concrete_program::{Stats, VCPConfig, VCP};
 use dag::DAG;
 use program_structure::program_archive::ProgramArchive;
-use program_structure::program_library::error_definition::ReportCollection;
+use circom_error::error_definition::ReportCollection;
 use std::collections::HashMap;
 
 pub type ExportResult = Result<(DAG, VCP, ReportCollection), ReportCollection>;
@@ -18,7 +18,7 @@ pub struct ExecutedProgram {
 
 impl ExecutedProgram {
     pub fn new(prime: &String) -> ExecutedProgram {
-        ExecutedProgram{
+        ExecutedProgram {
             model: Vec::new(),
             template_to_nodes: HashMap::new(),
             prime: prime.clone(),
@@ -104,7 +104,12 @@ impl ExecutedProgram {
 
         let dag_stats = produce_dags_stats(&dag);
         crate::compute_constants::manage_functions(&mut program, flag_verbose, &self.prime)?;
-        crate::compute_constants::compute_vct(&mut temp_instances, &program, flag_verbose, &self.prime)?;
+        crate::compute_constants::compute_vct(
+            &mut temp_instances,
+            &program,
+            flag_verbose,
+            &self.prime,
+        )?;
         let mut mixed = vec![];
         let mut index = 0;
         for in_mixed in mixed_instances {
@@ -142,7 +147,8 @@ fn produce_dags_stats(dag: &DAG) -> Stats {
         all_needed_subcomponents_indexes[index] += node.number_of_subcomponents_indexes();
         for c in dag.get_edges(index).unwrap() {
             all_created_cmp[index] += all_created_cmp[c.get_goes_to()];
-            all_needed_subcomponents_indexes[index] += all_needed_subcomponents_indexes[c.get_goes_to()];
+            all_needed_subcomponents_indexes[index] +=
+                all_needed_subcomponents_indexes[c.get_goes_to()];
             all_signals[index] += all_signals[c.get_goes_to()];
             all_io[index] += all_io[c.get_goes_to()];
         }

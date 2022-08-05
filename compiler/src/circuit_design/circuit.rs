@@ -9,7 +9,7 @@ use std::io::Write;
 
 pub struct CompilationFlags {
     pub main_inputs_log: bool,
-    pub wat_flag:bool,
+    pub wat_flag: bool,
 }
 
 pub struct Circuit {
@@ -85,7 +85,7 @@ impl WriteWasm for Circuit {
         code.append(&mut code_aux);
 
         code_aux = get_input_size_generator(&producer);
-        code.append(&mut code_aux);	
+        code.append(&mut code_aux);
 
         code_aux = get_witness_size_generator(&producer);
         code.append(&mut code_aux);
@@ -222,7 +222,7 @@ impl WriteWasm for Circuit {
         code = merge_code(code_aux);
         writer.write_all(code.as_bytes()).map_err(|_| {})?;
         writer.flush().map_err(|_| {})?;
-	
+
         code_aux = get_witness_size_generator(&producer);
         code = merge_code(code_aux);
         writer.write_all(code.as_bytes()).map_err(|_| {})?;
@@ -297,18 +297,17 @@ impl WriteC for Circuit {
         code.push("#include \"calcwit.hpp\"".to_string());
 
         let mut template_headers = collect_template_headers(producer.get_template_instance_list());
-        let function_headers: Vec<_> = self.functions
-            .iter()
-            .map(|f| f.header.clone())
-            .collect();
+        let function_headers: Vec<_> = self.functions.iter().map(|f| f.header.clone()).collect();
         let mut function_headers = collect_function_headers(function_headers);
         code.append(&mut template_headers);
         code.append(&mut function_headers);
         std::mem::drop(template_headers);
         std::mem::drop(function_headers);
 
-        code.push(format!("Circom_TemplateFunction {}[{}] = {{ {} }};",
-            function_table(), producer.get_number_of_template_instances(),
+        code.push(format!(
+            "Circom_TemplateFunction {}[{}] = {{ {} }};",
+            function_table(),
+            producer.get_number_of_template_instances(),
             generate_function_list(producer, producer.get_template_instance_list())
         ));
 
@@ -316,7 +315,7 @@ impl WriteC for Circuit {
             "uint get_main_input_signal_start() {{return {};}}\n",
             producer.get_number_of_main_outputs()
         ));
-	
+
         code.push(format!(
             "uint get_main_input_signal_no() {{return {};}}\n",
             producer.get_number_of_main_inputs()
@@ -361,7 +360,13 @@ impl WriteC for Circuit {
         let run_circuit_args = vec![declare_circom_calc_wit()];
         let main_template_create = producer.main_header.clone() + "_create";
         // We use 0 to indicate that the main component has no father
-        let create_args = vec!["1".to_string(), "0".to_string(), CIRCOM_CALC_WIT.to_string(), "\"main\"".to_string(), "0".to_string()];
+        let create_args = vec![
+            "1".to_string(),
+            "0".to_string(),
+            CIRCOM_CALC_WIT.to_string(),
+            "\"main\"".to_string(),
+            "0".to_string(),
+        ];
         let create_call = build_call(main_template_create, create_args);
         // let ctx_index = format!("{} = {};", declare_ctx_index(), create_call);
         let ctx_index = format!("{};", create_call);
@@ -371,7 +376,7 @@ impl WriteC for Circuit {
         let main_template_run = producer.main_header.clone() + "_run";
         let mut run_args = vec![];
         // run_args.push(CTX_INDEX.to_string());
-	run_args.push("0".to_string());
+        run_args.push("0".to_string());
         run_args.push(CIRCOM_CALC_WIT.to_string());
         let run_call = format!("{};", build_call(main_template_run, run_args.clone()));
 
@@ -380,7 +385,6 @@ impl WriteC for Circuit {
         code.push(build_callable(run_circuit, run_circuit_args, main_run_body));
         (code, "".to_string())
     }
-
 }
 
 impl Circuit {
@@ -412,25 +416,57 @@ impl Circuit {
     pub fn produce_ir_string_for_function(&self, id: ID) -> String {
         self.functions[id].to_string()
     }
-    pub fn produce_c<W: Write>(&self, c_folder: &str, run_name: &str, c_circuit: &mut W, c_dat: &mut W) -> Result<(), ()> {
-	use std::path::Path;
-	let c_folder_path = Path::new(c_folder.clone()).to_path_buf();
-        c_code_generator::generate_main_cpp_file(&c_folder_path, &self.c_producer.prime_str).map_err(|_err| {})?;
-        c_code_generator::generate_circom_hpp_file(&c_folder_path, &self.c_producer.prime_str).map_err(|_err| {})?;
-        c_code_generator::generate_fr_hpp_file(&c_folder_path, &self.c_producer.prime_str).map_err(|_err| {})?;
-        c_code_generator::generate_calcwit_hpp_file(&c_folder_path, &self.c_producer.prime_str).map_err(|_err| {})?;
-        c_code_generator::generate_fr_cpp_file(&c_folder_path, &self.c_producer.prime_str).map_err(|_err| {})?;
-        c_code_generator::generate_calcwit_cpp_file(&c_folder_path, &self.c_producer.prime_str).map_err(|_err| {})?;
-        c_code_generator::generate_fr_asm_file(&c_folder_path, &self.c_producer.prime_str).map_err(|_err| {})?;
-        c_code_generator::generate_make_file(&c_folder_path,run_name,&self.c_producer, &self.c_producer.prime_str).map_err(|_err| {})?;	
+    pub fn produce_c<W: Write>(
+        &self,
+        c_folder: &str,
+        run_name: &str,
+        c_circuit: &mut W,
+        c_dat: &mut W,
+    ) -> Result<(), ()> {
+        use std::path::Path;
+        let c_folder_path = Path::new(c_folder.clone()).to_path_buf();
+        c_code_generator::generate_main_cpp_file(&c_folder_path, &self.c_producer.prime_str)
+            .map_err(|_err| {})?;
+        c_code_generator::generate_circom_hpp_file(&c_folder_path, &self.c_producer.prime_str)
+            .map_err(|_err| {})?;
+        c_code_generator::generate_fr_hpp_file(&c_folder_path, &self.c_producer.prime_str)
+            .map_err(|_err| {})?;
+        c_code_generator::generate_calcwit_hpp_file(&c_folder_path, &self.c_producer.prime_str)
+            .map_err(|_err| {})?;
+        c_code_generator::generate_fr_cpp_file(&c_folder_path, &self.c_producer.prime_str)
+            .map_err(|_err| {})?;
+        c_code_generator::generate_calcwit_cpp_file(&c_folder_path, &self.c_producer.prime_str)
+            .map_err(|_err| {})?;
+        c_code_generator::generate_fr_asm_file(&c_folder_path, &self.c_producer.prime_str)
+            .map_err(|_err| {})?;
+        c_code_generator::generate_make_file(
+            &c_folder_path,
+            run_name,
+            &self.c_producer,
+            &self.c_producer.prime_str,
+        )
+        .map_err(|_err| {})?;
         c_code_generator::generate_dat_file(c_dat, &self.c_producer).map_err(|_err| {})?;
         self.write_c(c_circuit, &self.c_producer)
     }
-    pub fn produce_wasm<W: Write>(&self, js_folder: &str, _wasm_name: &str, writer: &mut W) -> Result<(), ()> {
-	use std::path::Path;
-	let js_folder_path = Path::new(js_folder.clone()).to_path_buf();
-        wasm_code_generator::generate_generate_witness_js_file(&js_folder_path, &self.wasm_producer.prime_str).map_err(|_err| {})?;
-        wasm_code_generator::generate_witness_calculator_js_file(&js_folder_path, &self.wasm_producer.prime_str).map_err(|_err| {})?;
+    pub fn produce_wasm<W: Write>(
+        &self,
+        js_folder: &str,
+        _wasm_name: &str,
+        writer: &mut W,
+    ) -> Result<(), ()> {
+        use std::path::Path;
+        let js_folder_path = Path::new(js_folder.clone()).to_path_buf();
+        wasm_code_generator::generate_generate_witness_js_file(
+            &js_folder_path,
+            &self.wasm_producer.prime_str,
+        )
+        .map_err(|_err| {})?;
+        wasm_code_generator::generate_witness_calculator_js_file(
+            &js_folder_path,
+            &self.wasm_producer.prime_str,
+        )
+        .map_err(|_err| {})?;
         self.write_wasm(writer, &self.wasm_producer)
     }
 }

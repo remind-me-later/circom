@@ -32,7 +32,6 @@ pub struct Input {
     pub prime: String,
 }
 
-
 const R1CS: &'static str = "r1cs";
 const WAT: &'static str = "wat";
 const WASM: &'static str = "wasm";
@@ -41,7 +40,6 @@ const JS: &'static str = "js";
 const DAT: &'static str = "dat";
 const SYM: &'static str = "sym";
 const JSON: &'static str = "json";
-
 
 impl Input {
     pub fn new() -> Result<Input, ()> {
@@ -59,10 +57,10 @@ impl Input {
             out_r1cs: Input::build_output(&output_path, &file_name, R1CS),
             out_wat_code: Input::build_output(&output_js_path, &file_name, WAT),
             out_wasm_code: Input::build_output(&output_js_path, &file_name, WASM),
-	        out_js_folder: output_js_path.clone(),
-	        out_wasm_name: file_name.clone(),
-	        out_c_folder: output_c_path.clone(),
-	        out_c_run_name: file_name.clone(),
+            out_js_folder: output_js_path.clone(),
+            out_wasm_name: file_name.clone(),
+            out_c_folder: output_c_path.clone(),
+            out_c_run_name: file_name.clone(),
             out_c_code: Input::build_output(&output_c_path, &file_name, CPP),
             out_c_dat: Input::build_output(&output_c_path, &file_name, DAT),
             out_sym: Input::build_output(&output_path, &file_name, SYM),
@@ -71,7 +69,7 @@ impl Input {
                 &format!("{}_constraints", file_name),
                 JSON,
             ),
-            wat_flag:input_processing::get_wat(&matches),
+            wat_flag: input_processing::get_wat(&matches),
             wasm_flag: input_processing::get_wasm(&matches),
             c_flag: input_processing::get_c(&matches),
             r1cs_flag: input_processing::get_r1cs(&matches),
@@ -85,21 +83,21 @@ impl Input {
             reduced_simplification_flag: o_style == SimplificationStyle::O1,
             parallel_simplification_flag: input_processing::get_parallel_simplification(&matches),
             inspect_constraints_flag: input_processing::get_inspect_constraints(&matches),
-            flag_verbose: input_processing::get_flag_verbose(&matches), 
+            flag_verbose: input_processing::get_flag_verbose(&matches),
             prime: input_processing::get_prime(&matches)?,
         })
     }
 
     fn build_folder(output_path: &PathBuf, filename: &str, ext: &str) -> PathBuf {
         let mut file = output_path.clone();
-	    let folder_name = format!("{}_{}",filename,ext);
-	    file.push(folder_name);
-	    file
+        let folder_name = format!("{}_{}", filename, ext);
+        file.push(folder_name);
+        file
     }
-    
+
     fn build_output(output_path: &PathBuf, filename: &str, ext: &str) -> PathBuf {
         let mut file = output_path.clone();
-        file.push(format!("{}.{}",filename,ext));
+        file.push(format!("{}.{}", filename, ext));
         file
     }
 
@@ -186,7 +184,7 @@ impl Input {
     pub fn no_rounds(&self) -> usize {
         self.no_rounds
     }
-    pub fn prime(&self) -> String{
+    pub fn prime(&self) -> String {
         self.prime.clone()
     }
 }
@@ -215,25 +213,27 @@ mod input_processing {
     }
 
     #[derive(Copy, Clone, Eq, PartialEq)]
-    pub enum SimplificationStyle { O0, O1, O2(usize) }
+    pub enum SimplificationStyle {
+        O0,
+        O1,
+        O2(usize),
+    }
     pub fn get_simplification_style(matches: &ArgMatches) -> Result<SimplificationStyle, ()> {
-
         let o_0 = matches.is_present("no_simplification");
         let o_1 = matches.is_present("reduced_simplification");
         let o_2 = matches.is_present("full_simplification");
         let o_2_argument = matches.value_of("full_simplification").unwrap();
-        let no_rounds =
-            if o_2_argument == "full" {
-                Ok(usize::MAX) }
-            else {
-                usize::from_str_radix(o_2_argument, 10)
-            };
+        let no_rounds = if o_2_argument == "full" {
+            Ok(usize::MAX)
+        } else {
+            usize::from_str_radix(o_2_argument, 10)
+        };
         match (o_0, o_1, o_2, no_rounds) {
             (true, _, _, _) => Ok(SimplificationStyle::O0),
             (_, true, _, _) => Ok(SimplificationStyle::O1),
             (_, _, true, Ok(no_rounds)) => Ok(SimplificationStyle::O2(no_rounds)),
             (false, false, false, _) => Ok(SimplificationStyle::O1),
-            _ => Result::Err(eprintln!("{}", Colour::Red.paint("invalid number of rounds")))
+            _ => Result::Err(eprintln!("{}", Colour::Red.paint("invalid number of rounds"))),
         }
     }
 
@@ -285,21 +285,19 @@ mod input_processing {
     }
 
     pub fn get_prime(matches: &ArgMatches) -> Result<String, ()> {
-        
-        match matches.is_present("prime"){
-            true => 
-               {
-                   let prime_value = matches.value_of("prime").unwrap();
-                   if prime_value == "bn128"
-                      || prime_value == "bls12381"
-                      || prime_value == "goldilocks"{
-                        Ok(String::from(matches.value_of("prime").unwrap()))
-                    }
-                    else{
-                        Result::Err(eprintln!("{}", Colour::Red.paint("invalid prime number")))
-                    }
-               }
-               
+        match matches.is_present("prime") {
+            true => {
+                let prime_value = matches.value_of("prime").unwrap();
+                if prime_value == "bn128"
+                    || prime_value == "bls12381"
+                    || prime_value == "goldilocks"
+                {
+                    Ok(String::from(matches.value_of("prime").unwrap()))
+                } else {
+                    Result::Err(eprintln!("{}", Colour::Red.paint("invalid prime number")))
+                }
+            }
+
             false => Ok(String::from("bn128")),
         }
     }

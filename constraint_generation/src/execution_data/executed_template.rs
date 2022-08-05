@@ -3,7 +3,7 @@ use circom_algebra::algebra::ArithmeticExpression;
 use compiler::hir::very_concrete_program::*;
 use dag::DAG;
 use num_bigint::BigInt;
-use program_structure::ast::{SignalType, Statement};
+use circom_ast::{SignalType, Statement};
 use std::collections::{HashMap, HashSet};
 
 struct Connexion {
@@ -42,7 +42,7 @@ impl ExecutedTemplate {
         instance: ParameterContext,
         code: Statement,
         is_parallel: bool,
-        is_custom_gate: bool
+        is_custom_gate: bool,
     ) -> ExecutedTemplate {
         let public_inputs: HashSet<_> = public.iter().cloned().collect();
         ExecutedTemplate {
@@ -70,8 +70,14 @@ impl ExecutedTemplate {
     }
 
     pub fn add_arrow(&mut self, component_name: String, data: SubComponentData) {
-        let cnn =
-            Connexion { full_name: component_name, inspect: data, dag_offset: 0, dag_component_offset: 0, dag_jump: 0, dag_component_jump: 0};
+        let cnn = Connexion {
+            full_name: component_name,
+            inspect: data,
+            dag_offset: 0,
+            dag_component_offset: 0,
+            dag_jump: 0,
+            dag_component_jump: 0,
+        };
         self.connexions.push(cnn);
     }
 
@@ -97,7 +103,11 @@ impl ExecutedTemplate {
                 let mut index = 0;
                 while index < dimensions[current] {
                     let new_name = format!("{}[{}]", symbol_name, index);
-                    generated_symbols.append(&mut generate_symbols(new_name, current + 1, dimensions));
+                    generated_symbols.append(&mut generate_symbols(
+                        new_name,
+                        current + 1,
+                        dimensions,
+                    ));
                     index += 1;
                 }
                 generated_symbols
@@ -154,7 +164,7 @@ impl ExecutedTemplate {
             parameters,
             self.ordered_signals.clone(), // pensar si calcularlo en este momento para no hacer clone
             self.is_parallel,
-            self.is_custom_gate
+            self.is_custom_gate,
         );
         self.build_signals(dag);
         self.build_connexions(dag);
@@ -206,7 +216,8 @@ impl ExecutedTemplate {
             cnn.dag_component_offset = dag.get_entry().unwrap().get_out_component();
             dag.add_edge(cnn.inspect.goes_to, &cnn.full_name);
             cnn.dag_jump = dag.get_entry().unwrap().get_out() - cnn.dag_offset;
-            cnn.dag_component_jump = dag.get_entry().unwrap().get_out_component() - cnn.dag_component_offset;
+            cnn.dag_component_jump =
+                dag.get_entry().unwrap().get_out_component() - cnn.dag_component_offset;
         }
         self.has_parallel_sub_cmp = dag.nodes[dag.main_id()].has_parallel_sub_cmp();
         dag.set_number_of_subcomponents_indexes(self.number_of_components);
@@ -275,7 +286,7 @@ impl ExecutedTemplate {
             has_parallel_sub_cmp: self.has_parallel_sub_cmp,
             code: self.code,
             name: self.template_name,
-            number_of_components : self.number_of_components,
+            number_of_components: self.number_of_components,
         };
 
         let mut instance = TemplateInstance::new(config);
@@ -454,7 +465,12 @@ fn build_clusters(tmp: &ExecutedTemplate, instances: &[TemplateInstance]) -> Vec
             length: end - start,
             defined_positions: defined_positions,
             cmp_name: cnn_data.name.clone(),
-            xtype: ClusterType::Uniform { offset_jump, component_offset_jump, instance_id, header: sub_cmp_header },
+            xtype: ClusterType::Uniform {
+                offset_jump,
+                component_offset_jump,
+                instance_id,
+                header: sub_cmp_header,
+            },
         };
         cmp_data.insert(cnn_data.name.clone(), cluster);
         index = end;

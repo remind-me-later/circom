@@ -1,6 +1,8 @@
 use super::{Constraint, Tree, DAG};
 use constraint_writers::log_writer::Log;
-use constraint_writers::r1cs_writer::{ConstraintSection, CustomGatesAppliedData, HeaderData, R1CSWriter};
+use constraint_writers::r1cs_writer::{
+    ConstraintSection, CustomGatesAppliedData, HeaderData, R1CSWriter,
+};
 
 pub fn write(dag: &DAG, output: &str) -> Result<(), ()> {
     let tree = Tree::new(dag);
@@ -48,7 +50,7 @@ pub fn write(dag: &DAG, output: &str) -> Result<(), ()> {
             if node.is_custom_gate() {
                 let mut name = node.template_name.clone();
                 occurring_order.push(name.clone());
-                while name.pop() != Some('(') {};
+                while name.pop() != Some('(') {}
                 usage_data.push((name, node.parameters().clone()));
             }
         }
@@ -61,7 +63,7 @@ pub fn write(dag: &DAG, output: &str) -> Result<(), ()> {
     let application_data = {
         fn find_indexes(
             occurring_order: Vec<String>,
-            application_data: Vec<(String, Vec<usize>)>
+            application_data: Vec<(String, Vec<usize>)>,
         ) -> CustomGatesAppliedData {
             let mut new_application_data = vec![];
             for (custom_gate_name, signals) in application_data {

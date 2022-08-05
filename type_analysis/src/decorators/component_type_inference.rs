@@ -1,4 +1,4 @@
-use program_structure::ast::*;
+use circom_ast::*;
 use program_structure::program_archive::ProgramArchive;
 use program_structure::template_data::TemplateInfo;
 use std::collections::{HashMap, HashSet};

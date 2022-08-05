@@ -1,7 +1,7 @@
-use program_structure::ast::Statement;
-use program_structure::error_code::ReportCode;
-use program_structure::error_definition::{Report, ReportCollection};
-use program_structure::file_definition::{self, FileID};
+use circom_ast::Statement;
+use circom_error::error_code::ReportCode;
+use circom_error::error_definition::{Report, ReportCollection};
+use circom_error::file_definition::{self, FileID};
 use program_structure::template_data::TemplateData;
 
 pub fn free_of_returns(template_data: &TemplateData) -> Result<(), ReportCollection> {

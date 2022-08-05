@@ -1,8 +1,8 @@
-use super::ast::*;
+use crate::*;
 use super::expression_builders::*;
 use super::statement_builders::*;
-use crate::ast::{Access, Expression, VariableType};
-use num_bigint::BigInt;
+use crate::{Access, Expression, VariableType};
+use num_bigint_dig::BigInt;
 
 #[derive(Clone)]
 pub struct Symbol {
@@ -62,8 +62,7 @@ pub fn split_declaration_into_single_nodes(
         let single_declaration = build_declaration(with_meta, has_type, name, dimensions);
         initializations.push(single_declaration);
         if let Option::Some(init) = possible_init {
-            let substitution =
-                build_substitution(meta.clone(), symbol.name, vec![], op, init);
+            let substitution = build_substitution(meta.clone(), symbol.name, vec![], op, init);
             initializations.push(substitution);
         }
     }

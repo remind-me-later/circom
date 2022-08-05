@@ -49,9 +49,8 @@ impl ComponentRepresentation {
         for (symbol, route) in node.inputs() {
             let signal_slice = SignalSlice::new_with_route(route, &false);
             let signal_slice_size = SignalSlice::get_number_of_cells(&signal_slice);
-            if signal_slice_size > 0{
-                unassigned_inputs
-                    .insert(symbol.clone(), signal_slice_size);
+            if signal_slice_size > 0 {
+                unassigned_inputs.insert(symbol.clone(), signal_slice_size);
             }
             inputs.insert(symbol.clone(), signal_slice);
         }

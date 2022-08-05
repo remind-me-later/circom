@@ -1,5 +1,5 @@
-use super::ast::*;
-use num_bigint::BigInt;
+use crate::*;
+use num_bigint_dig::BigInt;
 use Expression::*;
 
 pub fn build_infix(

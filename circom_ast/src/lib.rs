@@ -1,5 +1,13 @@
-use crate::file_definition::FileLocation;
-use num_bigint::BigInt;
+mod assign_op_impl;
+mod ast_impl;
+pub mod ast_shortcuts;
+pub mod expression_builders;
+mod expression_impl;
+pub mod statement_builders;
+mod statement_impl;
+
+use circom_error::file_definition::FileLocation;
+use num_bigint_dig::BigInt;
 use serde_derive::{Deserialize, Serialize};
 
 pub trait FillMeta {
@@ -11,9 +19,7 @@ pub fn build_main_component(public: Vec<String>, call: Expression) -> MainCompon
     (public, call)
 }
 
-
 pub type Version = (usize, usize, usize);
-
 
 #[derive(Clone)]
 pub struct Meta {
@@ -95,9 +101,9 @@ impl AST {
         definitions: Vec<Definition>,
         main_component: Option<MainComponent>,
     ) -> AST {
-        let custom_gates_declared = definitions.iter().any(
-            |definition| matches!(definition, Definition::Template { is_custom_gate: true, .. })
-        );
+        let custom_gates_declared = definitions.iter().any(|definition| {
+            matches!(definition, Definition::Template { is_custom_gate: true, .. })
+        });
         AST {
             meta,
             compiler_version,
@@ -105,7 +111,7 @@ impl AST {
             custom_gates_declared,
             includes,
             definitions,
-            main_component
+            main_component,
         }
     }
 }
@@ -138,15 +144,7 @@ pub fn build_template(
     parallel: bool,
     is_custom_gate: bool,
 ) -> Definition {
-    Definition::Template {
-        meta,
-        name,
-        args,
-        arg_location,
-        body,
-        parallel,
-        is_custom_gate,
-    }
+    Definition::Template { meta, name, args, arg_location, body, parallel, is_custom_gate }
 }
 
 pub fn build_function(

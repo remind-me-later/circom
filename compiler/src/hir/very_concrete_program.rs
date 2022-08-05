@@ -1,7 +1,7 @@
 use num_bigint_dig::BigInt;
-use program_structure::ast::{SignalType, Statement};
+use circom_ast::{SignalType, Statement};
 use program_structure::program_archive::ProgramArchive;
-use program_structure::program_library::file_definition::FileLibrary;
+use circom_error::file_definition::FileLibrary;
 use std::collections::HashMap;
 use std::ops::Range;
 use std::rc::Rc;
@@ -63,7 +63,7 @@ pub struct Trigger {
 #[derive(Clone)]
 pub enum ClusterType {
     Mixed { tmp_name: String },
-    Uniform { offset_jump: usize, component_offset_jump:usize, instance_id: usize, header: String },
+    Uniform { offset_jump: usize, component_offset_jump: usize, instance_id: usize, header: String },
 }
 #[derive(Clone)]
 pub struct TriggerCluster {

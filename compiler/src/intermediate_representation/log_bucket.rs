@@ -47,14 +47,14 @@ impl WriteWasm for LogBucket {
         let mut instructions = vec![];
         if producer.needs_comments() {
             instructions.push(";; log bucket".to_string());
-	}
+        }
         let mut instructions_print = self.print.produce_wasm(producer);
         instructions.append(&mut instructions_print);
         instructions.push(call("$copyFr2SharedRWMemory"));
         instructions.push(call("$showSharedRWMemory"));
         if producer.needs_comments() {
             instructions.push(";; end of log bucket".to_string());
-	}
+        }
         instructions
     }
 }

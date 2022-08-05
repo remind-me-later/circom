@@ -2,7 +2,7 @@ use super::analysis_utilities::*;
 use super::component_preprocess;
 use super::sugar_cleaner;
 use super::very_concrete_program::*;
-use program_structure::ast::*;
+use circom_ast::*;
 use program_structure::program_archive::ProgramArchive;
 
 pub fn run_preprocessing(vcp: &mut VCP, program_archive: ProgramArchive) {

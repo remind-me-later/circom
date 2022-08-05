@@ -21,7 +21,7 @@ pub struct CreateCmpBucket {
     pub signal_offset_jump: usize,
     // component number offset with respect to the father's component id
     pub component_offset: usize,
-    pub component_offset_jump:usize, 
+    pub component_offset_jump: usize,
     pub number_of_cmp: usize,
     pub is_parallel: bool,
 }
@@ -66,7 +66,7 @@ impl WriteWasm for CreateCmpBucket {
         let mut instructions = vec![];
         if producer.needs_comments() {
             instructions.push(";; create component bucket".to_string());
-	    }
+        }
         //obtain address of the subcomponent inside the component
         instructions.push(get_local(producer.get_offset_tag()));
         instructions
@@ -87,7 +87,7 @@ impl WriteWasm for CreateCmpBucket {
         if self.number_of_cmp == 1 {
             instructions.push(call(&format!("${}_create", self.symbol)));
             instructions.push(store32(None)); //store the offset given by create in the subcomponent address
-	    } else {
+        } else {
             instructions.push(set_local(producer.get_create_loop_offset_tag()));
             if self.number_of_cmp == self.defined_positions.len() {
                 instructions.push(set_constant(&self.number_of_cmp.to_string()));
@@ -113,7 +113,8 @@ impl WriteWasm for CreateCmpBucket {
                 instructions.push(set_local(producer.get_create_loop_sub_cmp_tag()));
                 // next signal offset
                 instructions.push(get_local(producer.get_create_loop_offset_tag()));
-                let jump_in_bytes = self.signal_offset_jump * producer.get_size_32_bits_in_memory() * 4;
+                let jump_in_bytes =
+                    self.signal_offset_jump * producer.get_size_32_bits_in_memory() * 4;
                 instructions.push(set_constant(&jump_in_bytes.to_string()));
                 instructions.push(add32());
                 instructions.push(set_local(producer.get_create_loop_offset_tag()));
@@ -124,27 +125,29 @@ impl WriteWasm for CreateCmpBucket {
             } else {
                 if self.defined_positions[0] != 0 {
                     instructions.push(get_local(producer.get_create_loop_sub_cmp_tag())); //sub_component address in component
-                    let jump = 4*self.defined_positions[0];
+                    let jump = 4 * self.defined_positions[0];
                     instructions.push(set_constant(&jump.to_string()));
                     instructions.push(add32());
-                    instructions.push(set_local(producer.get_create_loop_sub_cmp_tag())); //sub_component address in component
+                    instructions.push(set_local(producer.get_create_loop_sub_cmp_tag()));
+                    //sub_component address in component
                 }
                 instructions.push(get_local(producer.get_create_loop_sub_cmp_tag())); //sub_component address in component
                 instructions.push(get_local(producer.get_create_loop_offset_tag()));
                 //sub_component signal address start
                 instructions.push(call(&format!("${}_create", self.symbol)));
                 instructions.push(store32(None)); //store the offset given by create in the subcomponent address
-                //producer.get_create_loop_sub_cmp_tag() contains the position of last created subcomponent
-                //producer.get_create_loop_offset_tag() contains the offset of last created subcomponent
+                                                  //producer.get_create_loop_sub_cmp_tag() contains the position of last created subcomponent
+                                                  //producer.get_create_loop_offset_tag() contains the offset of last created subcomponent
                 for i in 1..self.defined_positions.len() {
                     instructions.push(get_local(producer.get_create_loop_sub_cmp_tag()));
-                    let jump = 4*(self.defined_positions[i]-self.defined_positions[i-1]);
+                    let jump = 4 * (self.defined_positions[i] - self.defined_positions[i - 1]);
                     instructions.push(set_constant(&jump.to_string()));
                     instructions.push(add32());
                     instructions.push(set_local(producer.get_create_loop_sub_cmp_tag()));
                     // next signal offset
                     instructions.push(get_local(producer.get_create_loop_offset_tag()));
-                    let jump_in_bytes = self.signal_offset_jump * producer.get_size_32_bits_in_memory() * 4;
+                    let jump_in_bytes =
+                        self.signal_offset_jump * producer.get_size_32_bits_in_memory() * 4;
                     instructions.push(set_constant(&jump_in_bytes.to_string()));
                     instructions.push(add32());
                     instructions.push(set_local(producer.get_create_loop_offset_tag()));
@@ -158,7 +161,7 @@ impl WriteWasm for CreateCmpBucket {
         }
         if producer.needs_comments() {
             instructions.push(";; end create component bucket".to_string());
-	    }
+        }
         instructions
     }
 }
@@ -174,9 +177,17 @@ impl WriteC for CreateCmpBucket {
         instructions.push("{".to_string());
         instructions.push(format!("uint aux_create = {};", scmp_idx));
         instructions.push(format!("int aux_cmp_num = {}+{}+1;", self.component_offset, CTX_INDEX));
-        instructions.push(format!("uint csoffset = {}+{};", MY_SIGNAL_START.to_string(), self.signal_offset));
-        if self.number_of_cmp > 1{
-            instructions.push(format!("uint aux_dimensions[{}] = {};", self.dimensions.len(), set_list(self.dimensions.clone())));
+        instructions.push(format!(
+            "uint csoffset = {}+{};",
+            MY_SIGNAL_START.to_string(),
+            self.signal_offset
+        ));
+        if self.number_of_cmp > 1 {
+            instructions.push(format!(
+                "uint aux_dimensions[{}] = {};",
+                self.dimensions.len(),
+                set_list(self.dimensions.clone())
+            ));
         }
         // if the array is complete traverse all its positions
         if complete_array {
@@ -184,36 +195,48 @@ impl WriteC for CreateCmpBucket {
         }
         // generate array with the positions that are actually created if there are empty components
         // if not only traverse the defined positions, but i gets the value of the indexed accesed position
-        else{
-            instructions.push(format!("uint aux_positions [{}]= {};", self.defined_positions.len(), set_list(self.defined_positions.clone())));
-            instructions.push(format!("for (uint i_aux = 0; i_aux < {}; i_aux++) {{",  self.defined_positions.len()));
+        else {
+            instructions.push(format!(
+                "uint aux_positions [{}]= {};",
+                self.defined_positions.len(),
+                set_list(self.defined_positions.clone())
+            ));
+            instructions.push(format!(
+                "for (uint i_aux = 0; i_aux < {}; i_aux++) {{",
+                self.defined_positions.len()
+            ));
             instructions.push(format!("uint i = aux_positions[i_aux];"));
         }
-        
+
         let sub_cmp_template_create = format!("{}_create", self.symbol);
-        if self.number_of_cmp > 1{
-            instructions.push(
-                format!("std::string new_cmp_name = \"{}\"+{};",
-                 self.name_subcomponent.to_string(),
-                 generate_my_array_position("aux_dimensions".to_string(), self.dimensions.len().to_string(), "i".to_string())
+        if self.number_of_cmp > 1 {
+            instructions.push(format!(
+                "std::string new_cmp_name = \"{}\"+{};",
+                self.name_subcomponent.to_string(),
+                generate_my_array_position(
+                    "aux_dimensions".to_string(),
+                    self.dimensions.len().to_string(),
+                    "i".to_string()
                 )
-            );
-        }
-        else {
-            instructions.push(format!("std::string new_cmp_name = \"{}\";", self.name_subcomponent.to_string()));
+            ));
+        } else {
+            instructions.push(format!(
+                "std::string new_cmp_name = \"{}\";",
+                self.name_subcomponent.to_string()
+            ));
         }
         let create_args = vec![
-            "csoffset".to_string(), 
-            "aux_cmp_num".to_string(), 
-            CIRCOM_CALC_WIT.to_string(), 
+            "csoffset".to_string(),
+            "aux_cmp_num".to_string(),
+            CIRCOM_CALC_WIT.to_string(),
             "new_cmp_name".to_string(),
-            MY_ID.to_string()
+            MY_ID.to_string(),
         ];
         let create_call = build_call(sub_cmp_template_create, create_args);
-	instructions.push(format!("{}[aux_create+i] = aux_cmp_num;", MY_SUBCOMPONENTS));
-    instructions.push(format!("{};", create_call));
+        instructions.push(format!("{}[aux_create+i] = aux_cmp_num;", MY_SUBCOMPONENTS));
+        instructions.push(format!("{};", create_call));
         instructions.push(format!("csoffset += {} ;", self.signal_offset_jump));
-	instructions.push(format!("aux_cmp_num += {};",self.component_offset_jump));
+        instructions.push(format!("aux_cmp_num += {};", self.component_offset_jump));
         instructions.push("}".to_string());
         instructions.push("}".to_string());
         (instructions, "".to_string())

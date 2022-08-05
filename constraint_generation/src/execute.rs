@@ -14,9 +14,8 @@ use program_structure::constants::UsefulConstants;
 
 use super::execution_data::analysis::Analysis;
 use super::execution_data::{ExecutedProgram, ExecutedTemplate, NodePointer};
-use super::{
-    ast::*, ArithmeticError, FileID, ProgramArchive, Report, ReportCode, ReportCollection
-};
+use super::{ArithmeticError, FileID, ProgramArchive, Report, ReportCode, ReportCollection};
+use circom_ast::*;
 use circom_algebra::num_bigint::BigInt;
 use std::collections::BTreeMap;
 type AExpr = ArithmeticExpressionGen<String>;
@@ -80,17 +79,18 @@ enum ExecutionError {
 
 pub fn constraint_execution(
     program_archive: &ProgramArchive,
-    flag_verbose: bool, 
+    flag_verbose: bool,
     prime: &String,
 ) -> Result<ExecutedProgram, ReportCollection> {
     let main_file_id = program_archive.get_file_id_main();
-    let mut runtime_information = RuntimeInformation::new(*main_file_id, program_archive.id_max, prime);
+    let mut runtime_information =
+        RuntimeInformation::new(*main_file_id, program_archive.id_max, prime);
     runtime_information.public_inputs = program_archive.get_public_inputs_main_component().clone();
     let folded_value_result = execute_expression(
         program_archive.get_main_expression(),
         program_archive,
         &mut runtime_information,
-        flag_verbose
+        flag_verbose,
     );
     match folded_value_result {
         Result::Err(_) => Result::Err(runtime_information.runtime_errors),
@@ -109,7 +109,8 @@ pub fn execute_constant_expression(
     prime: &String,
 ) -> Result<BigInt, ReportCollection> {
     let current_file = expression.get_meta().get_file_id();
-    let mut runtime_information = RuntimeInformation::new(current_file, program_archive.id_max, prime);
+    let mut runtime_information =
+        RuntimeInformation::new(current_file, program_archive.id_max, prime);
     runtime_information.environment = environment;
     let folded_value_result =
         execute_expression(expression, program_archive, &mut runtime_information, flag_verbose);
@@ -144,7 +145,7 @@ fn execute_statement(
                 program_archive,
                 runtime,
                 actual_node,
-                flag_verbose
+                flag_verbose,
             )?;
             debug_assert!(possible_fold.is_none());
             possible_fold
@@ -152,7 +153,8 @@ fn execute_statement(
         Declaration { meta, xtype, name, dimensions, .. } => {
             let mut arithmetic_values = Vec::new();
             for dimension in dimensions.iter() {
-                let f_dimensions = execute_expression(dimension, program_archive, runtime, flag_verbose)?;
+                let f_dimensions =
+                    execute_expression(dimension, program_archive, runtime, flag_verbose)?;
                 arithmetic_values
                     .push(safe_unwrap_to_single_arithmetic_expression(f_dimensions, line!()));
             }
@@ -191,7 +193,8 @@ fn execute_statement(
             Option::None
         }
         Substitution { meta, var, access, op, rhe, .. } => {
-            let access_information = treat_accessing(meta, access, program_archive, runtime, flag_verbose)?;
+            let access_information =
+                treat_accessing(meta, access, program_archive, runtime, flag_verbose)?;
             let r_folded = execute_expression(rhe, program_archive, runtime, flag_verbose)?;
             let possible_constraint =
                 perform_assign(meta, var, &access_information, r_folded, actual_node, runtime)?;
@@ -262,7 +265,7 @@ fn execute_statement(
                 program_archive,
                 runtime,
                 actual_node,
-                flag_verbose
+                flag_verbose,
             )?;
             possible_return
         }
@@ -274,7 +277,7 @@ fn execute_statement(
                 program_archive,
                 runtime,
                 actual_node,
-                flag_verbose
+                flag_verbose,
             )?;
             if returned.is_some() {
                 break returned;
@@ -286,7 +289,7 @@ fn execute_statement(
                     program_archive,
                     runtime,
                     actual_node,
-                    flag_verbose
+                    flag_verbose,
                 )?;
                 break returned;
             } else if !condition_result.unwrap() {
@@ -295,25 +298,27 @@ fn execute_statement(
         },
         Block { stmts, .. } => {
             ExecutionEnvironment::add_variable_block(&mut runtime.environment);
-            let return_value =
-                execute_sequence_of_statements(stmts, program_archive, runtime, actual_node, flag_verbose)?;
+            let return_value = execute_sequence_of_statements(
+                stmts,
+                program_archive,
+                runtime,
+                actual_node,
+                flag_verbose,
+            )?;
             ExecutionEnvironment::remove_variable_block(&mut runtime.environment);
             return_value
         }
         LogCall { arg, .. } => {
-            if flag_verbose{
+            if flag_verbose {
                 let f_result = execute_expression(arg, program_archive, runtime, flag_verbose)?;
                 let arith = safe_unwrap_to_single_arithmetic_expression(f_result, line!());
-                if AExpr::is_number(&arith){
+                if AExpr::is_number(&arith) {
                     println!("{}", arith);
-                }
-                else{
+                } else {
                     println!("Unknown")
                 }
             }
             Option::None
-
-
         }
         Assert { arg, meta, .. } => {
             let f_result = execute_expression(arg, program_archive, runtime, flag_verbose)?;
@@ -338,7 +343,7 @@ fn execute_expression(
     expr: &Expression,
     program_archive: &ProgramArchive,
     runtime: &mut RuntimeInformation,
-    flag_verbose: bool
+    flag_verbose: bool,
 ) -> Result<FoldedValue, ()> {
     use Expression::*;
     let res = match expr {
@@ -425,7 +430,8 @@ fn execute_expression(
         Call { id, args, .. } => {
             let mut arg_values = Vec::new();
             for arg_expression in args.iter() {
-                let f_arg = execute_expression(arg_expression, program_archive, runtime, flag_verbose)?;
+                let f_arg =
+                    execute_expression(arg_expression, program_archive, runtime, flag_verbose)?;
                 arg_values.push(safe_unwrap_to_arithmetic_slice(f_arg, line!()));
             }
             let new_environment = prepare_environment_for_call(id, &arg_values, program_archive);
@@ -705,9 +711,11 @@ fn execute_conditional_statement(
     } else {
         let previous_block_type = runtime.block_type;
         runtime.block_type = BlockType::Unknown;
-        let mut ret_value = execute_statement(true_case, program_archive, runtime, actual_node, flag_verbose)?;
+        let mut ret_value =
+            execute_statement(true_case, program_archive, runtime, actual_node, flag_verbose)?;
         if let Option::Some(else_stmt) = false_case {
-            let else_ret = execute_statement(else_stmt, program_archive, runtime, actual_node, flag_verbose)?;
+            let else_ret =
+                execute_statement(else_stmt, program_archive, runtime, actual_node, flag_verbose)?;
             if ret_value.is_none() {
                 ret_value = else_ret;
             }
@@ -722,7 +730,7 @@ fn execute_sequence_of_statements(
     program_archive: &ProgramArchive,
     runtime: &mut RuntimeInformation,
     actual_node: &mut Option<ExecutedTemplate>,
-    flag_verbose: bool
+    flag_verbose: bool,
 ) -> Result<Option<FoldedValue>, ()> {
     for stmt in stmts.iter() {
         let f_value = execute_statement(stmt, program_archive, runtime, actual_node, flag_verbose)?;
@@ -763,7 +771,7 @@ fn execute_variable(
     access: &[Access],
     program_archive: &ProgramArchive,
     runtime: &mut RuntimeInformation,
-    flag_verbose: bool
+    flag_verbose: bool,
 ) -> Result<FoldedValue, ()> {
     let access_information = treat_accessing(meta, access, program_archive, runtime, flag_verbose)?;
     if access_information.undefined {
@@ -796,7 +804,7 @@ fn execute_signal(
     access: &[Access],
     program_archive: &ProgramArchive,
     runtime: &mut RuntimeInformation,
-    flag_verbose: bool
+    flag_verbose: bool,
 ) -> Result<FoldedValue, ()> {
     let access_information = treat_accessing(meta, access, program_archive, runtime, flag_verbose)?;
     if access_information.undefined {
@@ -875,7 +883,7 @@ fn execute_component(
     access: &[Access],
     program_archive: &ProgramArchive,
     runtime: &mut RuntimeInformation,
-    flag_verbose: bool
+    flag_verbose: bool,
 ) -> Result<FoldedValue, ()> {
     let access_information = treat_accessing(meta, access, program_archive, runtime, flag_verbose)?;
     if access_information.undefined {
@@ -966,13 +974,18 @@ fn execute_function_call(
     id: &str,
     program_archive: &ProgramArchive,
     runtime: &mut RuntimeInformation,
-    flag_verbose: bool
+    flag_verbose: bool,
 ) -> Result<FoldedValue, ()> {
     let previous_block = runtime.block_type;
     runtime.block_type = BlockType::Known;
     let function_body = program_archive.get_function_data(id).get_body_as_vec();
-    let function_result =
-        execute_sequence_of_statements(function_body, program_archive, runtime, &mut Option::None, flag_verbose)?;
+    let function_result = execute_sequence_of_statements(
+        function_body,
+        program_archive,
+        runtime,
+        &mut Option::None,
+        flag_verbose,
+    )?;
     runtime.block_type = previous_block;
     let return_value = function_result.unwrap();
     debug_assert!(FoldedValue::valid_arithmetic_slice(&return_value));
@@ -984,7 +997,7 @@ fn execute_template_call(
     parameter_values: &[AExpressionSlice],
     program_archive: &ProgramArchive,
     runtime: &mut RuntimeInformation,
-    flag_verbose: bool
+    flag_verbose: bool,
 ) -> Result<FoldedValue, ()> {
     debug_assert!(runtime.block_type == BlockType::Known);
     let is_main = std::mem::replace(&mut runtime.public_inputs, vec![]);
@@ -1017,14 +1030,14 @@ fn execute_template_call(
             args_to_values,
             code,
             is_parallel,
-            is_custom_gate
+            is_custom_gate,
         ));
         let ret = execute_sequence_of_statements(
             template_body,
             program_archive,
             runtime,
             &mut node_wrap,
-            flag_verbose
+            flag_verbose,
         )?;
         debug_assert!(ret.is_none());
         let new_node = node_wrap.unwrap();
@@ -1102,7 +1115,7 @@ fn treat_indexing(
     access: &[Access],
     program_archive: &ProgramArchive,
     runtime: &mut RuntimeInformation,
-    flag_verbose: bool
+    flag_verbose: bool,
 ) -> Result<(Vec<AExpr>, Option<String>, usize), ()> {
     let mut index_accesses = Vec::new();
     let mut signal_name = Option::None;
@@ -1188,7 +1201,7 @@ fn treat_accessing(
     access: &[Access],
     program_archive: &ProgramArchive,
     runtime: &mut RuntimeInformation,
-    flag_verbose: bool
+    flag_verbose: bool,
 ) -> Result<AccessingInformation, ()> {
     let (ae_before_signal, signal_name, signal_index) =
         treat_indexing(0, access, program_archive, runtime, flag_verbose)?;

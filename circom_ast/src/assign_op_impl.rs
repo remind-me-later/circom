@@ -1,4 +1,4 @@
-use super::ast::AssignOp;
+use crate::AssignOp;
 
 impl AssignOp {
     pub fn is_signal_operator(self) -> bool {

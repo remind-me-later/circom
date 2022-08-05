@@ -1,6 +1,6 @@
-use program_structure::ast::Statement;
-use program_structure::error_code::ReportCode;
-use program_structure::error_definition::Report;
+use circom_ast::Statement;
+use circom_error::error_code::ReportCode;
+use circom_error::error_definition::Report;
 use program_structure::function_data::FunctionData;
 
 pub fn all_paths_with_return_check(function_data: &FunctionData) -> Result<(), Report> {

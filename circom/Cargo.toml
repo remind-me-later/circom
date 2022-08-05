@@ -7,7 +7,7 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-parser = {path = "../parser"}
+parser = { path = "../parser" }
 program_structure = { path = "../program_structure" }
 type_analysis = { path = "../type_analysis" }
 constraint_generation = { path = "../constraint_generation" }
@@ -17,3 +17,4 @@ dag = { path = "../dag" }
 clap = "2.33.0"
 ansi_term = "0.12.1"
 wast = "39.0.0"
+circom_error = { path = "../circom_error" }

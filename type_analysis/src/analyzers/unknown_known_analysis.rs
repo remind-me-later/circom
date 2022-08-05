@@ -1,8 +1,8 @@
-use program_structure::ast::*;
+use circom_ast::*;
 use program_structure::environment::CircomEnvironment;
-use program_structure::error_code::ReportCode;
-use program_structure::error_definition::{Report, ReportCollection};
-use program_structure::file_definition::{generate_file_location, FileID};
+use circom_error::error_code::ReportCode;
+use circom_error::error_definition::{Report, ReportCollection};
+use circom_error::file_definition::{generate_file_location, FileID};
 use program_structure::program_archive::ProgramArchive;
 use std::collections::HashSet;
 use std::cmp::max;
@@ -146,7 +146,7 @@ fn analyze(stmt: &Statement, entry_information: EntryInformation) -> ExitInforma
         IfThenElse { cond, if_case, else_case, .. } => {
             let tag_cond = tag(cond, &environment);
             let new_entry_else_case =
-                EntryInformation { environment: environment.clone(), file_id};
+                EntryInformation { environment: environment.clone(), file_id };
             let new_entry_if_case = EntryInformation { environment, file_id };
             let if_case_info = analyze(if_case, new_entry_if_case);
             let else_case_info = if let Option::Some(else_stmt) = else_case {
@@ -156,7 +156,7 @@ fn analyze(stmt: &Statement, entry_information: EntryInformation) -> ExitInforma
                     constraints_declared: false,
                     environment: new_entry_else_case.environment,
                     reports: ReportCollection::with_capacity(0),
-                    modified_variables : HashSet::new(),
+                    modified_variables: HashSet::new(),
                 }
             };
             constraints_declared =
@@ -173,14 +173,13 @@ fn analyze(stmt: &Statement, entry_information: EntryInformation) -> ExitInforma
                 Environment::merge(if_case_info.environment, else_case_info.environment, |a, b| {
                     max(a, b)
                 });
-            if tag_cond == Unknown{
-                for var in &modified_variables{
-                    if environment.has_variable(var){
+            if tag_cond == Unknown {
+                for var in &modified_variables {
+                    if environment.has_variable(var) {
                         let value = environment.get_mut_variable_or_break(var, file!(), line!());
                         *value = Unknown;
                     }
                 }
-
             }
             if tag_cond == Unknown && constraints_declared {
                 add_report(
@@ -193,17 +192,19 @@ fn analyze(stmt: &Statement, entry_information: EntryInformation) -> ExitInforma
         }
         While { cond, stmt, .. } => {
             let mut entry_info = environment.clone();
-            let mut entry = EntryInformation { file_id, environment};
+            let mut entry = EntryInformation { file_id, environment };
             let mut exit = analyze(stmt, entry);
-            let mut modified = check_modified(entry_info, &mut exit.environment, &exit.modified_variables);
+            let mut modified =
+                check_modified(entry_info, &mut exit.environment, &exit.modified_variables);
             environment = exit.environment;
-            while modified{
+            while modified {
                 entry_info = environment.clone();
-                entry = EntryInformation { file_id, environment};
+                entry = EntryInformation { file_id, environment };
                 exit = analyze(stmt, entry);
-                modified = check_modified(entry_info, &mut exit.environment, &exit.modified_variables);
+                modified =
+                    check_modified(entry_info, &mut exit.environment, &exit.modified_variables);
                 environment = exit.environment;
-            };
+            }
 
             constraints_declared = exit.constraints_declared;
             for report in exit.reports {
@@ -211,11 +212,11 @@ fn analyze(stmt: &Statement, entry_information: EntryInformation) -> ExitInforma
             }
             let tag_out = tag(cond, &environment);
 
-            if tag_out == Unknown{
-                for var in &exit.modified_variables{
+            if tag_out == Unknown {
+                for var in &exit.modified_variables {
                     let value = environment.get_mut_variable_or_break(var, file!(), line!());
                     *value = Unknown;
-                }   
+                }
             }
 
             if constraints_declared && tag_out == Unknown {
@@ -237,7 +238,8 @@ fn analyze(stmt: &Statement, entry_information: EntryInformation) -> ExitInforma
             environment.remove_variable_block();
         }
         InitializationBlock { initializations, .. } => {
-            let (nc, nr, ne, nm) = iterate_statements(initializations, reports, environment, file_id);
+            let (nc, nr, ne, nm) =
+                iterate_statements(initializations, reports, environment, file_id);
             constraints_declared = nc;
             reports = nr;
             environment = ne;
@@ -300,14 +302,15 @@ fn check_modified(
     initial_state: Environment,
     final_state: &mut Environment,
     modified_variables: &HashSet<String>,
-) -> bool{
+) -> bool {
     let mut modified = false;
-    for v in modified_variables{
-        if initial_state.has_variable(v) && final_state.has_variable(v){
+    for v in modified_variables {
+        if initial_state.has_variable(v) && final_state.has_variable(v) {
             let t_ini = initial_state.get_variable_or_break(v, file!(), line!());
             let t_fin = final_state.get_mut_variable_or_break(v, file!(), line!());
-            if *t_ini != *t_fin{
-                if *t_fin == Tag::Unknown{ // in other case we can enter in loops
+            if *t_ini != *t_fin {
+                if *t_fin == Tag::Unknown {
+                    // in other case we can enter in loops
                     modified = true;
                 }
                 *t_fin = max(*t_ini, *t_fin);

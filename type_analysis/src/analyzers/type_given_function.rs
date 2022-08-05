@@ -1,4 +1,4 @@
-use program_structure::ast::{Expression, Statement};
+use circom_ast::{Expression, Statement};
 use program_structure::function_data::FunctionData;
 use std::collections::{HashMap, HashSet};
 

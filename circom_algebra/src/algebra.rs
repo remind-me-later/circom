@@ -576,12 +576,12 @@ impl<C: Default + Clone + Display + Hash + Eq> ArithmeticExpression<C> {
                 let value = modular_arithmetic::pow(value_0, value_1, field);
                 Number { value }
             }
-            (Signal { symbol }, Number { value }) if *value == BigInt::from(2) => {      
-                    let left = Signal { symbol: symbol.clone() };
-                    let right = Signal { symbol: symbol.clone() };
-                    ArithmeticExpression::mul(&left, &right, field)
+            (Signal { symbol }, Number { value }) if *value == BigInt::from(2) => {
+                let left = Signal { symbol: symbol.clone() };
+                let right = Signal { symbol: symbol.clone() };
+                ArithmeticExpression::mul(&left, &right, field)
             }
-            (Linear { coefficients }, Number {value}) if *value == BigInt::from(2) => {
+            (Linear { coefficients }, Number { value }) if *value == BigInt::from(2) => {
                 let left = Linear { coefficients: coefficients.clone() };
                 let right = Linear { coefficients: coefficients.clone() };
                 ArithmeticExpression::mul(&left, &right, field)
@@ -1175,14 +1175,15 @@ impl<C: Default + Clone + Display + Hash + Eq> Constraint<C> {
         signal_equals_constant(&self.a, &self.b, &self.c)
     }
 
-    pub fn into_arithmetic_expressions(self) -> (ArithmeticExpression<C>, ArithmeticExpression<C>, ArithmeticExpression<C>) {
+    pub fn into_arithmetic_expressions(
+        self,
+    ) -> (ArithmeticExpression<C>, ArithmeticExpression<C>, ArithmeticExpression<C>) {
         (
             ArithmeticExpression::Linear { coefficients: self.a },
             ArithmeticExpression::Linear { coefficients: self.b },
-            ArithmeticExpression::Linear { coefficients: self.c }
+            ArithmeticExpression::Linear { coefficients: self.c },
         )
     }
-
 }
 
 impl<C: Default + Clone + Display + Hash + Eq + std::cmp::Ord> Constraint<C> {
@@ -1200,7 +1201,6 @@ impl<C: Default + Clone + Display + Hash + Eq + std::cmp::Ord> Constraint<C> {
         signals.remove(&Constraint::constant_coefficient());
         signals
     }
-
 }
 
 impl Constraint<usize> {

@@ -2,8 +2,8 @@ use super::ir_interface::*;
 use crate::hir::very_concrete_program::*;
 use constant_tracking::ConstantTracker;
 use num_bigint_dig::BigInt;
-use program_structure::ast::*;
-use program_structure::file_definition::FileLibrary;
+use circom_ast::*;
+use circom_error::file_definition::FileLibrary;
 use program_structure::utils::environment::VarEnvironment;
 use std::collections::HashMap;
 
@@ -310,16 +310,20 @@ fn create_uniform_components(state: &mut State, triggers: &[Trigger], cluster: T
             message_id: state.message_id,
             symbol: c_info.runs.clone(),
             name_subcomponent: c_info.component_name.clone(),
-            defined_positions: cluster.defined_positions.into_iter().map(|x| compute_jump(&symbol.dimensions, &x)).collect(),
+            defined_positions: cluster
+                .defined_positions
+                .into_iter()
+                .map(|x| compute_jump(&symbol.dimensions, &x))
+                .collect(),
             cmp_unique_id: id,
             sub_cmp_id: symbol.access_instruction.clone(),
             template_id: c_info.template_id,
             signal_offset: c_info.offset,
-	        component_offset: c_info.component_offset,
+            component_offset: c_info.component_offset,
             number_of_cmp: compute_number_cmp(&symbol.dimensions),
             dimensions: symbol.dimensions,
             signal_offset_jump: offset_jump,
-	     component_offset_jump: component_offset_jump,
+            component_offset_jump: component_offset_jump,
         }
         .allocate();
         state.code.push(creation_instr);
@@ -369,17 +373,25 @@ fn create_mixed_components(state: &mut State, triggers: &[Trigger], cluster: Tri
             is_parallel: state.is_parallel,
             message_id: state.message_id,
             symbol: c_info.runs.clone(),
-            name_subcomponent: format!("{}{}",c_info.component_name.clone(), c_info.indexed_with.iter().fold(String::new(), |acc, &num| format!("{}[{}]", acc, &num.to_string()))),
+            name_subcomponent: format!(
+                "{}{}",
+                c_info.component_name.clone(),
+                c_info.indexed_with.iter().fold(String::new(), |acc, &num| format!(
+                    "{}[{}]",
+                    acc,
+                    &num.to_string()
+                ))
+            ),
             defined_positions: vec![0],
             dimensions: symbol.dimensions,
             cmp_unique_id: id,
             sub_cmp_id: location,
             template_id: c_info.template_id,
             signal_offset: c_info.offset,
-	    component_offset: c_info.component_offset,
+            component_offset: c_info.component_offset,
             number_of_cmp: 1,
             signal_offset_jump: 0,
-	    component_offset_jump: 0,
+            component_offset_jump: 0,
         }
         .allocate();
         state.code.push(creation_instr);
@@ -588,8 +600,9 @@ fn translate_log(stmt: Statement, state: &mut State, context: &Context) {
             line,
             message_id: state.message_id,
             print: code,
-            is_parallel: state.is_parallel
-        }.allocate();
+            is_parallel: state.is_parallel,
+        }
+        .allocate();
         state.code.push(log);
     }
 }
@@ -857,13 +870,7 @@ impl ProcessedSymbol {
             }
         }
         let signal_location = signal.map(|signal_name| {
-            build_signal_location(
-                &signal_name,
-                &symbol_name,
-                af_index,
-                context,
-                state,
-            )
+            build_signal_location(&signal_name, &symbol_name, af_index, context, state)
         });
         ProcessedSymbol {
             xtype: meta.get_type_knowledge().get_reduces_to(),
@@ -874,23 +881,18 @@ impl ProcessedSymbol {
             name: symbol_name,
             before_signal: bf_index,
             signal: signal_location,
-            signal_type
+            signal_type,
         }
     }
 
-    fn into_call_assign(
-        self,
-        id: String,
-        args: ArgData,
-        state: &State,
-    ) -> InstructionPointer {
+    fn into_call_assign(self, id: String, args: ArgData, state: &State) -> InstructionPointer {
         let data = if let Option::Some(signal) = self.signal {
             let dest_type = AddressType::SubcmpSignal {
                 is_parallel: *state.component_to_parallel.get(&self.name).unwrap(),
                 cmp_address: compute_full_address(state, self.symbol, self.before_signal),
                 is_output: self.signal_type.unwrap() == SignalType::Output,
-                input_information : match self.signal_type.unwrap() {
-                    SignalType::Input => InputInformation::Input { status: StatusInput:: Unknown},
+                input_information: match self.signal_type.unwrap() {
+                    SignalType::Input => InputInformation::Input { status: StatusInput::Unknown },
                     _ => InputInformation::NoInput,
                 },
             };
@@ -932,8 +934,8 @@ impl ProcessedSymbol {
                 is_parallel: *state.component_to_parallel.get(&self.name).unwrap(),
                 cmp_address: compute_full_address(state, self.symbol, self.before_signal),
                 is_output: self.signal_type.unwrap() == SignalType::Output,
-                input_information : match self.signal_type.unwrap() {
-                    SignalType::Input => InputInformation::Input { status:StatusInput:: Unknown},
+                input_information: match self.signal_type.unwrap() {
+                    SignalType::Input => InputInformation::Input { status: StatusInput::Unknown },
                     _ => InputInformation::NoInput,
                 },
             };
@@ -974,8 +976,8 @@ impl ProcessedSymbol {
                 is_parallel: *state.component_to_parallel.get(&self.name).unwrap(),
                 cmp_address: compute_full_address(state, self.symbol, self.before_signal),
                 is_output: self.signal_type.unwrap() == SignalType::Output,
-                input_information : match self.signal_type.unwrap() {
-                    SignalType::Input => InputInformation::Input { status: StatusInput:: Unknown},
+                input_information: match self.signal_type.unwrap() {
+                    SignalType::Input => InputInformation::Input { status: StatusInput::Unknown },
                     _ => InputInformation::NoInput,
                 },
             };
@@ -1090,7 +1092,11 @@ fn indexing_instructions_filter(
     index_stack
 }
 
-fn fold(using: OperatorType, mut stack: Vec<InstructionPointer>, state: &State) -> InstructionPointer {
+fn fold(
+    using: OperatorType,
+    mut stack: Vec<InstructionPointer>,
+    state: &State,
+) -> InstructionPointer {
     let instruction = stack.pop().unwrap();
     if stack.len() == 0 {
         instruction
@@ -1188,7 +1194,6 @@ pub fn translate_code(body: Statement, code_info: CodeInfo) -> CodeOutput {
 
     let mut code = ir_processing::reduce_intermediate_operations(state.code);
     let expression_depth = ir_processing::build_auxiliary_stack(&mut code);
-    
 
     CodeOutput {
         code,

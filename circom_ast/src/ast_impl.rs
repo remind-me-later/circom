@@ -1,4 +1,4 @@
-use super::ast::*;
+use crate::*;
 
 impl AST {
     pub fn get_includes(&self) -> &Vec<String> {
@@ -12,7 +12,9 @@ impl AST {
     pub fn get_definitions(&self) -> &Vec<Definition> {
         &self.definitions
     }
-    pub fn decompose(self) -> (Meta, Option<Version>, Vec<String>, Vec<Definition>, Option<MainComponent>) {
+    pub fn decompose(
+        self,
+    ) -> (Meta, Option<Version>, Vec<String>, Vec<Definition>, Option<MainComponent>) {
         (self.meta, self.compiler_version, self.includes, self.definitions, self.main_component)
     }
 }

@@ -1,8 +1,8 @@
 use super::errors::{ParsingError, UnclosedCommentError};
 use super::lang;
-use program_structure::ast::AST;
-use program_structure::error_definition::Report;
-use program_structure::file_definition::FileID;
+use circom_ast::AST;
+use circom_error::error_definition::Report;
+use circom_error::file_definition::FileID;
 
 pub fn preprocess(expr: &str, file_id: FileID) -> Result<String, Report> {
     let mut pp = String::new();
@@ -63,8 +63,7 @@ pub fn preprocess(expr: &str, file_id: FileID) -> Result<String, Report> {
                             pp.push(' ');
                         }
                     }
-                    None => {
-                    }
+                    None => {}
                 }
             }
             (_, c) => {
@@ -74,12 +73,10 @@ pub fn preprocess(expr: &str, file_id: FileID) -> Result<String, Report> {
             }
         }
     }
-    if state == 2{
-        let error =
-            UnclosedCommentError { location: block_start..block_start, file_id };
+    if state == 2 {
+        let error = UnclosedCommentError { location: block_start..block_start, file_id };
         Err(UnclosedCommentError::produce_report(error))
-    }
-    else{
+    } else {
         Ok(pp)
     }
 }

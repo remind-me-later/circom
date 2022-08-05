@@ -1,6 +1,6 @@
 use super::analysis_utilities::*;
 use super::very_concrete_program::*;
-use program_structure::ast::*;
+use circom_ast::*;
 use std::collections::HashSet;
 
 struct SearchInfo {

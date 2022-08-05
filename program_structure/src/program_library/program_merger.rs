@@ -1,7 +1,7 @@
-use super::ast::Definition;
-use super::error_code::ReportCode;
-use super::error_definition::Report;
-use super::file_definition::FileID;
+use circom_ast::Definition;
+use circom_error::error_code::ReportCode;
+use circom_error::error_definition::Report;
+use circom_error::file_definition::FileID;
 use super::function_data::{FunctionData, FunctionInfo};
 use super::template_data::{TemplateData, TemplateInfo};
 
@@ -25,11 +25,23 @@ impl Merger {
         Merger::default()
     }
 
-    pub fn add_definitions(&mut self, file_id: FileID, definitions: Vec<Definition>)  -> Result<(), Vec<Report>> {
+    pub fn add_definitions(
+        &mut self,
+        file_id: FileID,
+        definitions: Vec<Definition>,
+    ) -> Result<(), Vec<Report>> {
         let mut reports = vec![];
         for definition in definitions {
             let (name, meta) = match definition {
-                Definition::Template { name, args, arg_location, body, meta, parallel, is_custom_gate } => {
+                Definition::Template {
+                    name,
+                    args,
+                    arg_location,
+                    body,
+                    meta,
+                    parallel,
+                    is_custom_gate,
+                } => {
                     if self.contains_function(&name) || self.contains_template(&name) {
                         (Option::Some(name), meta)
                     } else {
@@ -79,7 +91,11 @@ impl Merger {
                 reports.push(report);
             }
         }
-        if reports.is_empty() { Ok(()) } else { Err(reports) }
+        if reports.is_empty() {
+            Ok(())
+        } else {
+            Err(reports)
+        }
     }
     pub fn contains_function(&self, function_name: &str) -> bool {
         self.get_function_info().contains_key(function_name)
@@ -100,7 +116,6 @@ impl Merger {
     fn get_mut_template_info(&mut self) -> &mut TemplateInfo {
         &mut self.template_info
     }
-
 
     pub fn decompose(self) -> (usize, FunctionInfo, TemplateInfo) {
         (self.fresh_id, self.function_info, self.template_info)

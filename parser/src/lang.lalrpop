@@ -1,8 +1,8 @@
 use num_bigint::BigInt;
-use program_structure::statement_builders::*;
-use program_structure::expression_builders::*;
-use program_structure::ast::*;
-use program_structure::ast_shortcuts::{self,Symbol};
+use circom_ast::statement_builders::*;
+use circom_ast::expression_builders::*;
+use circom_ast::*;
+use circom_ast::ast_shortcuts::{self,Symbol};
 use std::str::FromStr;
 
 grammar;

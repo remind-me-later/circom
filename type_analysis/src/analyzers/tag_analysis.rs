@@ -1,11 +1,11 @@
-use program_structure::ast::{
+use circom_ast::{
     Access, AssignOp, Expression, ExpressionPrefixOpcode, Meta, SignalElementType, SignalType,
     Statement, VariableType,
 };
 use program_structure::environment::CircomEnvironment;
-use program_structure::error_code::ReportCode;
-use program_structure::error_definition::{Report, ReportCollection};
-use program_structure::file_definition::{generate_file_location, FileID};
+use circom_error::error_code::ReportCode;
+use circom_error::error_definition::{Report, ReportCollection};
+use circom_error::file_definition::{generate_file_location, FileID};
 use program_structure::program_archive::ProgramArchive;
 use program_structure::template_data::TemplateData;
 use std::collections::HashMap;

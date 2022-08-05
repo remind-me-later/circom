@@ -157,15 +157,11 @@ pub fn declare_my_template_name() -> CInstruction {
     )
 }
 pub fn declare_my_template_name_function(name: &String) -> CInstruction {
-    format!(
-        "std::string {} = \"{}\"",
-        MY_TEMPLATE_NAME, name.to_string()
-    )
+    format!("std::string {} = \"{}\"", MY_TEMPLATE_NAME, name.to_string())
 }
 pub fn my_template_name() -> CInstruction {
     format!("{}", MY_TEMPLATE_NAME)
 }
-
 
 pub const MY_COMPONENT_NAME: &str = "myComponentName";
 pub fn declare_my_component_name() -> CInstruction {
@@ -180,10 +176,7 @@ pub fn my_component_name() -> CInstruction {
 
 pub const MY_FATHER: &str = "myFather";
 pub fn declare_my_father() -> CInstruction {
-    format!(
-        "u64 {} = {}->componentMemory[{}].idFather",
-        MY_FATHER, CIRCOM_CALC_WIT, CTX_INDEX
-    )
+    format!("u64 {} = {}->componentMemory[{}].idFather", MY_FATHER, CIRCOM_CALC_WIT, CTX_INDEX)
 }
 pub fn my_father() -> CInstruction {
     format!("{}", MY_FATHER)
@@ -191,10 +184,7 @@ pub fn my_father() -> CInstruction {
 
 pub const MY_ID: &str = "myId";
 pub fn declare_my_id() -> CInstruction {
-    format!(
-        "u64 {} = {}",
-        MY_ID, CTX_INDEX
-    )
+    format!("u64 {} = {}", MY_ID, CTX_INDEX)
 }
 pub fn my_id() -> CInstruction {
     format!("{}", MY_ID)
@@ -343,32 +333,36 @@ pub fn set_list(elems: Vec<usize>) -> String {
         set_string = format!("{}{},", set_string, elem);
     }
     set_string.pop();
-    set_string .push('}');
+    set_string.push('}');
     set_string
 }
-
 
 pub fn add_return() -> String {
     "return;".to_string()
 }
 
-pub fn generate_my_array_position(aux_dimensions: String, len_dimensions: String, param: String) -> String {
-    format!("{}->generate_position_array({}, {}, {})", CIRCOM_CALC_WIT, aux_dimensions, len_dimensions, param)
+pub fn generate_my_array_position(
+    aux_dimensions: String,
+    len_dimensions: String,
+    param: String,
+) -> String {
+    format!(
+        "{}->generate_position_array({}, {}, {})",
+        CIRCOM_CALC_WIT, aux_dimensions, len_dimensions, param
+    )
 }
 
 pub fn generate_my_trace() -> String {
     format!("{}->getTrace({})", CIRCOM_CALC_WIT, MY_ID)
 }
 
-pub fn build_failed_assert_message(line: usize) -> String{
-    
+pub fn build_failed_assert_message(line: usize) -> String {
     format!("std::cout << \"Failed assert in template/function \" << {} << \" line {}. \" <<  \"Followed trace of components: \" << {} << std::endl" ,
         MY_TEMPLATE_NAME,
         line,
         generate_my_trace()
      )
 }
-
 
 pub fn build_conditional(
     cond: Vec<String>,
@@ -395,8 +389,8 @@ pub fn collect_template_headers(instances: &TemplateList) -> Vec<String> {
         let params_run = argument_list(params_run);
         let run_header = format!("void {}_run({});", instance, params_run);
         let params_create = vec![
-            declare_signal_offset(), 
-            declare_component_offset(), 
+            declare_signal_offset(),
+            declare_component_offset(),
             declare_circom_calc_wit(),
             declare_component_name(),
             declare_component_father(),
@@ -683,7 +677,7 @@ pub fn generate_main_cpp_file(c_folder: &PathBuf, prime: &String) -> std::io::Re
     let file_name = file_path.to_str().unwrap();
     let mut c_file = BufWriter::new(File::create(file_name).unwrap());
     let mut code = "".to_string();
-    let file = match prime.as_ref(){
+    let file = match prime.as_ref() {
         "bn128" => include_str!("bn128/main.cpp"),
         "bls12381" => include_str!("bls12381/main.cpp"),
         "goldilocks" => include_str!("goldilocks/main.cpp"),
@@ -705,7 +699,7 @@ pub fn generate_circom_hpp_file(c_folder: &PathBuf, prime: &String) -> std::io::
     let file_name = file_path.to_str().unwrap();
     let mut c_file = BufWriter::new(File::create(file_name).unwrap());
     let mut code = "".to_string();
-    let file = match prime.as_ref(){
+    let file = match prime.as_ref() {
         "bn128" => include_str!("bn128/circom.hpp"),
         "bls12381" => include_str!("bls12381/circom.hpp"),
         "goldilocks" => include_str!("goldilocks/circom.hpp"),
@@ -727,7 +721,7 @@ pub fn generate_fr_hpp_file(c_folder: &PathBuf, prime: &String) -> std::io::Resu
     let file_name = file_path.to_str().unwrap();
     let mut c_file = BufWriter::new(File::create(file_name).unwrap());
     let mut code = "".to_string();
-    let file = match prime.as_ref(){
+    let file = match prime.as_ref() {
         "bn128" => include_str!("bn128/fr.hpp"),
         "bls12381" => include_str!("bls12381/fr.hpp"),
         "goldilocks" => include_str!("goldilocks/fr.hpp"),
@@ -749,7 +743,7 @@ pub fn generate_calcwit_hpp_file(c_folder: &PathBuf, prime: &String) -> std::io:
     let file_name = file_path.to_str().unwrap();
     let mut c_file = BufWriter::new(File::create(file_name).unwrap());
     let mut code = "".to_string();
-    let file = match prime.as_ref(){
+    let file = match prime.as_ref() {
         "bn128" => include_str!("bn128/calcwit.hpp"),
         "bls12381" => include_str!("bls12381/calcwit.hpp"),
         "goldilocks" => include_str!("goldilocks/calcwit.hpp"),
@@ -771,7 +765,7 @@ pub fn generate_fr_cpp_file(c_folder: &PathBuf, prime: &String) -> std::io::Resu
     let file_name = file_path.to_str().unwrap();
     let mut c_file = BufWriter::new(File::create(file_name).unwrap());
     let mut code = "".to_string();
-    let file = match prime.as_ref(){
+    let file = match prime.as_ref() {
         "bn128" => include_str!("bn128/fr.cpp"),
         "bls12381" => include_str!("bls12381/fr.cpp"),
         "goldilocks" => include_str!("goldilocks/fr.cpp"),
@@ -793,7 +787,7 @@ pub fn generate_calcwit_cpp_file(c_folder: &PathBuf, prime: &String) -> std::io:
     let file_name = file_path.to_str().unwrap();
     let mut c_file = BufWriter::new(File::create(file_name).unwrap());
     let mut code = "".to_string();
-    let file = match prime.as_ref(){
+    let file = match prime.as_ref() {
         "bn128" => include_str!("bn128/calcwit.cpp"),
         "bls12381" => include_str!("bls12381/calcwit.cpp"),
         "goldilocks" => include_str!("goldilocks/calcwit.cpp"),
@@ -815,12 +809,12 @@ pub fn generate_fr_asm_file(c_folder: &PathBuf, prime: &String) -> std::io::Resu
     let file_name = file_path.to_str().unwrap();
     let mut c_file = BufWriter::new(File::create(file_name).unwrap());
     let mut code = "".to_string();
-    let file = match prime.as_ref(){
+    let file = match prime.as_ref() {
         "bn128" => include_str!("bn128/fr.asm"),
         "bls12381" => include_str!("bls12381/fr.asm"),
         "goldilocks" => include_str!("goldilocks/fr.asm"),
         _ => unreachable!(),
-    };    
+    };
     for line in file.lines() {
         code = format!("{}{}\n", code, line);
     }
@@ -837,12 +831,12 @@ pub fn generate_make_file(
 ) -> std::io::Result<()> {
     use std::io::BufWriter;
 
-    let makefile_template: &str = match prime.as_ref(){
+    let makefile_template: &str = match prime.as_ref() {
         "bn128" => include_str!("bn128/makefile"),
         "bls12381" => include_str!("bls12381/makefile"),
         "goldilocks" => include_str!("goldilocks/makefile"),
         _ => unreachable!(),
-    };  
+    };
 
     let template = handlebars::Handlebars::new();
     let code = template

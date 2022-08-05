@@ -9,7 +9,7 @@ use constraint_list::ConstraintList;
 use constraint_writers::debug_writer::DebugWriter;
 use constraint_writers::ConstraintExporter;
 use program_structure::constants::UsefulConstants;
-use program_structure::error_definition::ReportCollection;
+use circom_error::error_definition::ReportCollection;
 use std::collections::{HashMap, HashSet};
 type Signal = usize;
 type Constraint = circom_algebra::algebra::Constraint<usize>;
@@ -91,11 +91,18 @@ pub struct Edge {
     in_number: usize,
     out_number: usize,
     in_component_number: usize,
-    out_component_number: usize
+    out_component_number: usize,
 }
 impl Edge {
     fn new_entry(id: usize) -> Edge {
-        Edge { label: "main".to_string(), goes_to: id, in_number: 0, out_number: 0, in_component_number: 0, out_component_number: 0  }
+        Edge {
+            label: "main".to_string(),
+            goes_to: id,
+            in_number: 0,
+            out_number: 0,
+            in_component_number: 0,
+            out_component_number: 0,
+        }
     }
 
     pub fn get_goes_to(&self) -> usize {
@@ -161,10 +168,11 @@ impl Node {
         parameters: Vec<BigInt>,
         ordered_signals: Vec<String>,
         is_parallel: bool,
-        is_custom_gate: bool
+        is_custom_gate: bool,
     ) -> Node {
         Node {
-            template_name, entry: Edge::new_entry(id),
+            template_name,
+            entry: Edge::new_entry(id),
             parameters,
             number_of_components: 1,
             ordered_signals,
@@ -302,12 +310,7 @@ impl ConstraintExporter for DAG {
 
 impl DAG {
     pub fn new(prime: &String) -> DAG {
-        DAG{
-            prime : prime.clone(),
-            one_signal: 0,
-            nodes: Vec::new(),
-            adjacency: Vec::new(),
-        }
+        DAG { prime: prime.clone(), one_signal: 0, nodes: Vec::new(), adjacency: Vec::new() }
     }
 
     pub fn add_edge(&mut self, to: usize, label: &str) -> Option<&Edge> {
@@ -355,12 +358,17 @@ impl DAG {
         parameters: Vec<BigInt>,
         ordered_signals: Vec<String>,
         is_parallel: bool,
-        is_custom_gate: bool
+        is_custom_gate: bool,
     ) -> usize {
         let id = self.nodes.len();
-        self.nodes.push(
-            Node::new(id, template_name, parameters, ordered_signals, is_parallel, is_custom_gate)
-        );
+        self.nodes.push(Node::new(
+            id,
+            template_name,
+            parameters,
+            ordered_signals,
+            is_parallel,
+            is_custom_gate,
+        ));
         self.adjacency.push(vec![]);
         id
     }
@@ -389,7 +397,7 @@ impl DAG {
         }
     }
 
-    pub fn set_number_of_subcomponents_indexes(&mut self, number_scmp: usize){
+    pub fn set_number_of_subcomponents_indexes(&mut self, number_scmp: usize) {
         if let Option::Some(node) = self.get_mut_main() {
             node.set_number_of_subcomponents_indexes(number_scmp);
         }
@@ -512,5 +520,5 @@ pub struct SimplificationFlags {
     pub flag_s: bool,
     pub parallel_flag: bool,
     pub port_substitution: bool,
-    pub prime : String,
+    pub prime: String,
 }
