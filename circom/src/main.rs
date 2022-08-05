@@ -6,14 +6,18 @@ mod type_analysis_user;
 
 const VERSION: &'static str = env!("CARGO_PKG_VERSION");
 
+use std::process::ExitCode;
+
 use ansi_term::Colour;
 use input_user::Input;
-fn main() {
+fn main() -> ExitCode {
     let result = start();
     if result.is_err() {
         eprintln!("{}", Colour::Red.paint("previous errors were found"));
+        ExitCode::FAILURE
     } else {
         println!("{}", Colour::Green.paint("Everything went okay, circom safe"));
+        ExitCode::SUCCESS
     }
 }
 
