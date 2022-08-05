@@ -467,7 +467,7 @@ fn expand_variable(
     let is_constant = environment.get_variable_res(&name).is_ok();
     if is_constant && old_access.is_empty() {
         let mut expr = environment.get_variable_or_break(&name, file!(), line!()).clone();
-        expr.get_mut_meta().change_location(meta.location.clone(), meta.file_id);
+        expr.get_mut_meta().change_location(meta.location().clone(), meta.file_id());
         expr
     } else {
         let mut access = Vec::new();
@@ -488,6 +488,6 @@ fn broken_invariant_error(meta: &Meta, reports: &mut ReportCollection) {
     let error_code = ReportCode::NonConstantArrayLength;
     let mut report = Report::error(message, error_code);
     let message = "Non constant expression".to_string();
-    report.add_primary(meta.file_location(), meta.get_file_id(), message);
+    report.add_primary(meta.file_location(), meta.unwrap_file_id(), message);
     reports.push(report);
 }

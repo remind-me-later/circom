@@ -729,7 +729,7 @@ fn add_report_and_end<Ok>(
 
 fn add_report(error_code: ReportCode, meta: &Meta, reports: &mut ReportCollection) {
     use ReportCode::*;
-    let file_id = meta.get_file_id();
+    let file_id = meta.unwrap_file_id();
     let mut report = Report::error("Typing error found".to_string(), error_code);
     let location = generate_file_location(meta.get_start(), meta.get_end());
     let message = match error_code {

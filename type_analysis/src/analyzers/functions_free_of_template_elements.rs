@@ -25,7 +25,7 @@ fn analyse_statement(
     reports: &mut ReportCollection,
 ) {
     use Statement::*;
-    let file_id = stmt.get_meta().get_file_id();
+    let file_id = stmt.get_meta().unwrap_file_id();
     match stmt {
         IfThenElse { cond, if_case, else_case, .. } => {
             analyse_expression(cond, function_names, reports);
@@ -116,7 +116,7 @@ fn analyse_access(
     function_names: &HashSet<String>,
     reports: &mut ReportCollection,
 ) {
-    let file_id = meta.get_file_id();
+    let file_id = meta.unwrap_file_id();
     for acc in access.iter() {
         if let Access::ArrayAccess(index) = acc {
             analyse_expression(index, function_names, reports);
@@ -139,7 +139,7 @@ fn analyse_expression(
     reports: &mut ReportCollection,
 ) {
     use Expression::*;
-    let file_id = expr.get_meta().get_file_id();
+    let file_id = expr.get_meta().unwrap_file_id();
     match expr {
         InfixOp { lhe, rhe, .. } => {
             analyse_expression(lhe, function_names, reports);

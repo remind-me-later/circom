@@ -108,7 +108,7 @@ pub fn execute_constant_expression(
     flag_verbose: bool,
     prime: &String,
 ) -> Result<BigInt, ReportCollection> {
-    let current_file = expression.get_meta().get_file_id();
+    let current_file = expression.get_meta().unwrap_file_id();
     let mut runtime_information =
         RuntimeInformation::new(current_file, program_archive.id_max, prime);
     runtime_information.environment = environment;
@@ -136,7 +136,7 @@ fn execute_statement(
     flag_verbose: bool,
 ) -> Result<Option<FoldedValue>, ()> {
     use Statement::*;
-    let id = stmt.get_meta().elem_id;
+    let id = stmt.get_meta().elem_id();
     Analysis::reached(&mut runtime.analysis, id);
     let res = match stmt {
         InitializationBlock { initializations, .. } => {
@@ -458,7 +458,7 @@ fn execute_expression(
             folded_result
         }
     };
-    let expr_id = expr.get_meta().elem_id;
+    let expr_id = expr.get_meta().elem_id();
     let res_p = res.arithmetic_slice.clone();
     if let Some(slice) = res_p {
         if slice.is_single() {
@@ -1362,7 +1362,7 @@ fn add_report_to_runtime(
     call_trace: &[String],
 ) {
     let mut report = report;
-    report.add_primary(meta.location.clone(), meta.get_file_id(), "found here".to_string());
+    report.add_primary(meta.location().clone(), meta.unwrap_file_id(), "found here".to_string());
 
     let mut trace = "call trace:\n".to_string();
     let mut spacing = "".to_string();

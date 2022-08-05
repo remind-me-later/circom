@@ -23,7 +23,7 @@ fn clean_dead_code(stmt: &mut Statement, analysis: &Analysis, prime: &String) ->
                 *else_case = None;
             }
 
-            match Analysis::read_computed(analysis, cond.get_meta().elem_id) {
+            match Analysis::read_computed(analysis, cond.get_meta().elem_id()) {
                 Some(val) if as_bool(&val, &field) => *stmt = *if_case.clone(),
                 Some(val) if !as_bool(&val, &field) => {
                     *stmt = *else_case.clone().unwrap_or(empty_block)
@@ -35,7 +35,7 @@ fn clean_dead_code(stmt: &mut Statement, analysis: &Analysis, prime: &String) ->
         Block { stmts, .. } => {
             let work = std::mem::take(stmts);
             for mut w in work {
-                let id = w.get_meta().elem_id;
+                let id = w.get_meta().elem_id();
                 if Analysis::is_reached(analysis, id) {
                     let empty = clean_dead_code(&mut w, analysis, prime);
                     if !empty {
@@ -133,7 +133,7 @@ fn apply_computed_expr_vec(exprs: &mut Vec<Expression>, analysis: &Analysis) {
 }
 
 fn computed_or_original(analysis: &Analysis, expr: &Expression) -> Expression {
-    let id = expr.get_meta().elem_id;
+    let id = expr.get_meta().elem_id();
     if let Some(value) = Analysis::read_computed(analysis, id) {
         Expression::Number { meta: expr.get_meta().clone(), value }
     } else {

@@ -236,6 +236,6 @@ fn report_invalid_dimension(meta: &Meta, reports: &mut ReportCollection) {
     let msg = "Invalid array size".to_string();
     let mut report = Report::error(msg, error_code);
     let message = "This expression can not be used as an array size".to_string();
-    report.add_primary(meta.file_location(), meta.get_file_id(), message);
+    report.add_primary(meta.file_location(), meta.unwrap_file_id(), message);
     reports.push(report);
 }

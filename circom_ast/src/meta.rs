@@ -8,10 +8,12 @@ pub trait FillMeta {
 
 #[derive(Clone)]
 pub struct Meta {
-    pub elem_id: usize,
-    pub location: LocationInFile,
-    pub file_id: Option<usize>,
     pub component_inference: Option<String>,
+
+    pub(crate) elem_id: usize,
+
+    location: LocationInFile,
+    file_id: Option<usize>,
     type_knowledge: TypeKnowledge,
     memory_knowledge: MemoryKnowledge,
 }
@@ -28,6 +30,10 @@ impl Meta {
         }
     }
 
+    pub fn location(&self) -> &LocationInFile {
+        &self.location
+    }
+
     pub fn change_location(&mut self, location: LocationInFile, file_id: Option<usize>) {
         self.location = location;
         self.file_id = file_id;
@@ -41,7 +47,11 @@ impl Meta {
         self.location.end
     }
 
-    pub fn get_file_id(&self) -> usize {
+    pub fn file_id(&self) -> Option<usize> {
+        self.file_id
+    }
+
+    pub fn unwrap_file_id(&self) -> usize {
         self.file_id.expect("Empty file id accessed")
     }
 
@@ -67,5 +77,9 @@ impl Meta {
 
     pub fn set_file_id(&mut self, file_id: usize) {
         self.file_id = Some(file_id);
+    }
+
+    pub fn elem_id(&self) -> usize {
+        self.elem_id
     }
 }

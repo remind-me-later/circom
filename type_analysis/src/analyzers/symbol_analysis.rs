@@ -72,8 +72,8 @@ fn analyze_main(program: &ProgramArchive) -> Result<(), Vec<Report>> {
                         ReportCode::SameSymbolDeclaredTwice,
                     );
                     report.add_primary(
-                        call.get_meta().location.clone(),
-                        call.get_meta().get_file_id(),
+                        call.get_meta().location().clone(),
+                        call.get_meta().unwrap_file_id(),
                         format!("{} is not an input signal", signal),
                     );
                     reports.push(report);
@@ -84,7 +84,7 @@ fn analyze_main(program: &ProgramArchive) -> Result<(), Vec<Report>> {
     let environment = Environment::new();
     analyze_expression(
         call,
-        call.get_meta().get_file_id(),
+        call.get_meta().unwrap_file_id(),
         function_info,
         template_info,
         &mut reports,
@@ -217,7 +217,7 @@ fn analyze_statement(
                     ReportCode::SameSymbolDeclaredTwice,
                 );
                 report.add_primary(
-                    meta.location.clone(),
+                    meta.location().clone(),
                     file_id.clone(),
                     format!("Declaring same symbol twice"),
                 );

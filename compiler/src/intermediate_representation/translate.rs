@@ -428,7 +428,7 @@ fn translate_statement(stmt: Statement, state: &mut State, context: &Context) {
 fn translate_if_then_else(stmt: Statement, state: &mut State, context: &Context) {
     use Statement::IfThenElse;
     if let IfThenElse { meta, cond, if_case, else_case, .. } = stmt {
-        let starts_at = context.files.get_line(meta.get_start(), meta.get_file_id()).unwrap();
+        let starts_at = context.files.get_line(meta.get_start(), meta.unwrap_file_id()).unwrap();
         let main_program = std::mem::replace(&mut state.code, vec![]);
         let cond_translation = translate_expression(cond, state, context);
         translate_statement(*if_case, state, context);
@@ -453,7 +453,7 @@ fn translate_if_then_else(stmt: Statement, state: &mut State, context: &Context)
 fn translate_while(stmt: Statement, state: &mut State, context: &Context) {
     use Statement::While;
     if let While { meta, cond, stmt, .. } = stmt {
-        let starts_at = context.files.get_line(meta.get_start(), meta.get_file_id()).unwrap();
+        let starts_at = context.files.get_line(meta.get_start(), meta.unwrap_file_id()).unwrap();
         let main_program = std::mem::replace(&mut state.code, vec![]);
         let cond_translation = translate_expression(cond, state, context);
         translate_statement(*stmt, state, context);
@@ -521,7 +521,7 @@ fn translate_standard_case(
 fn translate_declaration(stmt: Statement, state: &mut State, context: &Context) {
     use Statement::Declaration;
     if let Declaration { name, meta, .. } = stmt {
-        let starts_at = context.files.get_line(meta.get_start(), meta.get_file_id()).unwrap();
+        let starts_at = context.files.get_line(meta.get_start(), meta.unwrap_file_id()).unwrap();
         let dimensions = meta.get_memory_knowledge().get_concrete_dimensions().to_vec();
         let size = dimensions.iter().fold(1, |p, c| p * (*c));
         let address = state.reserve_variable(size);
@@ -559,7 +559,7 @@ fn translate_block(stmt: Statement, state: &mut State, context: &Context) {
 fn translate_constraint_equality(stmt: Statement, state: &mut State, context: &Context) {
     use Statement::ConstraintEquality;
     if let ConstraintEquality { meta, lhe, rhe } = stmt {
-        let starts_at = context.files.get_line(meta.get_start(), meta.get_file_id()).unwrap();
+        let starts_at = context.files.get_line(meta.get_start(), meta.unwrap_file_id()).unwrap();
         let lhe_pointer = translate_expression(lhe, state, context);
         let rhe_pointer = translate_expression(rhe, state, context);
         let stack = vec![lhe_pointer, rhe_pointer];
@@ -584,7 +584,7 @@ fn translate_constraint_equality(stmt: Statement, state: &mut State, context: &C
 fn translate_assert(stmt: Statement, state: &mut State, context: &Context) {
     use Statement::Assert;
     if let Assert { meta, arg, .. } = stmt {
-        let line = context.files.get_line(meta.get_start(), meta.get_file_id()).unwrap();
+        let line = context.files.get_line(meta.get_start(), meta.unwrap_file_id()).unwrap();
         let code = translate_expression(arg, state, context);
         let assert = AssertBucket { line, message_id: state.message_id, evaluate: code }.allocate();
         state.code.push(assert);
@@ -594,7 +594,7 @@ fn translate_assert(stmt: Statement, state: &mut State, context: &Context) {
 fn translate_log(stmt: Statement, state: &mut State, context: &Context) {
     use Statement::LogCall;
     if let LogCall { meta, arg, .. } = stmt {
-        let line = context.files.get_line(meta.get_start(), meta.get_file_id()).unwrap();
+        let line = context.files.get_line(meta.get_start(), meta.unwrap_file_id()).unwrap();
         let code = translate_expression(arg, state, context);
         let log = LogBucket {
             line,
@@ -613,7 +613,7 @@ fn translate_return(stmt: Statement, state: &mut State, context: &Context) {
         let return_type = context.functions.get(&context.translating).unwrap();
         let return_bucket = ReturnBucket {
             is_parallel: state.is_parallel,
-            line: context.files.get_line(meta.get_start(), meta.get_file_id()).unwrap(),
+            line: context.files.get_line(meta.get_start(), meta.unwrap_file_id()).unwrap(),
             message_id: state.message_id,
             with_size: return_type.iter().fold(1, |p, c| p * (*c)),
             value: translate_expression(value, state, context),
@@ -658,7 +658,7 @@ fn translate_call(
         let args_inst = translate_call_arguments(args, state, context);
         CallBucket {
             is_parallel: state.is_parallel,
-            line: context.files.get_line(meta.get_start(), meta.get_file_id()).unwrap(),
+            line: context.files.get_line(meta.get_start(), meta.unwrap_file_id()).unwrap(),
             message_id: state.message_id,
             symbol: id,
             argument_types: args_inst.argument_data,
@@ -683,7 +683,7 @@ fn translate_infix(
         let rhi = translate_expression(*rhe, state, context);
         ComputeBucket {
             is_parallel: state.is_parallel,
-            line: context.files.get_line(meta.get_start(), meta.get_file_id()).unwrap(),
+            line: context.files.get_line(meta.get_start(), meta.unwrap_file_id()).unwrap(),
             message_id: state.message_id,
             op: translate_infix_operator(infix_op),
             op_aux_no: 0,
@@ -705,7 +705,7 @@ fn translate_prefix(
         let rhi = translate_expression(*rhe, state, context);
         ComputeBucket {
             is_parallel: state.is_parallel,
-            line: context.files.get_line(meta.get_start(), meta.get_file_id()).unwrap(),
+            line: context.files.get_line(meta.get_start(), meta.unwrap_file_id()).unwrap(),
             message_id: state.message_id,
             op_aux_no: 0,
             op: translate_prefix_operator(prefix_op),
@@ -740,7 +740,7 @@ fn translate_number(
     if let Number { meta, value } = expression {
         let cid = bigint_to_cid(&mut state.field_tracker, &value);
         ValueBucket {
-            line: context.files.get_line(meta.get_start(), meta.get_file_id()).unwrap(),
+            line: context.files.get_line(meta.get_start(), meta.unwrap_file_id()).unwrap(),
             message_id: state.message_id,
             op_aux_no: 0,
             parse_as: ValueType::BigInt,
@@ -874,7 +874,7 @@ impl ProcessedSymbol {
         });
         ProcessedSymbol {
             xtype: meta.get_type_knowledge().get_reduces_to(),
-            line: context.files.get_line(meta.get_start(), meta.get_file_id()).unwrap(),
+            line: context.files.get_line(meta.get_start(), meta.unwrap_file_id()).unwrap(),
             message_id: state.message_id,
             length: with_length,
             symbol: symbol_info,

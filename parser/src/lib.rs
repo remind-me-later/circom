@@ -1,7 +1,5 @@
 extern crate num_bigint_dig as num_bigint;
 extern crate num_traits;
-extern crate serde;
-extern crate serde_derive;
 #[macro_use]
 extern crate lalrpop_util;
 

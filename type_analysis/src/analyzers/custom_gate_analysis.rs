@@ -37,8 +37,8 @@ pub fn custom_gate_analysis(
                             ReportCode::CustomGateIntermediateSignalWarning,
                         );
                         warning.add_primary(
-                            meta.location.clone(),
-                            meta.file_id.unwrap(),
+                            meta.location().clone(),
+                            meta.unwrap_file_id(),
                             format!(
                                 "Intermediate signal {} declared in custom gate {}",
                                 name, custom_gate_name
@@ -52,8 +52,8 @@ pub fn custom_gate_analysis(
                             ReportCode::CustomGateSubComponent,
                         );
                         error.add_primary(
-                            meta.location.clone(),
-                            meta.file_id.unwrap(),
+                            meta.location().clone(),
+                            meta.unwrap_file_id(),
                             format!(
                                 "Component {} declared in custom gate {}",
                                 name, custom_gate_name
@@ -73,8 +73,8 @@ pub fn custom_gate_analysis(
                             ReportCode::CustomGateConstraint,
                         );
                         error.add_primary(
-                            meta.location.clone(),
-                            meta.file_id.unwrap(),
+                            meta.location().clone(),
+                            meta.unwrap_file_id(),
                             String::from("Added constraint"),
                         );
                         errors.push(error);
@@ -88,8 +88,8 @@ pub fn custom_gate_analysis(
                     ReportCode::CustomGateConstraint,
                 );
                 error.add_primary(
-                    meta.location.clone(),
-                    meta.file_id.unwrap(),
+                    meta.location().clone(),
+                    meta.unwrap_file_id(),
                     String::from("Added constraint"),
                 );
                 errors.push(error);

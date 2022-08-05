@@ -1,5 +1,3 @@
-use serde_derive::{Deserialize, Serialize};
-
 use crate::{Expression, Meta, FillMeta};
 
 #[derive(Clone)]
@@ -208,6 +206,7 @@ impl FillMeta for Statement {
             IfThenElse { cond, if_case, else_case, .. } => {
                 cond.fill(file_id, element_id);
                 if_case.fill(file_id, element_id);
+
                 if let Some(s) = else_case {
                     s.fill(file_id, element_id);
                 }
@@ -227,6 +226,7 @@ impl FillMeta for Statement {
             }
             Substitution { access, rhe, .. } => {
                 rhe.fill(file_id, element_id);
+
                 for a in access {
                     if let Access::ArrayAccess(e) = a {
                         e.fill(file_id, element_id);
@@ -250,14 +250,14 @@ impl FillMeta for Statement {
     }
 }
 
-#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
+#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord)]
 pub enum SignalElementType {
     Empty,
     Binary,
     FieldElement,
 }
 
-#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
+#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord)]
 pub enum SignalType {
     Output,
     Input,
