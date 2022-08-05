@@ -87,229 +87,94 @@ fn look_for_existing_instance(
 
 // Algorithm for producing the code's vcf
 fn produce_vcf_stmt(stmt: &Statement, state: &mut State, environment: &mut E) {
-    if stmt.is_return() {
-        produce_vcf_return(stmt, state, environment);
-    } else if stmt.is_assert() {
-        produce_vcf_assert(stmt, state, environment);
-    } else if stmt.is_log_call() {
-        produce_vcf_log_call(stmt, state, environment);
-    } else if stmt.is_constraint_equality() {
-        produce_vcf_constraint_equality(stmt, state, environment);
-    } else if stmt.is_substitution() {
-        produce_vcf_substitution(stmt, state, environment);
-    } else if stmt.is_declaration() {
-        produce_vcf_declaration(stmt, state, environment);
-    } else if stmt.is_block() {
-        produce_vcf_block(stmt, state, environment);
-    } else if stmt.is_initialization_block() {
-        produce_vcf_init_block(stmt, state, environment);
-    } else if stmt.is_while() {
-        produce_vcf_while(stmt, state, environment);
-    } else if stmt.is_if_then_else() {
-        produce_vcf_conditional(stmt, state, environment);
-    } else {
-        unreachable!();
+    use Statement::*;
+    match stmt {
+        Return { value, .. } => produce_vcf_expr(value, state, environment),
+        Assert { arg, .. } => produce_vcf_expr(arg, state, environment),
+        LogCall { arg, .. } => produce_vcf_expr(arg, state, environment),
+        ConstraintEquality { lhe, rhe, .. } => {
+            produce_vcf_expr(lhe, state, environment);
+            produce_vcf_expr(rhe, state, environment);
+        }
+        Substitution { access, rhe, .. } => {
+            produce_vcf_expr(rhe, state, environment);
+            for a in access {
+                if let Access::ArrayAccess(index) = a {
+                    produce_vcf_expr(index, state, environment);
+                }
+            }
+        }
+        Declaration { name, dimensions, meta, .. } => {
+            for d in dimensions {
+                produce_vcf_expr(d, state, environment);
+            }
+            let with_type = meta.get_memory_knowledge().get_concrete_dimensions().to_vec();
+            environment.add_variable(name, with_type);
+        }
+        Block { stmts, .. } => {
+            environment.add_variable_block();
+            for s in stmts {
+                produce_vcf_stmt(s, state, environment);
+            }
+            environment.remove_variable_block();
+        }
+        InitializationBlock { initializations, .. } => {
+            for s in initializations {
+                produce_vcf_stmt(s, state, environment);
+            }
+        }
+        While { cond, stmt, .. } => {
+            produce_vcf_expr(cond, state, environment);
+            produce_vcf_stmt(stmt, state, environment);
+        }
+        IfThenElse { cond, if_case, else_case, .. } => {
+            produce_vcf_expr(cond, state, environment);
+            produce_vcf_stmt(if_case, state, environment);
+            if let Option::Some(s) = else_case {
+                produce_vcf_stmt(s, state, environment);
+            }
+        }
     }
 }
 
 fn produce_vcf_expr(expr: &Expression, state: &mut State, environment: &E) {
-    if expr.is_infix() {
-        produce_vcf_infix(expr, state, environment);
-    } else if expr.is_prefix() {
-        produce_vcf_prefix(expr, state, environment);
-    } else if expr.is_switch() {
-        produce_vcf_switch(expr, state, environment);
-    } else if expr.is_variable() {
-        produce_vcf_variable(expr, state, environment);
-    } else if expr.is_number() {
-        produce_vcf_number(expr, state, environment);
-    } else if expr.is_call() {
-        produce_vcf_call(expr, state, environment);
-    } else if expr.is_array() {
-        produce_vcf_array(expr, state, environment);
-    } else {
-        unreachable!();
-    }
-}
-
-fn produce_vcf_return(stmt: &Statement, state: &mut State, environment: &E) {
-    use Statement::Return;
-    if let Return { value, .. } = stmt {
-        produce_vcf_expr(value, state, environment);
-    } else {
-        unreachable!();
-    }
-}
-
-fn produce_vcf_assert(stmt: &Statement, state: &mut State, environment: &E) {
-    use Statement::Assert;
-    if let Assert { arg, .. } = stmt {
-        produce_vcf_expr(arg, state, environment);
-    } else {
-        unreachable!();
-    }
-}
-
-fn produce_vcf_log_call(stmt: &Statement, state: &mut State, environment: &E) {
-    use Statement::LogCall;
-    if let LogCall { arg, .. } = stmt {
-        produce_vcf_expr(arg, state, environment);
-    } else {
-        unreachable!();
-    }
-}
-
-fn produce_vcf_constraint_equality(stmt: &Statement, state: &mut State, environment: &E) {
-    use Statement::ConstraintEquality;
-    if let ConstraintEquality { lhe, rhe, .. } = stmt {
-        produce_vcf_expr(lhe, state, environment);
-        produce_vcf_expr(rhe, state, environment);
-    } else {
-        unreachable!();
-    }
-}
-
-fn produce_vcf_substitution(stmt: &Statement, state: &mut State, environment: &E) {
-    use Statement::Substitution;
-    if let Substitution { access, rhe, .. } = stmt {
-        produce_vcf_expr(rhe, state, environment);
-        for a in access {
-            if let Access::ArrayAccess(index) = a {
-                produce_vcf_expr(index, state, environment);
+    use Expression::*;
+    match expr {
+        Number { .. } => (),
+        InfixOp { lhe, rhe, .. } => {
+            produce_vcf_expr(lhe, state, environment);
+            produce_vcf_expr(rhe, state, environment);
+        }
+        PrefixOp { rhe, .. } => {
+            produce_vcf_expr(rhe, state, environment);
+        }
+        TernaryOp { if_true, if_false, .. } => {
+            produce_vcf_expr(if_true, state, environment);
+            produce_vcf_expr(if_false, state, environment);
+        }
+        Variable { access, .. } => {
+            for a in access {
+                if let Access::ArrayAccess(index) = a {
+                    produce_vcf_expr(index, state, environment);
+                }
             }
         }
-    } else {
-        unreachable!();
-    }
-}
-
-fn produce_vcf_declaration(stmt: &Statement, state: &mut State, environment: &mut E) {
-    use Statement::Declaration;
-    if let Declaration { name, dimensions, meta, .. } = stmt {
-        for d in dimensions {
-            produce_vcf_expr(d, state, environment);
-        }
-        let with_type = meta.get_memory_knowledge().get_concrete_dimensions().to_vec();
-        environment.add_variable(name, with_type);
-    } else {
-        unreachable!();
-    }
-}
-
-fn produce_vcf_block(stmt: &Statement, state: &mut State, environment: &mut E) {
-    use Statement::Block;
-    if let Block { stmts, .. } = stmt {
-        environment.add_variable_block();
-        for s in stmts {
-            produce_vcf_stmt(s, state, environment);
-        }
-        environment.remove_variable_block();
-    } else {
-        unreachable!();
-    }
-}
-
-fn produce_vcf_init_block(stmt: &Statement, state: &mut State, environment: &mut E) {
-    use Statement::InitializationBlock;
-    if let InitializationBlock { initializations, .. } = stmt {
-        for s in initializations {
-            produce_vcf_stmt(s, state, environment);
-        }
-    } else {
-        unreachable!();
-    }
-}
-
-fn produce_vcf_while(stmt: &Statement, state: &mut State, environment: &mut E) {
-    use Statement::While;
-    if let While { cond, stmt, .. } = stmt {
-        produce_vcf_expr(cond, state, environment);
-        produce_vcf_stmt(stmt, state, environment);
-    } else {
-        unreachable!();
-    }
-}
-
-fn produce_vcf_conditional(stmt: &Statement, state: &mut State, environment: &mut E) {
-    use Statement::IfThenElse;
-    if let IfThenElse { cond, if_case, else_case, .. } = stmt {
-        produce_vcf_expr(cond, state, environment);
-        produce_vcf_stmt(if_case, state, environment);
-        if let Option::Some(s) = else_case {
-            produce_vcf_stmt(s, state, environment);
-        }
-    }
-}
-
-fn produce_vcf_array(expr: &Expression, state: &mut State, environment: &E) {
-    use Expression::ArrayInLine;
-    if let ArrayInLine { values, .. } = expr {
-        for v in values {
-            produce_vcf_expr(v, state, environment);
-        }
-    } else {
-        unreachable!();
-    }
-}
-fn produce_vcf_call(expr: &Expression, state: &mut State, environment: &E) {
-    use Expression::Call;
-    if let Call { id, args, .. } = expr {
-        for arg in args {
-            produce_vcf_expr(arg, state, environment);
-        }
-        if state.generic_functions.contains_key(id) {
-            let params = map_to_params(id, args, state, environment);
-            add_instance(id, params, state);
-        }
-    } else {
-        unreachable!();
-    }
-}
-
-fn produce_vcf_variable(expr: &Expression, state: &mut State, environment: &E) {
-    use Access::ArrayAccess;
-    use Expression::Variable;
-    if let Variable { access, .. } = expr {
-        for a in access {
-            if let ArrayAccess(index) = a {
-                produce_vcf_expr(index, state, environment);
+        Call { id, args, .. } => {
+            for arg in args {
+                produce_vcf_expr(arg, state, environment);
+            }
+            if state.generic_functions.contains_key(id) {
+                let params = map_to_params(id, args, state, environment);
+                add_instance(id, params, state);
             }
         }
-    } else {
-        unreachable!();
+        ArrayInLine { values, .. } => {
+            for v in values {
+                produce_vcf_expr(v, state, environment);
+            }
+        }
     }
 }
-
-fn produce_vcf_switch(expr: &Expression, state: &mut State, environment: &E) {
-    use Expression::TernaryOp;
-    if let TernaryOp { if_true, if_false, .. } = expr {
-        produce_vcf_expr(if_true, state, environment);
-        produce_vcf_expr(if_false, state, environment);
-    } else {
-        unreachable!();
-    }
-}
-
-fn produce_vcf_infix(expr: &Expression, state: &mut State, environment: &E) {
-    use Expression::InfixOp;
-    if let InfixOp { lhe, rhe, .. } = expr {
-        produce_vcf_expr(lhe, state, environment);
-        produce_vcf_expr(rhe, state, environment);
-    } else {
-        unreachable!();
-    }
-}
-
-fn produce_vcf_prefix(expr: &Expression, state: &mut State, environment: &E) {
-    use Expression::PrefixOp;
-    if let PrefixOp { rhe, .. } = expr {
-        produce_vcf_expr(rhe, state, environment);
-    } else {
-        unreachable!();
-    }
-}
-
-fn produce_vcf_number(_expr: &Expression, _state: &State, _environment: &E) {}
 
 /*
     Linking algorithm:
@@ -318,306 +183,130 @@ fn produce_vcf_number(_expr: &Expression, _state: &State, _environment: &E) {}
     will be linked with its vct (very concrete type).
 */
 fn link_stmt(stmt: &mut Statement, state: &State, env: &mut E) {
-    if stmt.is_block() {
-        link_block(stmt, state, env);
-    } else if stmt.is_initialization_block() {
-        link_initialization_block(stmt, state, env);
-    } else if stmt.is_if_then_else() {
-        link_conditional(stmt, state, env);
-    } else if stmt.is_while() {
-        link_while(stmt, state, env);
-    } else if stmt.is_log_call() {
-        link_log_call(stmt, state, env);
-    } else if stmt.is_assert() {
-        link_assert(stmt, state, env);
-    } else if stmt.is_return() {
-        link_return(stmt, state, env);
-    } else if stmt.is_constraint_equality() {
-        link_constraint_eq(stmt, state, env);
-    } else if stmt.is_declaration() {
-        link_declaration(stmt, state, env);
-    } else if stmt.is_substitution() {
-        link_substitution(stmt, state, env);
-    } else {
-        unreachable!();
-    }
-}
-
-fn link_block(stmt: &mut Statement, state: &State, env: &mut E) {
-    use Statement::Block;
-    if let Block { stmts, .. } = stmt {
-        env.add_variable_block();
-        for s in stmts {
-            link_stmt(s, state, env);
+    use Statement::*;
+    match stmt {
+        Block { stmts, .. } => {
+            env.add_variable_block();
+            stmts.iter_mut().for_each(|s| link_stmt(s, state, env));
+            env.remove_variable_block();
         }
-        env.remove_variable_block();
-    } else {
-        unreachable!();
-    }
-}
-
-fn link_initialization_block(stmt: &mut Statement, state: &State, env: &mut E) {
-    use Statement::InitializationBlock;
-    if let InitializationBlock { initializations, .. } = stmt {
-        for i in initializations {
-            link_stmt(i, state, env);
+        InitializationBlock { initializations, .. } => {
+            initializations.iter_mut().for_each(|i| link_stmt(i, state, env));
         }
-    } else {
-        unreachable!();
-    }
-}
-
-fn link_conditional(stmt: &mut Statement, state: &State, env: &mut E) {
-    use Statement::IfThenElse;
-    if let IfThenElse { cond, if_case, else_case, .. } = stmt {
-        link_expression(cond, state, env);
-        link_stmt(if_case, state, env);
-        if let Option::Some(s) = else_case {
-            link_stmt(s, state, env);
+        IfThenElse { cond, if_case, else_case, .. } => {
+            link_expression(cond, state, env);
+            link_stmt(if_case, state, env);
+            if let Option::Some(s) = else_case {
+                link_stmt(s, state, env);
+            }
         }
-    } else {
-        unreachable!();
-    }
-}
-
-fn link_while(stmt: &mut Statement, state: &State, env: &mut E) {
-    use Statement::While;
-    if let While { cond, stmt, .. } = stmt {
-        link_expression(cond, state, env);
-        link_stmt(stmt, state, env);
-    } else {
-        unreachable!();
-    }
-}
-
-fn link_log_call(stmt: &mut Statement, state: &State, env: &mut E) {
-    use Statement::LogCall;
-    if let LogCall { arg, .. } = stmt {
-        link_expression(arg, state, env);
-    } else {
-        unreachable!();
-    }
-}
-
-fn link_assert(stmt: &mut Statement, state: &State, env: &mut E) {
-    use Statement::Assert;
-    if let Assert { arg, .. } = stmt {
-        link_expression(arg, state, env);
-    } else {
-        unreachable!();
-    }
-}
-
-fn link_return(stmt: &mut Statement, state: &State, env: &mut E) {
-    use Statement::Return;
-    if let Return { value, .. } = stmt {
-        link_expression(value, state, env);
-    } else {
-        unreachable!();
-    }
-}
-
-fn link_constraint_eq(stmt: &mut Statement, state: &State, env: &mut E) {
-    use Statement::ConstraintEquality;
-    if let ConstraintEquality { lhe, rhe, .. } = stmt {
-        link_expression(lhe, state, env);
-        link_expression(rhe, state, env);
-    } else {
-        unreachable!();
-    }
-}
-
-fn link_declaration(stmt: &mut Statement, state: &State, env: &mut E) {
-    use Statement::Declaration;
-    if let Declaration { name, dimensions, meta, .. } = stmt {
-        for d in dimensions {
-            link_expression(d, state, env);
+        While { cond, stmt, .. } => {
+            link_expression(cond, state, env);
+            link_stmt(stmt, state, env);
         }
-        let has_type = meta.get_memory_knowledge().get_concrete_dimensions().to_vec();
-        env.add_variable(name, has_type);
-    } else {
-        unreachable!();
-    }
-}
-
-fn link_substitution(stmt: &mut Statement, state: &State, env: &mut E) {
-    use Statement::Substitution;
-    if let Substitution { access, rhe, .. } = stmt {
-        link_expression(rhe, state, env);
-        for acc in access {
-            if let Access::ArrayAccess(e) = acc {
-                link_expression(e, state, env);
+        LogCall { arg, .. } => link_expression(arg, state, env),
+        Assert { arg, .. } => link_expression(arg, state, env),
+        Return { value, .. } => link_expression(value, state, env),
+        ConstraintEquality { lhe, rhe, .. } => {
+            link_expression(lhe, state, env);
+            link_expression(rhe, state, env);
+        }
+        Declaration { name, dimensions, meta, .. } => {
+            dimensions.iter_mut().for_each(|d| link_expression(d, state, env));
+            let has_type = meta.get_memory_knowledge().get_concrete_dimensions().to_vec();
+            env.add_variable(name, has_type);
+        }
+        Substitution { access, rhe, .. } => {
+            link_expression(rhe, state, env);
+            for acc in access {
+                if let Access::ArrayAccess(e) = acc {
+                    link_expression(e, state, env);
+                }
             }
         }
     }
 }
 
 fn link_expression(expr: &mut Expression, state: &State, env: &E) {
-    if expr.is_call() {
-        link_call(expr, state, env);
-    } else if expr.is_array() {
-        link_array(expr, state, env);
-    } else if expr.is_variable() {
-        link_variable(expr, state, env);
-    } else if expr.is_switch() {
-        link_switch(expr, state, env);
-    } else if expr.is_number() {
-        link_number(expr, state, env);
-    } else if expr.is_infix() {
-        link_infix(expr, state, env);
-    } else if expr.is_prefix() {
-        link_prefix(expr, state, env);
-    } else {
-        unreachable!();
-    }
-    let has_type = cast_type_expression(expr, state, env);
-    expr.get_mut_meta().get_mut_memory_knowledge().set_concrete_dimensions(has_type);
-}
+    use Expression::*;
 
-fn link_call(expr: &mut Expression, state: &State, env: &E) {
-    use Expression::Call;
-    if let Call { id, args, .. } = expr {
-        for arg in args.iter_mut() {
-            link_expression(arg, state, env);
-        }
-        if state.generic_functions.contains_key(id) {
-            let params = map_to_params(id, args, state, env);
-            let (index, _) = look_for_existing_instance(id, &params, state).unwrap();
-            *id = state.vcf_collector[index].header.clone();
-        }
-    } else {
-        unreachable!();
-    }
-}
+    match expr {
+        Number { .. } => (),
+        Call { id, args, .. } => {
+            args.iter_mut().for_each(|a| link_expression(a, state, env));
 
-fn link_array(expr: &mut Expression, state: &State, env: &E) {
-    use Expression::ArrayInLine;
-    if let ArrayInLine { values, .. } = expr {
-        for v in values {
-            link_expression(v, state, env)
-        }
-    } else {
-        unreachable!();
-    }
-}
-
-fn link_variable(expr: &mut Expression, state: &State, env: &E) {
-    use Expression::Variable;
-    if let Variable { access, .. } = expr {
-        for acc in access {
-            if let Access::ArrayAccess(e) = acc {
-                link_expression(e, state, env);
+            if state.generic_functions.contains_key(id) {
+                let params = map_to_params(id, args, state, env);
+                let (index, _) = look_for_existing_instance(id, &params, state).unwrap();
+                *id = state.vcf_collector[index].header.clone();
             }
         }
-    } else {
-        unreachable!();
+        ArrayInLine { values, .. } => {
+            values.iter_mut().for_each(|v| link_expression(v, state, env))
+        }
+        Variable { access, .. } => {
+            for acc in access {
+                if let Access::ArrayAccess(e) = acc {
+                    link_expression(e, state, env);
+                }
+            }
+        }
+        TernaryOp { if_true, if_false, .. } => {
+            link_expression(if_true, state, env);
+            link_expression(if_false, state, env);
+        }
+        InfixOp { lhe, rhe, .. } => {
+            link_expression(lhe, state, env);
+            link_expression(rhe, state, env);
+        }
+        PrefixOp { rhe, .. } => link_expression(rhe, state, env),
     }
-}
 
-fn link_switch(expr: &mut Expression, state: &State, env: &E) {
-    use Expression::TernaryOp;
-    if let TernaryOp { if_true, if_false, .. } = expr {
-        link_expression(if_true, state, env);
-        link_expression(if_false, state, env);
-    } else {
-        unreachable!();
-    }
-}
-
-fn link_number(_expr: &mut Expression, _state: &State, _env: &E) {}
-
-fn link_infix(expr: &mut Expression, state: &State, env: &E) {
-    use Expression::InfixOp;
-    if let InfixOp { lhe, rhe, .. } = expr {
-        link_expression(lhe, state, env);
-        link_expression(rhe, state, env);
-    } else {
-        unreachable!();
-    }
-}
-
-fn link_prefix(expr: &mut Expression, state: &State, env: &E) {
-    use Expression::PrefixOp;
-    if let PrefixOp { rhe, .. } = expr {
-        link_expression(rhe, state, env);
-    } else {
-        unreachable!();
-    }
+    let has_type = cast_type_expression(expr, state, env);
+    expr.get_mut_meta().get_mut_memory_knowledge().set_concrete_dimensions(has_type);
 }
 
 // When the vcf of a branch in the AST had been produced, this algorithm
 // can return the type of a expression in that branch
 fn cast_type_expression(expr: &Expression, state: &State, environment: &E) -> VCT {
-    if expr.is_variable() {
-        cast_type_variable(expr, state, environment)
-    } else if expr.is_array() {
-        cast_type_array(expr, state, environment)
-    } else if expr.is_call() {
-        cast_type_call(expr, state, environment)
-    } else if expr.is_switch() {
-        cast_type_switch(expr, state, environment)
-    } else {
-        VCT::with_capacity(0)
-    }
-}
-
-fn cast_type_variable(expr: &Expression, state: &State, environment: &E) -> VCT {
-    use Expression::Variable;
-    if let Variable { name, access, .. } = expr {
-        let mut xtype = environment.get_variable(name).unwrap().clone();
-        xtype.reverse();
-        for acc in access {
-            match acc {
-                Access::ArrayAccess(_) => {
-                    xtype.pop();
-                }
-                Access::ComponentAccess(signal) => {
-                    xtype = state.external_signals.get(name).unwrap().get(signal).unwrap().clone();
-                    xtype.reverse();
+    use Expression::*;
+    match expr {
+        Variable { name, access, .. } => {
+            let mut xtype = environment.get_variable(name).unwrap().clone();
+            xtype.reverse();
+            for acc in access {
+                match acc {
+                    Access::ArrayAccess(_) => {
+                        xtype.pop();
+                    }
+                    Access::ComponentAccess(signal) => {
+                        xtype =
+                            state.external_signals.get(name).unwrap().get(signal).unwrap().clone();
+                        xtype.reverse();
+                    }
                 }
             }
+            xtype.reverse();
+            xtype
         }
-        xtype.reverse();
-        xtype
-    } else {
-        unreachable!();
-    }
-}
-
-fn cast_type_array(expr: &Expression, state: &State, environment: &E) -> VCT {
-    use Expression::ArrayInLine;
-    if let ArrayInLine { values, .. } = expr {
-        let mut result = vec![values.len()];
-        let mut inner_type = cast_type_expression(&values[0], state, environment);
-        result.append(&mut inner_type);
-        result
-    } else {
-        unreachable!();
-    }
-}
-
-fn cast_type_call(expr: &Expression, state: &State, environment: &E) -> VCT {
-    use Expression::Call;
-    if let Call { id, args, .. } = expr {
-        if let Option::Some(returns) = state.quick_knowledge.get(id) {
-            returns.clone()
-        } else if !state.generic_functions.contains_key(id) {
-            vec![]
-        } else {
-            let params = map_to_params(id, args, state, environment);
-            look_for_existing_instance(id, &params, state).unwrap().1
+        ArrayInLine { values, .. } => {
+            let mut result = vec![values.len()];
+            let mut inner_type = cast_type_expression(&values[0], state, environment);
+            result.append(&mut inner_type);
+            result
         }
-    } else {
-        unreachable!()
-    }
-}
-
-fn cast_type_switch(expr: &Expression, state: &State, environment: &E) -> VCT {
-    use Expression::TernaryOp;
-    if let TernaryOp { if_true, .. } = expr {
-        cast_type_expression(if_true, state, environment)
-    } else {
-        unreachable!();
+        Call { id, args, .. } => {
+            if let Option::Some(returns) = state.quick_knowledge.get(id) {
+                returns.clone()
+            } else if !state.generic_functions.contains_key(id) {
+                vec![]
+            } else {
+                let params = map_to_params(id, args, state, environment);
+                look_for_existing_instance(id, &params, state).unwrap().1
+            }
+        }
+        TernaryOp { if_true, .. } => cast_type_expression(if_true, state, environment),
+        _ => VCT::with_capacity(0),
     }
 }
 
