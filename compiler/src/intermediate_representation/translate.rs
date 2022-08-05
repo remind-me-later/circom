@@ -400,97 +400,144 @@ fn create_mixed_components(state: &mut State, triggers: &[Trigger], cluster: Tri
 
 // Start of translation utils
 fn translate_statement(stmt: Statement, state: &mut State, context: &Context) {
-    if stmt.is_declaration() {
-        translate_declaration(stmt, state, context);
-    } else if stmt.is_substitution() {
-        translate_substitution(stmt, state, context);
-    } else if stmt.is_block() {
-        translate_block(stmt, state, context);
-    } else if stmt.is_if_then_else() {
-        translate_if_then_else(stmt, state, context);
-    } else if stmt.is_while() {
-        translate_while(stmt, state, context);
-    } else if stmt.is_assert() {
-        translate_assert(stmt, state, context);
-    } else if stmt.is_constraint_equality() {
-        translate_constraint_equality(stmt, state, context);
-    } else if stmt.is_return() {
-        translate_return(stmt, state, context);
-    } else if stmt.is_log_call() {
-        translate_log(stmt, state, context);
-    } else if stmt.is_initialization_block() {
-        unreachable!("This statement is syntactic sugar");
-    } else {
-        unreachable!("Unknown statement");
-    }
-}
-
-fn translate_if_then_else(stmt: Statement, state: &mut State, context: &Context) {
-    use Statement::IfThenElse;
-    if let IfThenElse { meta, cond, if_case, else_case, .. } = stmt {
-        let starts_at = context.files.get_line(meta.get_start(), meta.unwrap_file_id()).unwrap();
-        let main_program = std::mem::replace(&mut state.code, vec![]);
-        let cond_translation = translate_expression(cond, state, context);
-        translate_statement(*if_case, state, context);
-        let if_code = std::mem::replace(&mut state.code, vec![]);
-        if let Option::Some(else_case) = else_case {
-            translate_statement(*else_case, state, context);
+    use Statement::*;
+    match stmt {
+        Declaration { name, meta, .. } => {
+            let starts_at =
+                context.files.get_line(meta.get_start(), meta.unwrap_file_id()).unwrap();
+            let dimensions = meta.get_memory_knowledge().get_concrete_dimensions().to_vec();
+            let size = dimensions.iter().fold(1, |p, c| p * (*c));
+            let address = state.reserve_variable(size);
+            let instruction = ValueBucket {
+                line: starts_at,
+                message_id: state.message_id,
+                parse_as: ValueType::U32,
+                value: address,
+                op_aux_no: 0,
+                is_parallel: state.is_parallel,
+            }
+            .allocate();
+            let info = SymbolInfo { access_instruction: instruction, dimensions };
+            state.environment.add_variable(&name, info);
         }
-        let else_code = std::mem::replace(&mut state.code, main_program);
-        let branch_instruction = BranchBucket {
-            is_parallel: state.is_parallel,
-            line: starts_at,
-            message_id: state.message_id,
-            cond: cond_translation,
-            if_branch: if_code,
-            else_branch: else_code,
+        Substitution { meta, var, access, rhe, .. } => {
+            debug_assert!(!meta.get_type_knowledge().is_component());
+            let def = SymbolDef { meta: meta.clone(), symbol: var, acc: access };
+            let str_info =
+                StoreInfo { prc_symbol: ProcessedSymbol::new(def, state, context), src: rhe };
+
+            let store_instruction = if let Expression::Call { id, args, .. } = str_info.src {
+                // Translate call
+                let args_instr = translate_call_arguments(args, state, context);
+                str_info.prc_symbol.into_call_assign(id, args_instr, &state)
+            } else {
+                // Translate standard case
+                let src = translate_expression(str_info.src, state, context);
+                str_info.prc_symbol.into_store(src, state)
+            };
+
+            state.code.push(store_instruction);
         }
-        .allocate();
-        state.code.push(branch_instruction);
-    }
-}
-
-fn translate_while(stmt: Statement, state: &mut State, context: &Context) {
-    use Statement::While;
-    if let While { meta, cond, stmt, .. } = stmt {
-        let starts_at = context.files.get_line(meta.get_start(), meta.unwrap_file_id()).unwrap();
-        let main_program = std::mem::replace(&mut state.code, vec![]);
-        let cond_translation = translate_expression(cond, state, context);
-        translate_statement(*stmt, state, context);
-        let loop_code = std::mem::replace(&mut state.code, main_program);
-        let loop_instruction = LoopBucket {
-            line: starts_at,
-            message_id: state.message_id,
-            continue_condition: cond_translation,
-            body: loop_code,
-            is_parallel: state.is_parallel,
+        Block { stmts, .. } => {
+            let save_variable_address = state.variable_stack;
+            state.environment.add_variable_block();
+            for s in stmts {
+                translate_statement(s, state, context);
+            }
+            state.environment.remove_variable_block();
+            state.variable_stack = save_variable_address;
         }
-        .allocate();
-        state.code.push(loop_instruction);
-    }
-}
-
-fn translate_substitution(stmt: Statement, state: &mut State, context: &Context) {
-    use Statement::Substitution;
-    if let Substitution { meta, var, access, rhe, .. } = stmt {
-        debug_assert!(!meta.get_type_knowledge().is_component());
-        let def = SymbolDef { meta: meta.clone(), symbol: var, acc: access };
-        let str_info =
-            StoreInfo { prc_symbol: ProcessedSymbol::new(def, state, context), src: rhe };
-
-        let store_instruction = if let Expression::Call { id, args, .. } = str_info.src {
-            // Translate call
-            let args_instr = translate_call_arguments(args, state, context);
-            str_info.prc_symbol.into_call_assign(id, args_instr, &state)
-        } else {
-            // Translate standard case
-            let src = translate_expression(str_info.src, state, context);
-            str_info.prc_symbol.into_store(src, state)
-        };
-
-        state.code.push(store_instruction);
-    } else {
-        unreachable!();
+        IfThenElse { meta, cond, if_case, else_case, .. } => {
+            let starts_at =
+                context.files.get_line(meta.get_start(), meta.unwrap_file_id()).unwrap();
+            let main_program = std::mem::replace(&mut state.code, vec![]);
+            let cond_translation = translate_expression(cond, state, context);
+            translate_statement(*if_case, state, context);
+            let if_code = std::mem::replace(&mut state.code, vec![]);
+            if let Option::Some(else_case) = else_case {
+                translate_statement(*else_case, state, context);
+            }
+            let else_code = std::mem::replace(&mut state.code, main_program);
+            let branch_instruction = BranchBucket {
+                is_parallel: state.is_parallel,
+                line: starts_at,
+                message_id: state.message_id,
+                cond: cond_translation,
+                if_branch: if_code,
+                else_branch: else_code,
+            }
+            .allocate();
+            state.code.push(branch_instruction);
+        }
+        While { meta, cond, stmt, .. } => {
+            let starts_at =
+                context.files.get_line(meta.get_start(), meta.unwrap_file_id()).unwrap();
+            let main_program = std::mem::replace(&mut state.code, vec![]);
+            let cond_translation = translate_expression(cond, state, context);
+            translate_statement(*stmt, state, context);
+            let loop_code = std::mem::replace(&mut state.code, main_program);
+            let loop_instruction = LoopBucket {
+                line: starts_at,
+                message_id: state.message_id,
+                continue_condition: cond_translation,
+                body: loop_code,
+                is_parallel: state.is_parallel,
+            }
+            .allocate();
+            state.code.push(loop_instruction);
+        }
+        Assert { meta, arg, .. } => {
+            let line = context.files.get_line(meta.get_start(), meta.unwrap_file_id()).unwrap();
+            let code = translate_expression(arg, state, context);
+            let assert =
+                AssertBucket { line, message_id: state.message_id, evaluate: code }.allocate();
+            state.code.push(assert);
+        }
+        ConstraintEquality { meta, lhe, rhe } => {
+            let starts_at =
+                context.files.get_line(meta.get_start(), meta.unwrap_file_id()).unwrap();
+            let lhe_pointer = translate_expression(lhe, state, context);
+            let rhe_pointer = translate_expression(rhe, state, context);
+            let stack = vec![lhe_pointer, rhe_pointer];
+            let equality = ComputeBucket {
+                line: starts_at,
+                is_parallel: state.is_parallel,
+                message_id: state.message_id,
+                op_aux_no: 0,
+                op: OperatorType::Eq,
+                stack,
+            }
+            .allocate();
+            let assert_instruction =
+                AssertBucket { line: starts_at, message_id: state.message_id, evaluate: equality }
+                    .allocate();
+            state.code.push(assert_instruction);
+        }
+        Return { meta, value, .. } => {
+            let return_type = context.functions.get(&context.translating).unwrap();
+            let return_bucket = ReturnBucket {
+                is_parallel: state.is_parallel,
+                line: context.files.get_line(meta.get_start(), meta.unwrap_file_id()).unwrap(),
+                message_id: state.message_id,
+                with_size: return_type.iter().fold(1, |p, c| p * (*c)),
+                value: translate_expression(value, state, context),
+            }
+            .allocate();
+            state.code.push(return_bucket);
+        }
+        LogCall { meta, arg, .. } => {
+            let line = context.files.get_line(meta.get_start(), meta.unwrap_file_id()).unwrap();
+            let code = translate_expression(arg, state, context);
+            let log = LogBucket {
+                line,
+                message_id: state.message_id,
+                print: code,
+                is_parallel: state.is_parallel,
+            }
+            .allocate();
+            state.code.push(log);
+        }
+        InitializationBlock { .. } => unreachable!("This statement is syntactic sugar"),
     }
 }
 
@@ -501,111 +548,6 @@ struct StoreInfo {
 }
 
 // End of substitution utils
-
-fn translate_declaration(stmt: Statement, state: &mut State, context: &Context) {
-    use Statement::Declaration;
-    if let Declaration { name, meta, .. } = stmt {
-        let starts_at = context.files.get_line(meta.get_start(), meta.unwrap_file_id()).unwrap();
-        let dimensions = meta.get_memory_knowledge().get_concrete_dimensions().to_vec();
-        let size = dimensions.iter().fold(1, |p, c| p * (*c));
-        let address = state.reserve_variable(size);
-        let instruction = ValueBucket {
-            line: starts_at,
-            message_id: state.message_id,
-            parse_as: ValueType::U32,
-            value: address,
-            op_aux_no: 0,
-            is_parallel: state.is_parallel,
-        }
-        .allocate();
-        let info = SymbolInfo { access_instruction: instruction, dimensions };
-        state.environment.add_variable(&name, info);
-    } else {
-        unreachable!()
-    }
-}
-
-fn translate_block(stmt: Statement, state: &mut State, context: &Context) {
-    use Statement::Block;
-    if let Block { stmts, .. } = stmt {
-        let save_variable_address = state.variable_stack;
-        state.environment.add_variable_block();
-        for s in stmts {
-            translate_statement(s, state, context);
-        }
-        state.environment.remove_variable_block();
-        state.variable_stack = save_variable_address;
-    } else {
-        unreachable!()
-    }
-}
-
-fn translate_constraint_equality(stmt: Statement, state: &mut State, context: &Context) {
-    use Statement::ConstraintEquality;
-    if let ConstraintEquality { meta, lhe, rhe } = stmt {
-        let starts_at = context.files.get_line(meta.get_start(), meta.unwrap_file_id()).unwrap();
-        let lhe_pointer = translate_expression(lhe, state, context);
-        let rhe_pointer = translate_expression(rhe, state, context);
-        let stack = vec![lhe_pointer, rhe_pointer];
-        let equality = ComputeBucket {
-            line: starts_at,
-            is_parallel: state.is_parallel,
-            message_id: state.message_id,
-            op_aux_no: 0,
-            op: OperatorType::Eq,
-            stack,
-        }
-        .allocate();
-        let assert_instruction =
-            AssertBucket { line: starts_at, message_id: state.message_id, evaluate: equality }
-                .allocate();
-        state.code.push(assert_instruction);
-    } else {
-        unimplemented!()
-    }
-}
-
-fn translate_assert(stmt: Statement, state: &mut State, context: &Context) {
-    use Statement::Assert;
-    if let Assert { meta, arg, .. } = stmt {
-        let line = context.files.get_line(meta.get_start(), meta.unwrap_file_id()).unwrap();
-        let code = translate_expression(arg, state, context);
-        let assert = AssertBucket { line, message_id: state.message_id, evaluate: code }.allocate();
-        state.code.push(assert);
-    }
-}
-
-fn translate_log(stmt: Statement, state: &mut State, context: &Context) {
-    use Statement::LogCall;
-    if let LogCall { meta, arg, .. } = stmt {
-        let line = context.files.get_line(meta.get_start(), meta.unwrap_file_id()).unwrap();
-        let code = translate_expression(arg, state, context);
-        let log = LogBucket {
-            line,
-            message_id: state.message_id,
-            print: code,
-            is_parallel: state.is_parallel,
-        }
-        .allocate();
-        state.code.push(log);
-    }
-}
-
-fn translate_return(stmt: Statement, state: &mut State, context: &Context) {
-    use Statement::Return;
-    if let Return { meta, value, .. } = stmt {
-        let return_type = context.functions.get(&context.translating).unwrap();
-        let return_bucket = ReturnBucket {
-            is_parallel: state.is_parallel,
-            line: context.files.get_line(meta.get_start(), meta.unwrap_file_id()).unwrap(),
-            message_id: state.message_id,
-            with_size: return_type.iter().fold(1, |p, c| p * (*c)),
-            value: translate_expression(value, state, context),
-        }
-        .allocate();
-        state.code.push(return_bucket);
-    }
-}
 
 fn translate_expression(
     expression: Expression,

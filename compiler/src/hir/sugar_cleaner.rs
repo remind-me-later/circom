@@ -43,142 +43,50 @@ pub fn clean_sugar(vcp: &mut VCP) {
 }
 
 fn extend_statement(stmt: &mut Statement, state: &mut State, context: &Context) -> Vec<Statement> {
-    if stmt.is_block() {
-        extend_block(stmt, state, context)
-    } else if stmt.is_while() {
-        extend_while(stmt, state, context)
-    } else if stmt.is_if_then_else() {
-        extend_conditional(stmt, state, context)
-    } else if stmt.is_substitution() {
-        extend_substitution(stmt, state, context)
-    } else if stmt.is_constraint_equality() {
-        extend_constraint_equality(stmt, state, context)
-    } else if stmt.is_declaration() {
-        extend_declaration(stmt, state, context)
-    } else if stmt.is_return() {
-        extend_return(stmt, state, context)
-    } else if stmt.is_log_call() {
-        extend_log_call(stmt, state, context)
-    } else if stmt.is_assert() {
-        extend_assert(stmt, state, context)
-    } else {
-        unreachable!()
-    }
-}
-
-fn extend_declaration(
-    _stmt: &mut Statement,
-    _state: &mut State,
-    _context: &Context,
-) -> Vec<Statement> {
-    vec![]
-}
-
-fn extend_block(stmt: &mut Statement, state: &mut State, context: &Context) -> Vec<Statement> {
-    use Statement::Block;
-    if let Block { stmts, .. } = stmt {
-        let checkpoint_id = state.fresh_id;
-        map_init_blocks(stmts);
-        map_stmts_with_sugar(stmts, state, context);
-        map_substitutions(stmts);
-        state.fresh_id = map_returns(stmts, state.fresh_id);
-        state.fresh_id = checkpoint_id;
-        vec![]
-    } else {
-        unreachable!()
-    }
-}
-
-fn extend_while(stmt: &mut Statement, state: &mut State, context: &Context) -> Vec<Statement> {
-    use Statement::While;
-    if let While { cond, stmt, .. } = stmt {
-        let mut expands = extend_statement(stmt, state, context);
-        let mut cond_extension = extend_expression(cond, state, context);
-        expands.append(&mut cond_extension.initializations);
-        let mut expr = vec![cond.clone()];
-        sugar_filter(&mut expr, state, &mut expands);
-        *cond = expr.pop().unwrap();
-        expands
-    } else {
-        unreachable!()
-    }
-}
-
-fn extend_conditional(
-    stmt: &mut Statement,
-    state: &mut State,
-    context: &Context,
-) -> Vec<Statement> {
-    use Statement::IfThenElse;
-    if let IfThenElse { cond, if_case, else_case, .. } = stmt {
-        let mut expands = vec![];
-        expands.append(&mut extend_statement(if_case, state, context));
-        if let Option::Some(s) = else_case {
-            expands.append(&mut extend_statement(s, state, context));
+    use Statement::*;
+    match stmt {
+        Block { stmts, .. } => {
+            let checkpoint_id = state.fresh_id;
+            map_init_blocks(stmts);
+            map_stmts_with_sugar(stmts, state, context);
+            map_substitutions(stmts);
+            state.fresh_id = map_returns(stmts, state.fresh_id);
+            state.fresh_id = checkpoint_id;
+            vec![]
         }
-        let mut cond_extension = extend_expression(cond, state, context);
-        expands.append(&mut cond_extension.initializations);
-        let mut expr = vec![cond.clone()];
-        sugar_filter(&mut expr, state, &mut expands);
-        *cond = expr.pop().unwrap();
-        expands
-    } else {
-        unreachable!()
-    }
-}
-
-fn extend_substitution(
-    stmt: &mut Statement,
-    state: &mut State,
-    context: &Context,
-) -> Vec<Statement> {
-    use Statement::Substitution;
-    if let Substitution { rhe, .. } = stmt {
-        extend_expression(rhe, state, context).initializations
-    } else {
-        unreachable!()
-    }
-}
-
-fn extend_constraint_equality(
-    stmt: &mut Statement,
-    state: &mut State,
-    context: &Context,
-) -> Vec<Statement> {
-    use Statement::ConstraintEquality;
-    if let ConstraintEquality { lhe, rhe, .. } = stmt {
-        let mut expands = extend_expression(lhe, state, context).initializations;
-        expands.append(&mut extend_expression(rhe, state, context).initializations);
-        expands
-    } else {
-        unreachable!()
-    }
-}
-
-fn extend_return(stmt: &mut Statement, state: &mut State, context: &Context) -> Vec<Statement> {
-    use Statement::Return;
-    if let Return { value, .. } = stmt {
-        extend_expression(value, state, context).initializations
-    } else {
-        unreachable!()
-    }
-}
-
-fn extend_log_call(stmt: &mut Statement, state: &mut State, context: &Context) -> Vec<Statement> {
-    use Statement::LogCall;
-    if let LogCall { arg, .. } = stmt {
-        extend_expression(arg, state, context).initializations
-    } else {
-        unreachable!()
-    }
-}
-
-fn extend_assert(stmt: &mut Statement, state: &mut State, context: &Context) -> Vec<Statement> {
-    use Statement::Assert;
-    if let Assert { arg, .. } = stmt {
-        extend_expression(arg, state, context).initializations
-    } else {
-        unreachable!()
+        While { cond, stmt, .. } => {
+            let mut expands = extend_statement(stmt, state, context);
+            let mut cond_extension = extend_expression(cond, state, context);
+            expands.append(&mut cond_extension.initializations);
+            let mut expr = vec![cond.clone()];
+            sugar_filter(&mut expr, state, &mut expands);
+            *cond = expr.pop().unwrap();
+            expands
+        }
+        IfThenElse { cond, if_case, else_case, .. } => {
+            let mut expands = vec![];
+            expands.append(&mut extend_statement(if_case, state, context));
+            if let Option::Some(s) = else_case {
+                expands.append(&mut extend_statement(s, state, context));
+            }
+            let mut cond_extension = extend_expression(cond, state, context);
+            expands.append(&mut cond_extension.initializations);
+            let mut expr = vec![cond.clone()];
+            sugar_filter(&mut expr, state, &mut expands);
+            *cond = expr.pop().unwrap();
+            expands
+        }
+        Substitution { rhe, .. } => extend_expression(rhe, state, context).initializations,
+        ConstraintEquality { lhe, rhe, .. } => {
+            let mut expands = extend_expression(lhe, state, context).initializations;
+            expands.append(&mut extend_expression(rhe, state, context).initializations);
+            expands
+        }
+        Declaration { .. } => vec![],
+        Return { value, .. } => extend_expression(value, state, context).initializations,
+        LogCall { arg, .. } => extend_expression(arg, state, context).initializations,
+        Assert { arg, .. } => extend_expression(arg, state, context).initializations,
+        _ => unreachable!(),
     }
 }
 

@@ -85,84 +85,28 @@ fn treat_statement(
     flag_verbose: bool,
     prime: &String,
 ) {
-    if stmt.is_initialization_block() {
-        treat_init_block(stmt, context, reports, flag_verbose, prime)
-    } else if stmt.is_block() {
-        treat_block(stmt, context, reports, flag_verbose, prime)
-    } else if stmt.is_if_then_else() {
-        treat_conditional(stmt, context, reports, flag_verbose, prime)
-    } else if stmt.is_while() {
-        treat_while(stmt, context, reports, flag_verbose, prime)
-    } else {
-    }
-}
-
-fn treat_init_block(
-    stmt: &mut Statement,
-    context: &Context,
-    reports: &mut ReportCollection,
-    flag_verbose: bool,
-    prime: &String,
-) {
-    use Statement::InitializationBlock;
-    if let InitializationBlock { initializations, .. } = stmt {
-        for init in initializations {
-            if init.is_declaration() {
-                treat_declaration(init, context, reports, flag_verbose, prime)
+    use Statement::*;
+    match stmt {
+        InitializationBlock { initializations, .. } => {
+            for init in initializations {
+                if matches!(init, Declaration { .. }) {
+                    treat_declaration(init, context, reports, flag_verbose, prime)
+                }
             }
         }
-    } else {
-        unreachable!()
-    }
-}
-
-fn treat_block(
-    stmt: &mut Statement,
-    context: &Context,
-    reports: &mut ReportCollection,
-    flag_verbose: bool,
-    prime: &String,
-) {
-    use Statement::Block;
-    if let Block { stmts, .. } = stmt {
-        for s in stmts {
-            treat_statement(s, context, reports, flag_verbose, prime);
+        Block { stmts, .. } => {
+            stmts
+                .into_iter()
+                .for_each(|s| treat_statement(s, context, reports, flag_verbose, prime));
         }
-    } else {
-        unreachable!()
-    }
-}
-
-fn treat_while(
-    stmt: &mut Statement,
-    context: &Context,
-    reports: &mut ReportCollection,
-    flag_verbose: bool,
-    prime: &String,
-) {
-    use Statement::While;
-    if let While { stmt, .. } = stmt {
-        treat_statement(stmt, context, reports, flag_verbose, prime);
-    } else {
-        unreachable!()
-    }
-}
-
-fn treat_conditional(
-    stmt: &mut Statement,
-    context: &Context,
-    reports: &mut ReportCollection,
-    flag_verbose: bool,
-    prime: &String,
-) {
-    use Statement::IfThenElse;
-    if let IfThenElse { if_case, else_case, .. } = stmt {
-        treat_statement(if_case, context, reports, flag_verbose, prime);
-        if let Some(s) = else_case {
-            treat_statement(s, context, reports, flag_verbose, prime);
+        IfThenElse { if_case, else_case, .. } => {
+            treat_statement(if_case, context, reports, flag_verbose, prime);
+            if let Some(s) = else_case {
+                treat_statement(s, context, reports, flag_verbose, prime);
+            }
         }
-    } else {
-        unreachable!()
+        While { stmt, .. } => treat_statement(stmt, context, reports, flag_verbose, prime),
+        _ => (),
     }
 }
 

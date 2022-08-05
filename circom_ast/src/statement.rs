@@ -151,47 +151,6 @@ impl Statement {
             | InitializationBlock { meta, .. } => meta,
         }
     }
-
-    pub fn is_if_then_else(&self) -> bool {
-        matches!(self, Statement::IfThenElse { .. })
-    }
-
-    pub fn is_while(&self) -> bool {
-        matches!(self, Statement::While { .. })
-    }
-
-    pub fn is_return(&self) -> bool {
-        use Statement::Return;
-        matches!(self, Return { .. })
-    }
-
-    pub fn is_initialization_block(&self) -> bool {
-        matches!(self, Statement::InitializationBlock { .. })
-    }
-
-    pub fn is_declaration(&self) -> bool {
-        matches!(self, Statement::Declaration { .. })
-    }
-
-    pub fn is_substitution(&self) -> bool {
-        matches!(self, Statement::Substitution { .. })
-    }
-
-    pub fn is_constraint_equality(&self) -> bool {
-        matches!(self, Statement::ConstraintEquality { .. })
-    }
-
-    pub fn is_log_call(&self) -> bool {
-        matches!(self, Statement::LogCall { .. })
-    }
-
-    pub fn is_block(&self) -> bool {
-        matches!(self, Statement::Block { .. })
-    }
-
-    pub fn is_assert(&self) -> bool {
-        matches!(self, Statement::Assert { .. })
-    }
 }
 
 impl FillMeta for Statement {
