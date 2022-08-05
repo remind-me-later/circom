@@ -5,19 +5,11 @@ use circom_error::file_definition::FileID;
 use super::function_data::{FunctionData, FunctionInfo};
 use super::template_data::{TemplateData, TemplateInfo};
 
+#[derive(Default)]
 pub struct Merger {
     fresh_id: usize,
     function_info: FunctionInfo,
     template_info: TemplateInfo,
-}
-impl Default for Merger {
-    fn default() -> Self {
-        Merger {
-            fresh_id: 0,
-            function_info: FunctionInfo::new(),
-            template_info: TemplateInfo::new(),
-        }
-    }
 }
 
 impl Merger {
@@ -43,7 +35,7 @@ impl Merger {
                     is_custom_gate,
                 } => {
                     if self.contains_function(&name) || self.contains_template(&name) {
-                        (Option::Some(name), meta)
+                        (Some(name), meta)
                     } else {
                         let new_data = TemplateData::new(
                             name.clone(),
@@ -57,12 +49,12 @@ impl Merger {
                             is_custom_gate,
                         );
                         self.get_mut_template_info().insert(name.clone(), new_data);
-                        (Option::None, meta)
+                        (None, meta)
                     }
                 }
                 Definition::Function { name, body, args, arg_location, meta } => {
                     if self.contains_function(&name) || self.contains_template(&name) {
-                        (Option::Some(name), meta)
+                        (Some(name), meta)
                     } else {
                         let new_data = FunctionData::new(
                             name.clone(),
@@ -74,11 +66,11 @@ impl Merger {
                             &mut self.fresh_id,
                         );
                         self.get_mut_function_info().insert(name.clone(), new_data);
-                        (Option::None, meta)
+                        (None, meta)
                     }
                 }
             };
-            if let Option::Some(definition_name) = name {
+            if let Some(definition_name) = name {
                 let mut report = Report::error(
                     String::from("Duplicated callable symbol"),
                     ReportCode::SameSymbolDeclaredTwice,

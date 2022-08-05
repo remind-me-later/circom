@@ -309,8 +309,8 @@ impl ConstraintExporter for DAG {
 }
 
 impl DAG {
-    pub fn new(prime: &String) -> DAG {
-        DAG { prime: prime.clone(), one_signal: 0, nodes: Vec::new(), adjacency: Vec::new() }
+    pub fn new(prime: &str) -> DAG {
+        DAG { prime: prime.to_string(), one_signal: 0, nodes: Vec::new(), adjacency: Vec::new() }
     }
 
     pub fn add_edge(&mut self, to: usize, label: &str) -> Option<&Edge> {
@@ -348,7 +348,7 @@ impl DAG {
             self.adjacency[from].push(with);
             self.adjacency[from].last()
         } else {
-            Option::None
+            None
         }
     }
 
@@ -374,31 +374,31 @@ impl DAG {
     }
 
     pub fn add_input(&mut self, name: String, is_public: bool) {
-        if let Option::Some(node) = self.get_mut_main() {
+        if let Some(node) = self.get_mut_main() {
             node.add_input(name, is_public);
         }
     }
 
     pub fn add_output(&mut self, name: String) {
-        if let Option::Some(node) = self.get_mut_main() {
+        if let Some(node) = self.get_mut_main() {
             node.add_output(name);
         }
     }
 
     pub fn add_intermediate(&mut self, name: String) {
-        if let Option::Some(node) = self.get_mut_main() {
+        if let Some(node) = self.get_mut_main() {
             node.add_intermediate(name);
         }
     }
 
     pub fn add_constraint(&mut self, constraint: Constraint) {
-        if let Option::Some(node) = self.get_mut_main() {
+        if let Some(node) = self.get_mut_main() {
             node.add_constraint(constraint);
         }
     }
 
     pub fn set_number_of_subcomponents_indexes(&mut self, number_scmp: usize) {
-        if let Option::Some(node) = self.get_mut_main() {
+        if let Some(node) = self.get_mut_main() {
             node.set_number_of_subcomponents_indexes(number_scmp);
         }
     }
@@ -418,15 +418,15 @@ impl DAG {
             index += 1;
         }
         if index == cc.len() {
-            Option::None
+            None
         } else {
-            Option::Some(index)
+            Some(index)
         }
     }
 
     pub fn get_connexion(&self, from: usize, to: usize) -> Option<&Edge> {
         let index = self.raw_find_id_connexion(from, to);
-        if let Option::Some(i) = index {
+        if let Some(i) = index {
             Some(&self.adjacency[from][i])
         } else {
             None
@@ -487,7 +487,7 @@ impl DAG {
     }
 
     pub fn public_inputs(&self) -> usize {
-        if let Option::Some(main) = self.get_main() {
+        if let Some(main) = self.get_main() {
             main.number_of_public_inputs()
         } else {
             0
@@ -495,7 +495,7 @@ impl DAG {
     }
 
     pub fn private_inputs(&self) -> usize {
-        if let Option::Some(main) = self.get_main() {
+        if let Some(main) = self.get_main() {
             main.number_of_private_inputs()
         } else {
             0
@@ -503,7 +503,7 @@ impl DAG {
     }
 
     pub fn public_outputs(&self) -> usize {
-        if let Option::Some(main) = self.get_main() {
+        if let Some(main) = self.get_main() {
             main.number_of_outputs()
         } else {
             0

@@ -1,3 +1,4 @@
+use circom_ast::VariableType;
 use circom_ast::{FillMeta, SignalElementType, Statement};
 use circom_error::file_definition::FileID;
 use circom_error::file_definition::LocationInFile;
@@ -110,7 +111,7 @@ fn fill_inputs_and_outputs(
     match template_statement {
         Statement::IfThenElse { if_case, else_case, .. } => {
             fill_inputs_and_outputs(if_case, input_signals, output_signals);
-            if let Option::Some(else_value) = else_case {
+            if let Some(else_value) = else_case {
                 fill_inputs_and_outputs(else_value, input_signals, output_signals);
             }
         }
@@ -127,19 +128,22 @@ fn fill_inputs_and_outputs(
                 fill_inputs_and_outputs(initialization, input_signals, output_signals);
             }
         }
-        Statement::Declaration { xtype, name, dimensions, .. } => {
-            if let circom_ast::VariableType::Signal(stype, tag) = xtype {
-                let signal_name = name.clone();
-                let dim = dimensions.len();
-                match stype {
-                    circom_ast::SignalType::Input => {
-                        input_signals.insert(signal_name, (dim, *tag));
-                    }
-                    circom_ast::SignalType::Output => {
-                        output_signals.insert(signal_name, (dim, *tag));
-                    }
-                    _ => {} //no need to deal with intermediate signals
+        Statement::Declaration {
+            xtype: VariableType::Signal(stype, tag),
+            name,
+            dimensions,
+            ..
+        } => {
+            let signal_name = name.clone();
+            let dim = dimensions.len();
+            match stype {
+                circom_ast::SignalType::Input => {
+                    input_signals.insert(signal_name, (dim, *tag));
                 }
+                circom_ast::SignalType::Output => {
+                    output_signals.insert(signal_name, (dim, *tag));
+                }
+                _ => {} //no need to deal with intermediate signals
             }
         }
         _ => {}

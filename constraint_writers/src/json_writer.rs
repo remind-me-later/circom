@@ -16,7 +16,7 @@ impl ConstraintJSON {
         writer_constraints.write_all(b"\n\"constraints\": [").map_err(|_err| {})?;
         writer_constraints.flush().map_err(|_err| {})?;
 
-        Result::Ok(ConstraintJSON { writer_constraints, constraints_flag: false })
+        Ok(ConstraintJSON { writer_constraints, constraints_flag: false })
     }
     pub fn write_constraint(&mut self, constraint: &str) -> Result<(), ()> {
         if !self.constraints_flag {
@@ -29,12 +29,12 @@ impl ConstraintJSON {
         }
         self.writer_constraints.write_all(constraint.as_bytes()).map_err(|_err| {})?;
         self.writer_constraints.flush().map_err(|_err| {})?;
-        Result::Ok(())
+        Ok(())
     }
     pub fn end(mut self) -> Result<(), ()> {
         self.writer_constraints.write_all(b"\n]\n}").map_err(|_err| {})?;
         self.writer_constraints.flush().map_err(|_err| {})?;
-        Result::Ok(())
+        Ok(())
     }
 }
 
@@ -51,7 +51,7 @@ impl SignalsJSON {
         writer_signals.flush().map_err(|_err| {})?;
         writer_signals.write_all(b"\n\"one\" : \"0\"").map_err(|_err| {})?;
         writer_signals.flush().map_err(|_err| {})?;
-        Result::Ok(SignalsJSON { writer_signals })
+        Ok(SignalsJSON { writer_signals })
     }
     pub fn write_correspondence(&mut self, signal: String, data: String) -> Result<(), ()> {
         self.writer_signals
@@ -78,7 +78,7 @@ impl SubstitutionJSON {
         writer_substitutions.flush().map_err(|_err| {})?;
         writer_substitutions.write_all(b"\n\"substitution\": {").map_err(|_err| {})?;
         writer_substitutions.flush().map_err(|_err| {})?;
-        Result::Ok(SubstitutionJSON { writer_substitutions, first })
+        Ok(SubstitutionJSON { writer_substitutions, first })
     }
     pub fn write_substitution(&mut self, signal: &str, substitution: &str) -> Result<(), ()> {
         if self.first {
@@ -91,7 +91,7 @@ impl SubstitutionJSON {
         self.writer_substitutions.flush().map_err(|_err| {})?;
         self.writer_substitutions.write_all(substitution.as_bytes()).map_err(|_err| {})?;
         self.writer_substitutions.flush().map_err(|_err| {})?;
-        Result::Ok(())
+        Ok(())
     }
     pub fn end(mut self) -> Result<(), ()> {
         self.writer_substitutions.write_all(b"\n}\n}").map_err(|_err| {})?;

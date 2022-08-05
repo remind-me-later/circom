@@ -1,4 +1,4 @@
-use std::path::PathBuf;
+use std::path::{PathBuf, Path};
 
 pub struct Input {
     pub input_program: PathBuf,
@@ -32,14 +32,14 @@ pub struct Input {
     pub prime: String,
 }
 
-const R1CS: &'static str = "r1cs";
-const WAT: &'static str = "wat";
-const WASM: &'static str = "wasm";
-const CPP: &'static str = "cpp";
-const JS: &'static str = "js";
-const DAT: &'static str = "dat";
-const SYM: &'static str = "sym";
-const JSON: &'static str = "json";
+const R1CS: &str = "r1cs";
+const WAT: &str = "wat";
+const WASM: &str = "wasm";
+const CPP: &str = "cpp";
+const JS: &str = "js";
+const DAT: &str = "dat";
+const SYM: &str = "sym";
+const JSON: &str = "json";
 
 impl Input {
     pub fn new() -> Result<Input, ()> {
@@ -51,7 +51,7 @@ impl Input {
         let output_c_path = Input::build_folder(&output_path, &file_name, CPP);
         let output_js_path = Input::build_folder(&output_path, &file_name, JS);
         let o_style = input_processing::get_simplification_style(&matches)?;
-        Result::Ok(Input {
+        Ok(Input {
             //field: P_BN128,
             input_program: input,
             out_r1cs: Input::build_output(&output_path, &file_name, R1CS),
@@ -88,21 +88,21 @@ impl Input {
         })
     }
 
-    fn build_folder(output_path: &PathBuf, filename: &str, ext: &str) -> PathBuf {
-        let mut file = output_path.clone();
+    fn build_folder(output_path: &Path, filename: &str, ext: &str) -> PathBuf {
+        let mut file = output_path.to_path_buf();
         let folder_name = format!("{}_{}", filename, ext);
         file.push(folder_name);
         file
     }
 
-    fn build_output(output_path: &PathBuf, filename: &str, ext: &str) -> PathBuf {
-        let mut file = output_path.clone();
+    fn build_output(output_path: &Path, filename: &str, ext: &str) -> PathBuf {
+        let mut file = output_path.to_path_buf();
         file.push(format!("{}.{}", filename, ext));
         file
     }
 
     pub fn input_file(&self) -> &str {
-        &self.input_program.to_str().unwrap()
+        self.input_program.to_str().unwrap()
     }
     pub fn r1cs_file(&self) -> &str {
         self.out_r1cs.to_str().unwrap()
@@ -197,18 +197,18 @@ mod input_processing {
     pub fn get_input(matches: &ArgMatches) -> Result<PathBuf, ()> {
         let route = Path::new(matches.value_of("input").unwrap()).to_path_buf();
         if route.is_file() {
-            Result::Ok(route)
+            Ok(route)
         } else {
-            Result::Err(eprintln!("{}", Colour::Red.paint("invalid input file")))
+            Err(eprintln!("{}", Colour::Red.paint("invalid input file")))
         }
     }
 
     pub fn get_output_path(matches: &ArgMatches) -> Result<PathBuf, ()> {
         let route = Path::new(matches.value_of("output").unwrap()).to_path_buf();
         if route.is_dir() {
-            Result::Ok(route)
+            Ok(route)
         } else {
-            Result::Err(eprintln!("{}", Colour::Red.paint("invalid output path")))
+            Err(eprintln!("{}", Colour::Red.paint("invalid output path")))
         }
     }
 
@@ -223,17 +223,14 @@ mod input_processing {
         let o_1 = matches.is_present("reduced_simplification");
         let o_2 = matches.is_present("full_simplification");
         let o_2_argument = matches.value_of("full_simplification").unwrap();
-        let no_rounds = if o_2_argument == "full" {
-            Ok(usize::MAX)
-        } else {
-            usize::from_str_radix(o_2_argument, 10)
-        };
+        let no_rounds =
+            if o_2_argument == "full" { Ok(usize::MAX) } else { o_2_argument.parse::<usize>() };
         match (o_0, o_1, o_2, no_rounds) {
             (true, _, _, _) => Ok(SimplificationStyle::O0),
             (_, true, _, _) => Ok(SimplificationStyle::O1),
             (_, _, true, Ok(no_rounds)) => Ok(SimplificationStyle::O2(no_rounds)),
             (false, false, false, _) => Ok(SimplificationStyle::O1),
-            _ => Result::Err(eprintln!("{}", Colour::Red.paint("invalid number of rounds"))),
+            _ => Err(eprintln!("{}", Colour::Red.paint("invalid number of rounds"))),
         }
     }
 
@@ -294,7 +291,7 @@ mod input_processing {
                 {
                     Ok(String::from(matches.value_of("prime").unwrap()))
                 } else {
-                    Result::Err(eprintln!("{}", Colour::Red.paint("invalid prime number")))
+                    Err(eprintln!("{}", Colour::Red.paint("invalid prime number")))
                 }
             }
 

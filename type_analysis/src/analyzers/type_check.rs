@@ -28,16 +28,16 @@ struct FoldedType {
 }
 impl FoldedType {
     pub fn arithmetic_type(dimensions: ArithmeticType) -> FoldedType {
-        FoldedType { arithmetic: Option::Some(dimensions), template: Option::None }
+        FoldedType { arithmetic: Some(dimensions), template: None }
     }
     pub fn template(name: &str) -> FoldedType {
-        FoldedType { template: Option::Some(name.to_string()), arithmetic: Option::None }
+        FoldedType { template: Some(name.to_string()), arithmetic: None }
     }
     pub fn is_template(&self) -> bool {
         self.template.is_some() && self.arithmetic.is_none()
     }
     pub fn dim(&self) -> usize {
-        if let Option::Some(dim) = &self.arithmetic {
+        if let Some(dim) = &self.arithmetic {
             *dim
         } else {
             0
@@ -45,12 +45,10 @@ impl FoldedType {
     }
     pub fn same_type(left: &FoldedType, right: &FoldedType) -> bool {
         let mut equal = false;
-        if let (Option::Some(l_template), Option::Some(r_template)) =
-            (&left.template, &right.template)
-        {
+        if let (Some(l_template), Some(r_template)) = (&left.template, &right.template) {
             equal = l_template.eq(r_template);
         }
-        if let (Option::Some(l_dim), Option::Some(r_dim)) = (&left.arithmetic, &right.arithmetic) {
+        if let (Some(l_dim), Some(r_dim)) = (&left.arithmetic, &right.arithmetic) {
             equal = *l_dim == *r_dim;
         }
         equal
@@ -68,15 +66,15 @@ pub fn type_check(program_archive: &ProgramArchive) -> Result<OutInfo, ReportCol
         reports: ReportCollection::new(),
         registered_calls: CallRegister::new(),
         environment: TypingEnvironment::new(),
-        return_type: Option::None,
+        return_type: None,
     };
     let initial_expression = program_archive.get_main_expression();
     let type_analysis_response =
         type_expression(initial_expression, program_archive, &mut analysis_information);
-    let first_type = if let Result::Ok(t) = type_analysis_response {
+    let first_type = if let Ok(t) = type_analysis_response {
         t
     } else {
-        return Result::Err(analysis_information.reports);
+        return Err(analysis_information.reports);
     };
     if !first_type.is_template() {
         add_report(
@@ -86,9 +84,9 @@ pub fn type_check(program_archive: &ProgramArchive) -> Result<OutInfo, ReportCol
         );
     }
     if analysis_information.reports.is_empty() {
-        Result::Ok(OutInfo { reached: analysis_information.reached })
+        Ok(OutInfo { reached: analysis_information.reached })
     } else {
-        Result::Err(analysis_information.reports)
+        Err(analysis_information.reports)
     }
 }
 
@@ -135,7 +133,7 @@ fn type_statement(
         }
         Substitution { var, access, op, rhe, meta, .. } => {
             let rhe_response = type_expression(rhe, program_archive, analysis_information);
-            let rhe_type = if let Result::Ok(r_type) = rhe_response {
+            let rhe_type = if let Ok(r_type) = rhe_response {
                 r_type
             } else {
                 return;
@@ -143,7 +141,7 @@ fn type_statement(
 
             let access_information_result =
                 treat_access(access, meta, program_archive, analysis_information);
-            let access_information = if let Result::Ok(info) = access_information_result {
+            let access_information = if let Ok(info) = access_information_result {
                 info
             } else {
                 return;
@@ -156,7 +154,7 @@ fn type_statement(
                 &mut analysis_information.reports,
                 program_archive,
             );
-            let symbol_information = if let Result::Ok(s_type) = symbol_type_result {
+            let symbol_information = if let Ok(s_type) = symbol_type_result {
                 s_type
             } else {
                 return;
@@ -217,12 +215,12 @@ fn type_statement(
         ConstraintEquality { lhe, rhe, .. } => {
             let lhe_response = type_expression(lhe, program_archive, analysis_information);
             let rhe_response = type_expression(rhe, program_archive, analysis_information);
-            let lhe_type = if let Result::Ok(f) = lhe_response {
+            let lhe_type = if let Ok(f) = lhe_response {
                 f
             } else {
                 return;
             };
-            let rhe_type = if let Result::Ok(f) = rhe_response {
+            let rhe_type = if let Ok(f) = rhe_response {
                 f
             } else {
                 return;
@@ -244,7 +242,7 @@ fn type_statement(
         }
         LogCall { arg, meta } | Assert { arg, meta } => {
             let arg_response = type_expression(arg, program_archive, analysis_information);
-            let arg_type = if let Result::Ok(t) = arg_response {
+            let arg_type = if let Ok(t) = arg_response {
                 t
             } else {
                 return;
@@ -260,12 +258,12 @@ fn type_statement(
         Return { value, meta } => {
             debug_assert!(analysis_information.return_type.is_some());
             let value_response = type_expression(value, program_archive, analysis_information);
-            let value_type = if let Result::Ok(f) = value_response {
+            let value_type = if let Ok(f) = value_response {
                 f
             } else {
                 return;
             };
-            let ret_type = analysis_information.return_type.clone().unwrap();
+            let ret_type = analysis_information.return_type.unwrap();
             debug_assert!(!value_type.is_template());
             if ret_type != value_type.dim() {
                 add_report(
@@ -278,10 +276,10 @@ fn type_statement(
         IfThenElse { cond, if_case, else_case, .. } => {
             let cond_response = type_expression(cond, program_archive, analysis_information);
             type_statement(if_case, program_archive, analysis_information);
-            if let Option::Some(else_stmt) = else_case {
+            if let Some(else_stmt) = else_case {
                 type_statement(else_stmt, program_archive, analysis_information);
             }
-            let cond_type = if let Result::Ok(t) = cond_response {
+            let cond_type = if let Ok(t) = cond_response {
                 t
             } else {
                 return;
@@ -297,7 +295,7 @@ fn type_statement(
         While { cond, stmt, .. } => {
             let cond_response = type_expression(cond, program_archive, analysis_information);
             type_statement(stmt, program_archive, analysis_information);
-            let cond_type = if let Result::Ok(t) = cond_response {
+            let cond_type = if let Ok(t) = cond_response {
                 t
             } else {
                 return;
@@ -326,7 +324,7 @@ fn type_expression(
 ) -> Result<FoldedType, ()> {
     use Expression::*;
     match expression {
-        Number { .. } => Result::Ok(FoldedType::arithmetic_type(0)),
+        Number { .. } => Ok(FoldedType::arithmetic_type(0)),
         ArrayInLine { meta, values } => {
             let values_types =
                 type_array_of_expressions(values, program_archive, analysis_information)?;
@@ -353,14 +351,14 @@ fn type_expression(
                     );
                 }
             }
-            Result::Ok(FoldedType::arithmetic_type(inferred_dim + 1))
+            Ok(FoldedType::arithmetic_type(inferred_dim + 1))
         }
         InfixOp { lhe, rhe, .. } => {
             let lhe_response = type_expression(lhe, program_archive, analysis_information);
             let rhe_response = type_expression(rhe, program_archive, analysis_information);
             let lhe_type = lhe_response?;
             let rhe_type = rhe_response?;
-            let mut successful = Result::Ok(());
+            let mut successful = Ok(());
             if lhe_type.is_template() || lhe_type.dim() > 0 {
                 successful = add_report_and_end(
                     ReportCode::InfixOperatorWithWrongTypes,
@@ -376,7 +374,7 @@ fn type_expression(
                 );
             }
             successful?;
-            Result::Ok(FoldedType::arithmetic_type(0))
+            Ok(FoldedType::arithmetic_type(0))
         }
         PrefixOp { rhe, .. } => {
             let rhe_type = type_expression(rhe, program_archive, analysis_information)?;
@@ -387,7 +385,7 @@ fn type_expression(
                     &mut analysis_information.reports,
                 )
             } else {
-                Result::Ok(FoldedType::arithmetic_type(0))
+                Ok(FoldedType::arithmetic_type(0))
             }
         }
         TernaryOp { cond, if_true, if_false, .. } => {
@@ -397,10 +395,10 @@ fn type_expression(
                 type_expression(if_false, program_archive, analysis_information);
             let if_true_type = if_true_response?;
 
-            let cond_type = if let Result::Ok(f) = cond_response {
+            let cond_type = if let Ok(f) = cond_response {
                 f
             } else {
-                return Result::Ok(if_true_type);
+                return Ok(if_true_type);
             };
             if cond_type.is_template() || cond_type.dim() > 0 {
                 add_report(
@@ -410,10 +408,10 @@ fn type_expression(
                 );
             }
 
-            let if_false_type = if let Result::Ok(f) = if_false_response {
+            let if_false_type = if let Ok(f) = if_false_response {
                 f
             } else {
-                return Result::Ok(if_true_type);
+                return Ok(if_true_type);
             };
             if !FoldedType::same_type(&if_true_type, &if_false_type) {
                 add_report(
@@ -422,7 +420,7 @@ fn type_expression(
                     &mut analysis_information.reports,
                 );
             }
-            Result::Ok(if_true_type)
+            Ok(if_true_type)
         }
         Variable { name, access, meta, .. } => {
             debug_assert!(analysis_information.environment.has_symbol(name));
@@ -440,10 +438,10 @@ fn type_expression(
             )?;
             match symbol_information {
                 SymbolInformation::Component(possible_template) if possible_template.is_some() => {
-                    Result::Ok(FoldedType::template(&possible_template.unwrap()))
+                    Ok(FoldedType::template(&possible_template.unwrap()))
                 }
                 SymbolInformation::Var(dim) | SymbolInformation::Signal(dim) => {
-                    Result::Ok(FoldedType::arithmetic_type(dim))
+                    Ok(FoldedType::arithmetic_type(dim))
                 }
                 SymbolInformation::Component(possible_template) if possible_template.is_none() => {
                     add_report_and_end(ReportCode::UninitializedSymbolInExpression, meta, reports)
@@ -456,11 +454,11 @@ fn type_expression(
             let typing_response =
                 type_array_of_expressions(args, program_archive, analysis_information);
             if program_archive.contains_template(id) && typing_response.is_err() {
-                return Result::Ok(FoldedType::template(id));
+                return Ok(FoldedType::template(id));
             }
             let arg_types = typing_response?;
             let mut concrete_types = Vec::new();
-            let mut success = Result::Ok(());
+            let mut success = Ok(());
             for (arg_expr, arg_type) in args.iter().zip(arg_types.iter()) {
                 if arg_type.is_template() {
                     success = add_report_and_end(
@@ -472,7 +470,7 @@ fn type_expression(
                 concrete_types.push(arg_type.dim());
             }
             if program_archive.contains_template(id) && success.is_err() {
-                return Result::Ok(FoldedType::template(id));
+                return Ok(FoldedType::template(id));
             }
             success?;
             let previous_file_id = analysis_information.file_id;
@@ -489,23 +487,23 @@ fn type_expression(
                 &mut analysis_information.reports,
             );
             if new_environment.is_err() {
-                return Result::Ok(FoldedType::template(id));
+                return Ok(FoldedType::template(id));
             }
             let new_environment = new_environment?;
             let previous_environment =
                 std::mem::replace(&mut analysis_information.environment, new_environment);
             let returned_type = if program_archive.contains_function(id) {
                 type_function(id, &concrete_types, meta, analysis_information, program_archive)
-                    .map(|val| FoldedType::arithmetic_type(val))
+                    .map(FoldedType::arithmetic_type)
             } else {
                 let r_val =
                     type_template(id, &concrete_types, analysis_information, program_archive);
-                Result::Ok(FoldedType::template(&r_val))
+                Ok(FoldedType::template(&r_val))
             };
             analysis_information.environment = previous_environment;
             analysis_information.file_id = previous_file_id;
             let folded_value = returned_type?;
-            Result::Ok(folded_value)
+            Ok(folded_value)
         }
     }
 }
@@ -531,18 +529,18 @@ fn treat_access(
     analysis_information: &mut AnalysisInformation,
 ) -> Result<AccessInfo, ()> {
     use Access::*;
-    let mut access_info: AccessInfo = (0, Option::None);
-    let mut successful = Result::Ok(());
+    let mut access_info: AccessInfo = (0, None);
+    let mut successful = Ok(());
     for access in accesses {
         match access {
             ArrayAccess(index) => {
                 let index_response = type_expression(index, program_archive, analysis_information);
-                if let Option::Some(signal_info) = &mut access_info.1 {
+                if let Some(signal_info) = &mut access_info.1 {
                     signal_info.1 += 1;
                 } else {
                     access_info.0 += 1;
                 }
-                if let Result::Ok(index_type) = index_response {
+                if let Ok(index_type) = index_response {
                     if index_type.is_template() || index_type.dim() > 0 {
                         add_report(
                             ReportCode::InvalidArraySize,
@@ -560,13 +558,13 @@ fn treat_access(
                         &mut analysis_information.reports,
                     );
                 } else {
-                    access_info.1 = Option::Some((signal_name.clone(), 0));
+                    access_info.1 = Some((signal_name.clone(), 0));
                 }
             }
         }
     }
     successful?;
-    Result::Ok(access_info)
+    Ok(access_info)
 }
 
 enum SymbolInformation {
@@ -585,9 +583,9 @@ fn apply_access_to_symbol(
     let (current_template, mut current_dim) = if environment.has_component(symbol) {
         environment.get_component_or_break(symbol, file!(), line!()).clone()
     } else if environment.has_signal(symbol) {
-        (Option::None, *environment.get_signal_or_break(symbol, file!(), line!()))
+        (None, *environment.get_signal_or_break(symbol, file!(), line!()))
     } else {
-        (Option::None, *environment.get_variable_or_break(symbol, file!(), line!()))
+        (None, *environment.get_variable_or_break(symbol, file!(), line!()))
     };
 
     if access_information.0 > current_dim {
@@ -598,13 +596,13 @@ fn apply_access_to_symbol(
 
     if access_information.1.is_some() && (current_dim > 0 || current_template.is_none()) {
         add_report_and_end(ReportCode::InvalidSignalAccess, meta, reports)
-    } else if let Option::Some((signal_name, dims_accessed)) = access_information.1 {
+    } else if let Some((signal_name, dims_accessed)) = access_information.1 {
         let template_name = current_template.unwrap();
         let input = program_archive.get_template_data(&template_name).get_input_info(&signal_name);
         let output =
             program_archive.get_template_data(&template_name).get_output_info(&signal_name);
         current_dim = match (input, output) {
-            (Option::Some((d, _)), _) | (_, Option::Some((d, _))) => *d,
+            (Some((d, _)), _) | (_, Some((d, _))) => *d,
             _ => {
                 return add_report_and_end(ReportCode::InvalidSignalAccess, meta, reports);
             }
@@ -612,14 +610,14 @@ fn apply_access_to_symbol(
         if dims_accessed > current_dim {
             add_report_and_end(ReportCode::InvalidArrayAccess, meta, reports)
         } else {
-            Result::Ok(SymbolInformation::Signal(current_dim - dims_accessed))
+            Ok(SymbolInformation::Signal(current_dim - dims_accessed))
         }
     } else if environment.has_variable(symbol) {
-        Result::Ok(SymbolInformation::Var(current_dim))
+        Ok(SymbolInformation::Var(current_dim))
     } else if environment.has_signal(symbol) {
-        Result::Ok(SymbolInformation::Signal(current_dim))
+        Ok(SymbolInformation::Signal(current_dim))
     } else if environment.has_component(symbol) && current_dim == 0 {
-        Result::Ok(SymbolInformation::Component(current_template))
+        Ok(SymbolInformation::Component(current_template))
     } else {
         add_report_and_end(ReportCode::InvalidPartialArray, meta, reports)
     }
@@ -634,16 +632,16 @@ fn type_array_of_expressions(
     let mut successful_typing = true;
     for expression in expressions {
         let typing_result = type_expression(expression, program_archive, analysis_information);
-        if let Result::Ok(expression_type) = typing_result {
+        if let Ok(expression_type) = typing_result {
             types.push(expression_type);
         } else {
             successful_typing = false;
         }
     }
     if successful_typing {
-        Result::Ok(types)
+        Ok(types)
     } else {
-        Result::Err(())
+        Err(())
     }
 }
 
@@ -667,7 +665,7 @@ fn prepare_environment_for_call(
     for (name, dim) in args_names.iter().zip(args_dims.iter()) {
         environment.add_variable(name, *dim);
     }
-    Result::Ok(environment)
+    Ok(environment)
 }
 
 fn type_template(
@@ -693,13 +691,11 @@ fn type_function(
     program_archive: &ProgramArchive,
 ) -> Result<ArithmeticType, ()> {
     debug_assert!(program_archive.contains_function(call_id));
-    if let Option::Some(instance) =
-        analysis_information.registered_calls.get_instance(call_id, args_dims)
-    {
-        return Result::Ok(*instance.returns());
+    if let Some(instance) = analysis_information.registered_calls.get_instance(call_id, args_dims) {
+        return Ok(*instance.returns());
     }
     let mut given_type = type_given_function(call_id, program_archive.get_functions(), args_dims);
-    if let Option::Some(raw) = &given_type {
+    if let Some(raw) = &given_type {
         analysis_information.registered_calls.add_instance(call_id, args_dims.to_vec(), *raw);
     } else {
         return add_report_and_end(
@@ -714,7 +710,7 @@ fn type_function(
     given_type = std::mem::replace(&mut analysis_information.return_type, previous_type);
     debug_assert!(given_type.is_some());
     let raw_type = given_type.unwrap();
-    Result::Ok(raw_type)
+    Ok(raw_type)
 }
 
 //************************************************* Report handling *************************************************
@@ -724,7 +720,7 @@ fn add_report_and_end<Ok>(
     reports: &mut ReportCollection,
 ) -> Result<Ok, ()> {
     add_report(error_code, meta, reports);
-    Result::Err(())
+    Err(())
 }
 
 fn add_report(error_code: ReportCode, meta: &Meta, reports: &mut ReportCollection) {

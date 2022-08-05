@@ -8,11 +8,11 @@ pub fn free_of_returns(template_data: &TemplateData) -> Result<(), ReportCollect
     let file_id = template_data.get_file_id();
     let template_body = template_data.get_body();
     let mut reports = ReportCollection::new();
-    look_for_return(&template_body, file_id, &mut reports);
+    look_for_return(template_body, file_id, &mut reports);
     if reports.is_empty() {
-        Result::Ok(())
+        Ok(())
     } else {
-        Result::Err(reports)
+        Err(reports)
     }
 }
 
@@ -21,7 +21,7 @@ fn look_for_return(stmt: &Statement, file_id: FileID, reports: &mut ReportCollec
     match stmt {
         IfThenElse { if_case, else_case, .. } => {
             look_for_return(if_case, file_id, reports);
-            if let Option::Some(else_block) = else_case {
+            if let Some(else_block) = else_case {
                 look_for_return(else_block, file_id, reports);
             }
         }

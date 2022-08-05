@@ -124,7 +124,7 @@ SimpleSymbol : Symbol = {
     => Symbol {
         name,
         is_array: dims,
-        init: Option::None,
+        init: None,
     },
 }
 
@@ -133,7 +133,7 @@ ComplexSymbol : Symbol = {
     => Symbol {
         name,
         is_array: dims,
-        init: Option::Some(rhe),
+        init: Some(rhe),
     },
 };
 
@@ -142,7 +142,7 @@ SignalConstraintSymbol : Symbol = {
     => Symbol {
         name,
         is_array: dims,
-        init: Option::Some(rhe),
+        init: Some(rhe),
     },
 };
 
@@ -151,7 +151,7 @@ SignalSimpleSymbol : Symbol = {
     => Symbol {
         name,
         is_array: dims,
-        init: Option::Some(rhe),
+        init: Some(rhe),
     },
 };
 
@@ -277,18 +277,18 @@ ParseStatement0 : Statement = {
 
 ParseStmt0NB : Statement = {
     <s:@L> "if" "(" <cond: ParseExpression> ")" <if_case: ParseStmt0NB> <e:@R>
-    => Statement::build_conditional_block(Meta::new(s,e),cond,if_case,Option::None),
+    => Statement::build_conditional_block(Meta::new(s,e),cond,if_case,None),
 
     <s:@L> "if" "(" <cond: ParseExpression> ")" <if_case: ParseStatement1> <e:@R>
-    => Statement::build_conditional_block(Meta::new(s,e),cond,if_case,Option::None),
+    => Statement::build_conditional_block(Meta::new(s,e),cond,if_case,None),
 
     <s:@L> "if" "(" <cond: ParseExpression> ")" <if_case: ParseStatement1> <else_case: ParseElse<ParseStmt0NB>><e:@R>
-    => Statement::build_conditional_block(Meta::new(s,e),cond,if_case,Option::Some(else_case)),
+    => Statement::build_conditional_block(Meta::new(s,e),cond,if_case,Some(else_case)),
 };
 
 ParseStatement1 : Statement = {
     <s:@L> "if" "(" <cond: ParseExpression> ")" <if_case: ParseStatement1> <else_case: ParseElse<ParseStatement1>><e:@R>
-    =>  Statement::build_conditional_block(Meta::new(s,e),cond,if_case,Option::Some(else_case)),
+    =>  Statement::build_conditional_block(Meta::new(s,e),cond,if_case,Some(else_case)),
     ParseStatement2
 };
 
@@ -541,6 +541,6 @@ SMALL_DECNUMBER: usize = {
 // Version used by pragma to describe the compiler, its syntax is Number1.Number2.Number3...
 Version: Version = {
     <version: SMALL_DECNUMBER> "." <subversion:SMALL_DECNUMBER> "." <subsubversion:SMALL_DECNUMBER> => {
-        (version, subversion, subsubversion)
+        Version::new(version, subversion, subsubversion)
     }
 };

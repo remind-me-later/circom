@@ -21,7 +21,7 @@ impl SymFile {
     pub fn new(file: &str) -> Result<SymFile, ()> {
         let file = File::create(file).map_err(|_err| {})?;
         let writer = BufWriter::new(file);
-        Result::Ok(SymFile { writer })
+        Ok(SymFile { writer })
     }
 
     pub fn write_sym_elem(sym: &mut SymFile, elem: SymElem) -> Result<(), ()> {

@@ -8,6 +8,7 @@ lalrpop_mod!(pub lang);
 mod errors;
 mod include_logic;
 mod parser_logic;
+use circom_ast::Version;
 use include_logic::{FileStack, IncludesGraph};
 use circom_error::error_code::ReportCode;
 use circom_error::error_definition::{Report, ReportCollection};
@@ -15,8 +16,6 @@ use circom_error::file_definition::{FileLibrary};
 use program_structure::program_archive::ProgramArchive;
 use std::path::PathBuf;
 use std::str::FromStr;
-
-pub type Version = (usize, usize, usize);
 
 pub fn run_parser(
     file: String,
@@ -56,7 +55,7 @@ pub fn run_parser(
         );
     }
 
-    if main_components.len() == 0 {
+    if main_components.is_empty() {
         let report = errors::NoMainError::produce_report();
         Err((file_library, vec![report]))
     } else if main_components.len() > 1 {
@@ -76,7 +75,7 @@ pub fn run_parser(
                 )
             })
             .collect();
-        if errors.len() > 0 {
+        if !errors.is_empty() {
             Err((file_library, errors))
         } else {
             let (main_id, main_component) = main_components.pop().unwrap();
@@ -97,12 +96,12 @@ fn open_file(path: PathBuf) -> Result<(String, String), Report> /* path, src */ 
     read_to_string(path)
         .map(|contents| (path_str.clone(), contents))
         .map_err(|_| FileOsError { path: path_str.clone() })
-        .map_err(|e| FileOsError::produce_report(e))
+        .map_err(FileOsError::produce_report)
 }
 
 fn parse_number_version(version: &str) -> Version {
-    let version_splitted: Vec<&str> = version.split(".").collect();
-    (
+    let version_splitted: Vec<&str> = version.split('.').collect();
+    Version::new(
         usize::from_str(version_splitted[0]).unwrap(),
         usize::from_str(version_splitted[1]).unwrap(),
         usize::from_str(version_splitted[2]).unwrap(),
@@ -116,10 +115,10 @@ fn check_number_version(
 ) -> Result<ReportCollection, Report> {
     use errors::{CompilerVersionError, NoCompilerVersionWarning};
     if let Some(required_version) = version_file {
-        if required_version.0 == version_compiler.0
-            && (required_version.1 < version_compiler.1
-                || (required_version.1 == version_compiler.1
-                    && required_version.2 <= version_compiler.2))
+        if required_version.major() == version_compiler.major()
+            && (required_version.minor() < version_compiler.minor()
+                || (required_version.minor() == version_compiler.minor()
+                    && required_version.patch() <= version_compiler.patch()))
         {
             Ok(vec![])
         } else {

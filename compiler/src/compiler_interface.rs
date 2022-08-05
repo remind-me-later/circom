@@ -78,5 +78,5 @@ fn produce_debug_output(circuit: &Circuit) -> Result<(), ()> {
         writer.write_all(body.as_bytes()).map_err(|_err| {})?;
         writer.flush().map_err(|_err| {})?;
     }
-    Result::Ok(())
+    Ok(())
 }

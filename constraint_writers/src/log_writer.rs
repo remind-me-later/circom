@@ -34,3 +34,9 @@ impl Log {
         println!("labels: {}", log.no_labels);
     }
 }
+
+impl Default for Log {
+    fn default() -> Self {
+        Self::new()
+    }
+}

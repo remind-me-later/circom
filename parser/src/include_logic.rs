@@ -21,7 +21,7 @@ impl FileStack {
         crr.push(path.clone());
         let path = std::fs::canonicalize(crr)
             .map_err(|_| FileOsError { path: path.clone() })
-            .map_err(|e| FileOsError::produce_report(e))?;
+            .map_err(FileOsError::produce_report)?;
         if !f_stack.black_paths.contains(&path) {
             f_stack.stack.push(path);
         }
@@ -66,7 +66,7 @@ impl IncludesGraph {
     pub fn add_node(&mut self, path: PathBuf, custom_gates_pragma: bool, custom_gates_usage: bool) {
         self.nodes.push(IncludesNode { path: path.clone(), custom_gates_pragma });
         if custom_gates_usage {
-            self.custom_gates_nodes.push(path.clone());
+            self.custom_gates_nodes.push(path);
         }
     }
 
@@ -75,8 +75,8 @@ impl IncludesGraph {
         crr.pop();
         crr.push(path.clone());
         let path = std::fs::canonicalize(crr)
-            .map_err(|_| FileOsError { path: path })
-            .map_err(|e| FileOsError::produce_report(e))?;
+            .map_err(|_| FileOsError { path })
+            .map_err(FileOsError::produce_report)?;
         let edges = self.adjacency.entry(path).or_insert(vec![]);
         edges.push(self.nodes.len() - 1);
         Ok(())
@@ -124,25 +124,23 @@ impl IncludesGraph {
                 }
             }
             problematic_paths
+        } else if ok {
+            vec![]
         } else {
-            if ok {
-                vec![]
-            } else {
-                vec![path]
-            }
+            vec![path]
         }
     }
 
-    pub fn display_path(path: &Vec<PathBuf>) -> String {
+    pub fn display_path(path: &[PathBuf]) -> String {
         let path = path
             .iter()
             .map(|file| -> String {
                 let file = format!("{}", file.display());
-                let (_, file) = file.rsplit_once("/").unwrap();
-                file.clone().to_string()
+                let (_, file) = file.rsplit_once('/').unwrap();
+                file.to_string()
             })
             .collect::<Vec<String>>();
-        let mut path_covered = format!("{}", path[0]);
+        let mut path_covered = path[0].to_string();
         for file in &path[1..] {
             path_covered = format!("{} -> {}", path_covered, file);
         }

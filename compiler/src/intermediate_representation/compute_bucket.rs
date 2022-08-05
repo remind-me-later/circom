@@ -281,39 +281,38 @@ impl WriteC for ComputeBucket {
         let mut operands = vec![];
         //compute_c.push(format!("// start of compute bucket {}",self.to_string()));
 
-        let result;
         for instr in &self.stack {
             let (mut instr_c, operand) = instr.produce_c(producer);
             operands.push(operand);
             compute_c.append(&mut instr_c);
         }
-        match &self.op {
+
+        let result = match &self.op {
             OperatorType::AddAddress => {
-                result = format!("({} + {})", operands[0], operands[1]);
+                format!("({} + {})", operands[0], operands[1])
             }
             OperatorType::MulAddress => {
-                result = format!("({} * {})", operands[0], operands[1]);
+                format!("({} * {})", operands[0], operands[1])
             }
-            OperatorType::ToAddress => {
-                result = build_call("Fr_toInt".to_string(), operands);
-            }
+            OperatorType::ToAddress => build_call("Fr_toInt".to_string(), operands),
             _ => {
                 let exp_aux_index = self.op_aux_no.to_string();
                 // build assign
                 let operator = get_fr_op(self.op);
-                let result_ref = format!("&{}", expaux(exp_aux_index.clone()));
+                let result_ref = format!("&{}", expaux(exp_aux_index));
                 let mut arguments = vec![result_ref.clone()];
                 arguments.append(&mut operands);
                 compute_c.push(format!(
                     "{}; // line circom {}",
                     build_call(operator, arguments),
-                    self.line.to_string()
+                    self.line
                 ));
 
                 //value address
-                result = result_ref;
+                result_ref
             }
-        }
+        };
+
         //compute_c.push(format!("// end of compute with result {}",result));
         (compute_c, result)
     }

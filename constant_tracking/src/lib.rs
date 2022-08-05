@@ -2,6 +2,7 @@ use std::collections::HashMap;
 use std::hash::Hash;
 
 pub type CID = usize;
+
 pub struct ConstantTracker<C>
 where
     C: Hash,
@@ -43,5 +44,14 @@ where
 
     pub fn next_id(&self) -> CID {
         self.constants.len()
+    }
+}
+
+impl<C> Default for ConstantTracker<C>
+where
+    C: Eq + Hash + Clone,
+{
+    fn default() -> Self {
+        Self::new()
     }
 }

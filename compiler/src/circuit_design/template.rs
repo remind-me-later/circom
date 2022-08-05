@@ -146,12 +146,14 @@ impl WriteC for TemplateCodeInfo {
     fn produce_c(&self, producer: &CProducer) -> (Vec<String>, String) {
         use c_code_generator::*;
         let create_header = format!("void {}_create", self.header);
-        let mut create_params = vec![];
-        create_params.push(declare_signal_offset());
-        create_params.push(declare_component_offset());
-        create_params.push(declare_circom_calc_wit());
-        create_params.push(declare_component_name());
-        create_params.push(declare_component_father());
+        let create_params = vec![
+            declare_signal_offset(),
+            declare_component_offset(),
+            declare_circom_calc_wit(),
+            declare_component_name(),
+            declare_component_father(),
+        ];
+
         let mut create_body = vec![];
 
         create_body.push(format!(
@@ -233,9 +235,8 @@ impl WriteC for TemplateCodeInfo {
         let create_fun = build_callable(create_header, create_params, create_body);
 
         let run_header = format!("void {}_run", self.header);
-        let mut run_params = vec![];
-        run_params.push(declare_ctx_index());
-        run_params.push(declare_circom_calc_wit());
+        let run_params = vec![declare_ctx_index(), declare_circom_calc_wit()];
+
         let mut run_body = vec![];
         run_body.push(format!("{};", declare_signal_values()));
         run_body.push(format!("{};", declare_my_signal_start()));
@@ -255,23 +256,23 @@ impl WriteC for TemplateCodeInfo {
         }
         // parallelism (join at the end of the function)
         if self.number_of_components > 0 && self.has_parallel_sub_cmp {
-            run_body.push(format!("{{"));
+            run_body.push("{".to_string());
             run_body.push(format!(
                 "for (uint i = 0; i < {}; i++) {{",
                 &self.number_of_components.to_string()
             ));
-            run_body.push(format!("if (ctx->componentMemory[ctx_index].sbct[i].joinable()) {{"));
-            run_body.push(format!("ctx->componentMemory[ctx_index].sbct[i].join();"));
-            run_body.push(format!("}}"));
-            run_body.push(format!("}}"));
-            run_body.push(format!("}}"));
+            run_body.push("if (ctx->componentMemory[ctx_index].sbct[i].joinable()) {".to_string());
+            run_body.push("ctx->componentMemory[ctx_index].sbct[i].join();".to_string());
+            run_body.push("}".to_string());
+            run_body.push("}".to_string());
+            run_body.push("}".to_string());
         }
         if self.is_parallel {
             // parallelism
-            run_body.push(format!("ctx->numThreadMutex.lock();"));
-            run_body.push(format!("ctx->numThread--;"));
-            run_body.push(format!("ctx->numThreadMutex.unlock();"));
-            run_body.push(format!("ctx->ntcvs.notify_one();"));
+            run_body.push("ctx->numThreadMutex.lock();".to_string());
+            run_body.push("ctx->numThread--;".to_string());
+            run_body.push("ctx->numThreadMutex.unlock();".to_string());
+            run_body.push("ctx->ntcvs.notify_one();".to_string());
         }
         let run_fun = build_callable(run_header, run_params, run_body);
         (vec![create_fun, run_fun], "".to_string())

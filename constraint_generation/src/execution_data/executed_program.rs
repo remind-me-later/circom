@@ -17,34 +17,34 @@ pub struct ExecutedProgram {
 }
 
 impl ExecutedProgram {
-    pub fn new(prime: &String) -> ExecutedProgram {
+    pub fn new(prime: &str) -> ExecutedProgram {
         ExecutedProgram {
             model: Vec::new(),
             template_to_nodes: HashMap::new(),
-            prime: prime.clone(),
+            prime: prime.to_string(),
         }
     }
     pub fn identify_node(&self, name: &str, context: &ParameterContext) -> Option<NodePointer> {
         if !self.template_to_nodes.contains_key(name) {
-            return Option::None;
+            return None;
         }
         let related_nodes = self.template_to_nodes.get(name).unwrap();
         for index in related_nodes {
             let existing_node = &self.model[*index];
             if ExecutedTemplate::is_equal(existing_node, name, context) {
-                return Option::Some(*index);
+                return Some(*index);
             }
         }
-        Option::None
+        None
     }
     pub fn number_of_nodes(&self) -> usize {
         self.model.len()
     }
     pub fn get_node(&self, node_pointer: NodePointer) -> Option<&ExecutedTemplate> {
         if node_pointer >= self.model.len() {
-            return Option::None;
+            return None;
         }
-        Option::Some(&self.model[node_pointer])
+        Some(&self.model[node_pointer])
     }
 
     pub fn add_node_to_scheme(
@@ -58,10 +58,10 @@ impl ExecutedProgram {
         apply_computed(&mut node.code, &analysis);
         // Insert template
         let possible_index = self.identify_node(node.template_name(), node.parameter_instances());
-        if let Option::Some(index) = possible_index {
+        if let Some(index) = possible_index {
             return index;
         }
-        self.template_to_nodes.entry(node.template_name().clone()).or_insert_with(|| vec![]);
+        self.template_to_nodes.entry(node.template_name().clone()).or_insert_with(Vec::new);
         let nodes_for_template = self.template_to_nodes.get_mut(node.template_name()).unwrap();
         let node_index = self.model.len();
         self.model.push(node);
@@ -111,12 +111,10 @@ impl ExecutedProgram {
             &self.prime,
         )?;
         let mut mixed = vec![];
-        let mut index = 0;
-        for in_mixed in mixed_instances {
+        for (index, in_mixed) in mixed_instances.into_iter().enumerate() {
             if in_mixed {
                 mixed.push(index);
             }
-            index += 1;
         }
         let config = VCPConfig {
             stats: dag_stats,
@@ -128,7 +126,7 @@ impl ExecutedProgram {
             prime: self.prime,
         };
         let vcp = VCP::new(config);
-        Result::Ok((dag, vcp, warnings))
+        Ok((dag, vcp, warnings))
     }
 }
 

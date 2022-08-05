@@ -184,8 +184,8 @@ fn initialize_constants(state: &mut State, constants: Vec<Argument>) {
         let symbol_info =
             SymbolInfo { access_instruction: address_instruction.clone(), dimensions };
         state.environment.add_variable(&arg.name, symbol_info);
-        let mut index = 0;
-        for value in arg.values {
+
+        for (index, value) in arg.values.into_iter().enumerate() {
             let cid = bigint_to_cid(&mut state.field_tracker, &value);
             let offset_instruction = ValueBucket {
                 line: 0,
@@ -226,7 +226,6 @@ fn initialize_constants(state: &mut State, constants: Vec<Argument>) {
             }
             .allocate();
             state.code.push(store_instruction);
-            index += 1;
         }
     }
 }
@@ -283,13 +282,13 @@ fn create_components(state: &mut State, triggers: &[Trigger], clusters: Vec<Trig
 }
 
 fn create_uniform_components(state: &mut State, triggers: &[Trigger], cluster: TriggerCluster) {
-    fn compute_number_cmp(lengths: &Vec<usize>) -> usize {
-        lengths.iter().fold(1, |p, c| p * (*c))
+    fn compute_number_cmp(lengths: &[usize]) -> usize {
+        lengths.iter().product()
     }
-    fn compute_jump(lengths: &Vec<usize>, indexes: &[usize]) -> usize {
+    fn compute_jump(lengths: &[usize], indexes: &[usize]) -> usize {
         let mut jump = 0;
         let mut full_length = lengths.iter().fold(1, |p, c| p * (*c));
-        let mut lengths = lengths.clone();
+        let mut lengths = lengths.to_vec();
         lengths.reverse();
         for index in indexes {
             let length = lengths.pop().unwrap();
@@ -323,7 +322,7 @@ fn create_uniform_components(state: &mut State, triggers: &[Trigger], cluster: T
             number_of_cmp: compute_number_cmp(&symbol.dimensions),
             dimensions: symbol.dimensions,
             signal_offset_jump: offset_jump,
-            component_offset_jump: component_offset_jump,
+            component_offset_jump,
         }
         .allocate();
         state.code.push(creation_instr);
@@ -333,10 +332,10 @@ fn create_uniform_components(state: &mut State, triggers: &[Trigger], cluster: T
 }
 
 fn create_mixed_components(state: &mut State, triggers: &[Trigger], cluster: TriggerCluster) {
-    fn compute_jump(lengths: &Vec<usize>, indexes: &[usize]) -> usize {
+    fn compute_jump(lengths: &[usize], indexes: &[usize]) -> usize {
         let mut jump = 0;
-        let mut full_length = lengths.iter().fold(1, |p, c| p * (*c));
-        let mut lengths = lengths.clone();
+        let mut full_length: usize = lengths.iter().product();
+        let mut lengths = lengths.to_vec();
         lengths.reverse();
         for index in indexes {
             let length = lengths.pop().unwrap();
@@ -422,14 +421,14 @@ fn translate_statement(stmt: Statement, state: &mut State, context: &Context) {
         }
         Substitution { meta, var, access, rhe, .. } => {
             debug_assert!(!meta.get_type_knowledge().is_component());
-            let def = SymbolDef { meta: meta.clone(), symbol: var, acc: access };
+            let def = SymbolDef { meta, symbol: var, acc: access };
             let str_info =
                 StoreInfo { prc_symbol: ProcessedSymbol::new(def, state, context), src: rhe };
 
             let store_instruction = if let Expression::Call { id, args, .. } = str_info.src {
                 // Translate call
                 let args_instr = translate_call_arguments(args, state, context);
-                str_info.prc_symbol.into_call_assign(id, args_instr, &state)
+                str_info.prc_symbol.into_call_assign(id, args_instr, state)
             } else {
                 // Translate standard case
                 let src = translate_expression(str_info.src, state, context);
@@ -450,11 +449,11 @@ fn translate_statement(stmt: Statement, state: &mut State, context: &Context) {
         IfThenElse { meta, cond, if_case, else_case, .. } => {
             let starts_at =
                 context.files.get_line(meta.get_start(), meta.unwrap_file_id()).unwrap();
-            let main_program = std::mem::replace(&mut state.code, vec![]);
+            let main_program = std::mem::take(&mut state.code);
             let cond_translation = translate_expression(cond, state, context);
             translate_statement(*if_case, state, context);
-            let if_code = std::mem::replace(&mut state.code, vec![]);
-            if let Option::Some(else_case) = else_case {
+            let if_code = std::mem::take(&mut state.code);
+            if let Some(else_case) = else_case {
                 translate_statement(*else_case, state, context);
             }
             let else_code = std::mem::replace(&mut state.code, main_program);
@@ -472,7 +471,7 @@ fn translate_statement(stmt: Statement, state: &mut State, context: &Context) {
         While { meta, cond, stmt, .. } => {
             let starts_at =
                 context.files.get_line(meta.get_start(), meta.unwrap_file_id()).unwrap();
-            let main_program = std::mem::replace(&mut state.code, vec![]);
+            let main_program = std::mem::take(&mut state.code);
             let cond_translation = translate_expression(cond, state, context);
             translate_statement(*stmt, state, context);
             let loop_code = std::mem::replace(&mut state.code, main_program);
@@ -748,7 +747,7 @@ impl ProcessedSymbol {
     }
 
     fn into_call_assign(self, id: String, args: ArgData, state: &State) -> InstructionPointer {
-        let data = if let Option::Some(signal) = self.signal {
+        let data = if let Some(signal) = self.signal {
             let dest_type = AddressType::SubcmpSignal {
                 is_parallel: *state.component_to_parallel.get(&self.name).unwrap(),
                 cmp_address: compute_full_address(state, self.symbol, self.before_signal),
@@ -791,7 +790,7 @@ impl ProcessedSymbol {
     }
 
     fn into_store(self, src: InstructionPointer, state: &State) -> InstructionPointer {
-        if let Option::Some(signal) = self.signal {
+        if let Some(signal) = self.signal {
             let dest_type = AddressType::SubcmpSignal {
                 is_parallel: *state.component_to_parallel.get(&self.name).unwrap(),
                 cmp_address: compute_full_address(state, self.symbol, self.before_signal),
@@ -833,7 +832,7 @@ impl ProcessedSymbol {
     }
 
     fn into_load(self, state: &State) -> InstructionPointer {
-        if let Option::Some(signal) = self.signal {
+        if let Some(signal) = self.signal {
             let dest_type = AddressType::SubcmpSignal {
                 is_parallel: *state.component_to_parallel.get(&self.name).unwrap(),
                 cmp_address: compute_full_address(state, self.symbol, self.before_signal),
@@ -925,7 +924,7 @@ fn indexing_instructions_filter(
             Value(mut v) if v.parse_as == ValueType::BigInt => {
                 v.parse_as = ValueType::U32;
                 let field = state.field_tracker.get_constant(v.value).unwrap();
-                v.value = usize::from_str_radix(field, 10).unwrap_or_else(|_| usize::MAX);
+                v.value = field.parse::<usize>().unwrap_or(usize::MAX);
                 index_stack.push(v.allocate());
             }
             Compute(mut v) if v.op == OperatorType::Add => {
@@ -960,7 +959,7 @@ fn fold(
     state: &State,
 ) -> InstructionPointer {
     let instruction = stack.pop().unwrap();
-    if stack.len() == 0 {
+    if stack.is_empty() {
         instruction
     } else {
         ComputeBucket {

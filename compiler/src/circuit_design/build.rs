@@ -16,7 +16,7 @@ fn matching_lengths_and_offsets(list: &InputOutputList) {
     for signal in list {
         debug_assert_eq!(signal.offset, prev + offset);
         prev = signal.offset;
-        offset = signal.lengths.iter().fold(1, |p, c| p * (*c));
+        offset = signal.lengths.iter().product();
     }
 }
 
@@ -27,9 +27,8 @@ fn build_template_instances(
     mut field_tracker: FieldTracker,
 ) -> FieldTracker {
     let mut cmp_id = 0;
-    let mut tmp_id = 0;
     let parallels: Vec<_> = ti.iter().map(|i| i.is_parallel).collect();
-    for template in ti {
+    for (tmp_id, template) in ti.into_iter().enumerate() {
         let header = template.template_header;
         let name = template.template_name;
         let instance_values = template.header;
@@ -88,7 +87,6 @@ fn build_template_instances(
         template_info.signal_stack_depth = out.signal_depth;
         cmp_id = out.next_cmp_id;
         circuit.add_template_code(template_info);
-        tmp_id += 1;
     }
     field_tracker
 }

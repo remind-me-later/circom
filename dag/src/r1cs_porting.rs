@@ -101,7 +101,7 @@ pub fn write(dag: &DAG, output: &str) -> Result<(), ()> {
     let _r1cs = custom_gates_applied_section.end_section()?;
 
     Log::print(&log);
-    Result::Ok(())
+    Ok(())
 }
 
 fn write_constraint_section(
@@ -123,5 +123,5 @@ fn write_constraint_section(
         let subtree_signals = write_constraint_section(constraint_section, log, &subtree)?;
         no_signals += subtree_signals;
     }
-    Result::Ok(no_signals)
+    Ok(no_signals)
 }

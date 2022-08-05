@@ -47,26 +47,26 @@ pub fn execute_project(
     if config.json_constraint_flag {
         generate_json_constraints(&debug, exporter.as_ref())?;
     }
-    Result::Ok(vcp)
+    Ok(vcp)
 }
 
 fn generate_output_r1cs(file: &str, exporter: &dyn ConstraintExporter) -> Result<(), ()> {
-    if let Result::Ok(()) = exporter.r1cs(file) {
+    if let Ok(()) = exporter.r1cs(file) {
         println!("{} {}", Colour::Green.paint("Written successfully:"), file);
-        Result::Ok(())
+        Ok(())
     } else {
         eprintln!("{}", Colour::Red.paint("Could not write the output in the given path"));
-        Result::Err(())
+        Err(())
     }
 }
 
 fn generate_output_sym(file: &str, exporter: &dyn ConstraintExporter) -> Result<(), ()> {
-    if let Result::Ok(()) = exporter.sym(file) {
+    if let Ok(()) = exporter.sym(file) {
         println!("{} {}", Colour::Green.paint("Written successfully:"), file);
-        Result::Ok(())
+        Ok(())
     } else {
         eprintln!("{}", Colour::Red.paint("Could not write the output in the given path"));
-        Result::Err(())
+        Err(())
     }
 }
 
@@ -74,11 +74,11 @@ fn generate_json_constraints(
     debug: &DebugWriter,
     exporter: &dyn ConstraintExporter,
 ) -> Result<(), ()> {
-    if let Ok(()) = exporter.json_constraints(&debug) {
+    if let Ok(()) = exporter.json_constraints(debug) {
         println!("{} {}", Colour::Green.paint("Constraints written in:"), debug.json_constraints);
-        Result::Ok(())
+        Ok(())
     } else {
         eprintln!("{}", Colour::Red.paint("Could not write the output in the given path"));
-        Result::Err(())
+        Err(())
     }
 }

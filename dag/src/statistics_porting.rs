@@ -67,5 +67,5 @@ pub fn write_statistics(dag: &DAG,debug: &DebugWriter) -> Result<(),()>{
         writer.write_all(times_reached.as_bytes()).map_err(|_err| {})?;
         writer.flush().map_err(|_err| {})?;
     }
-    Result::Ok(())
+    Ok(())
 }

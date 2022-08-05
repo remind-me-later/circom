@@ -34,7 +34,7 @@ fn initialize_section(writer: &mut BufWriter<File>, header: &[u8]) -> Result<u64
     let go_back = writer.seek(SeekFrom::Current(0)).map_err(|_err| {})?;
     writer.write_all(PLACE_HOLDER).map_err(|_| {})?;
     writer.flush().map_err(|_err| {})?;
-    Result::Ok(go_back)
+    Ok(go_back)
 }
 
 fn end_section(writer: &mut BufWriter<File>, go_back: u64, size: usize) -> Result<(), ()> {
@@ -93,7 +93,7 @@ where
     file.flush().map_err(|_err| {})?;
     file.write_all(&block_c).map_err(|_err| {})?;
     file.flush().map_err(|_err| {})?;
-    Result::Ok(size_a + size_b + size_c)
+    Ok(size_a + size_b + size_c)
 }
 
 fn initialize_file(writer: &mut BufWriter<File>) -> Result<(), ()> {
@@ -103,7 +103,7 @@ fn initialize_file(writer: &mut BufWriter<File>) -> Result<(), ()> {
     writer.flush().map_err(|_err| {})?;
     writer.write_all(NUMBER_OF_SECTIONS).map_err(|_err| {})?;
     writer.flush().map_err(|_err| {})?;
-    Result::Ok(())
+    Ok(())
 }
 
 pub struct R1CSWriter {
@@ -164,12 +164,12 @@ impl R1CSWriter {
         let mut writer =
             File::create(&output_file).map_err(|_err| {}).map(|f| BufWriter::new(f))?;
         initialize_file(&mut writer)?;
-        Result::Ok(R1CSWriter { writer, sections, field_size })
+        Ok(R1CSWriter { writer, sections, field_size })
     }
 
     pub fn start_header_section(mut r1cs: R1CSWriter) -> Result<HeaderSection, ()> {
         let start = initialize_section(&mut r1cs.writer, HEADER_TYPE)?;
-        Result::Ok(HeaderSection {
+        Ok(HeaderSection {
             writer: r1cs.writer,
             go_back: start,
             size: 0,
@@ -181,7 +181,7 @@ impl R1CSWriter {
 
     pub fn start_constraints_section(mut r1cs: R1CSWriter) -> Result<ConstraintSection, ()> {
         let start = initialize_section(&mut r1cs.writer, CONSTRAINT_TYPE)?;
-        Result::Ok(ConstraintSection {
+        Ok(ConstraintSection {
             number_of_constraints: 0,
             writer: r1cs.writer,
             go_back: start,
@@ -194,7 +194,7 @@ impl R1CSWriter {
 
     pub fn start_signal_section(mut r1cs: R1CSWriter) -> Result<SignalSection, ()> {
         let start = initialize_section(&mut r1cs.writer, WIRE2LABEL_TYPE)?;
-        Result::Ok(SignalSection {
+        Ok(SignalSection {
             writer: r1cs.writer,
             go_back: start,
             size: 0,
@@ -208,7 +208,7 @@ impl R1CSWriter {
         mut r1cs: R1CSWriter,
     ) -> Result<CustomGatesUsedSection, ()> {
         let start = initialize_section(&mut r1cs.writer, CUSTOM_GATES_USED_TYPE)?;
-        Result::Ok(CustomGatesUsedSection {
+        Ok(CustomGatesUsedSection {
             writer: r1cs.writer,
             go_back: start,
             size: 0,
@@ -222,7 +222,7 @@ impl R1CSWriter {
         mut r1cs: R1CSWriter,
     ) -> Result<CustomGatesAppliedSection, ()> {
         let start = initialize_section(&mut r1cs.writer, CUSTOM_GATES_APPLIED_TYPE)?;
-        Result::Ok(CustomGatesAppliedSection {
+        Ok(CustomGatesAppliedSection {
             writer: r1cs.writer,
             go_back: start,
             size: 0,
@@ -266,7 +266,7 @@ impl HeaderSection {
             self.writer.write_all(&stream).map_err(|_err| {})?;
             self.writer.flush().map_err(|_err| {})?;
         }
-        Result::Ok(())
+        Ok(())
     }
 
     pub fn end_section(mut self) -> Result<R1CSWriter, ()> {
@@ -274,7 +274,7 @@ impl HeaderSection {
         let mut sections = self.sections;
         let index = self.index;
         sections[index] = true;
-        Result::Ok(R1CSWriter { writer: self.writer, field_size: self.field_size, sections })
+        Ok(R1CSWriter { writer: self.writer, field_size: self.field_size, sections })
     }
 }
 
@@ -305,7 +305,7 @@ impl ConstraintSection {
         let size = write_constraint(&mut self.writer, &r1cs_a, &r1cs_b, &r1cs_c, field_size)?;
         self.size += size;
         self.number_of_constraints += 1;
-        Result::Ok(())
+        Ok(())
     }
 
     pub fn end_section(mut self) -> Result<R1CSWriter, ()> {
@@ -313,7 +313,7 @@ impl ConstraintSection {
         let mut sections = self.sections;
         let index = self.index;
         sections[index] = true;
-        Result::Ok(R1CSWriter { writer: self.writer, field_size: self.field_size, sections })
+        Ok(R1CSWriter { writer: self.writer, field_size: self.field_size, sections })
     }
 
     pub fn constraints_written(&self) -> usize {
@@ -342,7 +342,7 @@ impl SignalSection {
         let mut sections = self.sections;
         let index = self.index;
         sections[index] = true;
-        Result::Ok(R1CSWriter { writer: self.writer, field_size: self.field_size, sections })
+        Ok(R1CSWriter { writer: self.writer, field_size: self.field_size, sections })
     }
 }
 
@@ -381,7 +381,7 @@ impl CustomGatesUsedSection {
             }
         }
 
-        Result::Ok(())
+        Ok(())
     }
 
     pub fn end_section(mut self) -> Result<R1CSWriter, ()> {
@@ -389,7 +389,7 @@ impl CustomGatesUsedSection {
         let mut sections = self.sections;
         let index = self.index;
         sections[index] = true;
-        Result::Ok(R1CSWriter { writer: self.writer, field_size: self.field_size, sections })
+        Ok(R1CSWriter { writer: self.writer, field_size: self.field_size, sections })
     }
 }
 
@@ -430,7 +430,7 @@ impl CustomGatesAppliedSection {
             }
         }
 
-        Result::Ok(())
+        Ok(())
     }
 
     pub fn end_section(mut self) -> Result<R1CSWriter, ()> {
@@ -438,6 +438,6 @@ impl CustomGatesAppliedSection {
         let mut sections = self.sections;
         let index = self.index;
         sections[index] = true;
-        Result::Ok(R1CSWriter { writer: self.writer, field_size: self.field_size, sections })
+        Ok(R1CSWriter { writer: self.writer, field_size: self.field_size, sections })
     }
 }

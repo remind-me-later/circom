@@ -2,10 +2,10 @@ use super::*;
 use num_bigint_dig::BigInt;
 use std::fs::File;
 use std::io::prelude::*;
-use std::path::PathBuf;
+use std::path::{Path};
 
 pub fn wasm_hexa(nbytes: usize, num: &BigInt) -> String {
-    let inbytes = num.to_str_radix(16).to_string();
+    let inbytes = num.to_str_radix(16);
     assert!(
         2 * nbytes >= inbytes.len(),
         "the size of memory needs addresses beyond 32 bits long. This circuit cannot be run on WebAssembly\n Try to run circom --c in order to generate c++ code instead"
@@ -65,7 +65,7 @@ pub fn wrap_i6432() -> WasmInstruction {
 }
 pub fn load32_8u(offset: Option<&str>) -> WasmInstruction {
     let code = "i32.load8_u".to_string();
-    if let Option::Some(o) = offset {
+    if let Some(o) = offset {
         format!("{} offset={}", code, o)
     } else {
         code
@@ -73,7 +73,7 @@ pub fn load32_8u(offset: Option<&str>) -> WasmInstruction {
 }
 pub fn load32(offset: Option<&str>) -> WasmInstruction {
     let code = "i32.load".to_string();
-    if let Option::Some(o) = offset {
+    if let Some(o) = offset {
         format!("{} offset={}", code, o)
     } else {
         code
@@ -81,7 +81,7 @@ pub fn load32(offset: Option<&str>) -> WasmInstruction {
 }
 pub fn load64(offset: Option<&str>) -> WasmInstruction {
     let code = "i64.load".to_string();
-    if let Option::Some(o) = offset {
+    if let Some(o) = offset {
         format!("{} offset={}", code, o)
     } else {
         code
@@ -89,7 +89,7 @@ pub fn load64(offset: Option<&str>) -> WasmInstruction {
 }
 pub fn store32_8(offset: Option<&str>) -> WasmInstruction {
     let code = "i32.store8".to_string();
-    if let Option::Some(o) = offset {
+    if let Some(o) = offset {
         format!("{} offset={}", code, o)
     } else {
         code
@@ -97,7 +97,7 @@ pub fn store32_8(offset: Option<&str>) -> WasmInstruction {
 }
 pub fn store32(offset: Option<&str>) -> WasmInstruction {
     let code = "i32.store".to_string();
-    if let Option::Some(o) = offset {
+    if let Some(o) = offset {
         format!("{} offset={}", code, o)
     } else {
         code
@@ -105,7 +105,7 @@ pub fn store32(offset: Option<&str>) -> WasmInstruction {
 }
 pub fn store64(offset: Option<&str>) -> WasmInstruction {
     let code = "i64.store".to_string();
-    if let Option::Some(o) = offset {
+    if let Some(o) = offset {
         format!("{} offset={}", code, o)
     } else {
         code
@@ -270,10 +270,10 @@ pub fn generate_data_template_instance_to_io(
     for c in 0..producer.get_number_of_template_instances() {
         match io_map.get(&c) {
             Some(value) => {
-                io_map_data.push_str(&&wasm_hexa(4, &BigInt::from(s)));
+                io_map_data.push_str(&wasm_hexa(4, &BigInt::from(s)));
                 s += value.len() * 4;
             }
-            None => io_map_data.push_str(&&wasm_hexa(4, &BigInt::from(0))),
+            None => io_map_data.push_str(&wasm_hexa(4, &BigInt::from(0))),
         }
     }
     io_map_data
@@ -288,17 +288,15 @@ pub fn generate_data_io_signals_to_info(
     for c in 0..producer.get_number_of_template_instances() {
         match io_map.get(&c) {
             Some(value) => {
-                let mut n = 0;
-                for s in value {
+                for (n, s) in value.iter().enumerate() {
                     assert_eq!(s.code, n);
-                    io_signals.push_str(&&wasm_hexa(4, &BigInt::from(pos)));
+                    io_signals.push_str(&wasm_hexa(4, &BigInt::from(pos)));
                     //do not store code and the first one of lengths
-                    if s.lengths.len() == 0 {
+                    if s.lengths.is_empty() {
                         pos += 4;
                     } else {
                         pos += s.lengths.len() * 4;
                     }
-                    n += 1;
                 }
             }
             None => (),
@@ -317,12 +315,12 @@ pub fn generate_data_io_signals_info(
             Some(value) => {
                 for s in value {
                     // add the actual offset in memory, taking into account the size of field nums
-                    io_signals_info.push_str(&&wasm_hexa(
+                    io_signals_info.push_str(&wasm_hexa(
                         4,
                         &BigInt::from(s.offset * producer.get_size_32_bits_in_memory() * 4),
                     ));
                     for i in 1..s.lengths.len() {
-                        io_signals_info.push_str(&&wasm_hexa(4, &BigInt::from(s.lengths[i])));
+                        io_signals_info.push_str(&wasm_hexa(4, &BigInt::from(s.lengths[i])));
                     }
                 }
             }
@@ -350,10 +348,10 @@ pub fn generate_data_constants(producer: &WASMProducer, constant_list: &Vec<Stri
         let p = producer.get_prime().parse::<BigInt>().unwrap();
         let b = ((p.bits() + 63) / 64) * 64;
         let mut r = BigInt::from(1);
-        r = r << b;
-        n = n % BigInt::clone(&p);
-        n = n + BigInt::clone(&p);
-        n = n % BigInt::clone(&p);
+        r <<= b;
+        n %= BigInt::clone(&p);
+        n += BigInt::clone(&p);
+        n %= BigInt::clone(&p);
         let hp = BigInt::clone(&p) / 2;
         let mut nn;
         if BigInt::clone(&n) > hp {
@@ -491,54 +489,50 @@ pub fn to_array_hex(num: &BigInt, size: usize, group_size: usize) -> Vec<String>
 // ------ fix elements --------------------------
 
 pub fn generate_imports_list() -> Vec<WasmInstruction> {
-    let mut imports = vec![];
-    imports.push(
+    vec![
         "(import \"runtime\" \"exceptionHandler\" (func $exceptionHandler (type $_t_i32)))"
             .to_string(),
-    );
-    imports.push(
         "(import \"runtime\" \"showSharedRWMemory\" (func $showSharedRWMemory (type $_t_void)))"
             .to_string(),
-    );
-    imports
+    ]
 }
 
 pub fn generate_memory_def_list(producer: &WASMProducer) -> Vec<WasmInstruction> {
     let mut wmemory = vec![];
-    wmemory.push(format!("(memory {})", get_initial_size_of_memory(&producer)));
+    wmemory.push(format!("(memory {})", get_initial_size_of_memory(producer)));
     wmemory
 }
 
 pub fn generate_types_list() -> Vec<WasmInstruction> {
-    let mut types = vec![];
-    types.push("(type $_t_void (func ))".to_string());
-    types.push("(type $_t_ri32 (func  (result i32)))".to_string());
-    types.push("(type $_t_i32 (func  (param i32)))".to_string());
-    types.push("(type $_t_i32ri32 (func  (param i32) (result i32)))".to_string());
-    types.push("(type $_t_i64ri32 (func  (param i64) (result i32)))".to_string());
-    types.push("(type $_t_i32i32 (func  (param i32 i32)))".to_string());
-    types.push("(type $_t_i32i32ri32 (func  (param i32 i32) (result i32)))".to_string());
-    types.push("(type $_t_i32i32i32  (func  (param i32 i32 i32)))".to_string());
-    types
+    vec![
+        "(type $_t_void (func ))".to_string(),
+        "(type $_t_ri32 (func  (result i32)))".to_string(),
+        "(type $_t_i32 (func  (param i32)))".to_string(),
+        "(type $_t_i32ri32 (func  (param i32) (result i32)))".to_string(),
+        "(type $_t_i64ri32 (func  (param i64) (result i32)))".to_string(),
+        "(type $_t_i32i32 (func  (param i32 i32)))".to_string(),
+        "(type $_t_i32i32ri32 (func  (param i32 i32) (result i32)))".to_string(),
+        "(type $_t_i32i32i32  (func  (param i32 i32 i32)))".to_string(),
+    ]
 }
 
 pub fn generate_exports_list() -> Vec<WasmInstruction> {
-    let mut exports = vec![];
-    exports.push("(export \"memory\" (memory 0))".to_string());
-    exports.push("(export \"getVersion\" (func $getVersion))".to_string());
-    exports.push("(export \"getSharedRWMemoryStart\" (func $getSharedRWMemoryStart))".to_string());
-    exports.push("(export \"readSharedRWMemory\" (func $readSharedRWMemory))".to_string());
-    exports.push("(export \"writeSharedRWMemory\" (func $writeSharedRWMemory))".to_string());
-    exports.push("(export \"init\" (func $init))".to_string());
-    exports.push("(export \"setInputSignal\" (func $setInputSignal))".to_string());
-    exports.push("(export \"getInputSignalSize\" (func $getInputSignalSize))".to_string());
-    exports.push("(export \"getRawPrime\" (func $getRawPrime))".to_string());
-    exports.push("(export \"getFieldNumLen32\" (func $getFieldNumLen32))".to_string());
-    exports.push("(export \"getWitnessSize\" (func $getWitnessSize))".to_string());
-    exports.push("(export \"getInputSize\" (func $getInputSize))".to_string());
-    exports.push("(export \"getWitness\" (func $getWitness))".to_string());
-    exports.push("(export \"getMessageChar\" (func $getMessageChar))".to_string());
-    exports
+    vec![
+        "(export \"memory\" (memory 0))".to_string(),
+        "(export \"getVersion\" (func $getVersion))".to_string(),
+        "(export \"getSharedRWMemoryStart\" (func $getSharedRWMemoryStart))".to_string(),
+        "(export \"readSharedRWMemory\" (func $readSharedRWMemory))".to_string(),
+        "(export \"writeSharedRWMemory\" (func $writeSharedRWMemory))".to_string(),
+        "(export \"init\" (func $init))".to_string(),
+        "(export \"setInputSignal\" (func $setInputSignal))".to_string(),
+        "(export \"getInputSignalSize\" (func $getInputSignalSize))".to_string(),
+        "(export \"getRawPrime\" (func $getRawPrime))".to_string(),
+        "(export \"getFieldNumLen32\" (func $getFieldNumLen32))".to_string(),
+        "(export \"getWitnessSize\" (func $getWitnessSize))".to_string(),
+        "(export \"getInputSize\" (func $getInputSize))".to_string(),
+        "(export \"getWitness\" (func $getWitness))".to_string(),
+        "(export \"getMessageChar\" (func $getMessageChar))".to_string(),
+    ]
 }
 
 pub fn generate_data_list(producer: &WASMProducer) -> Vec<WasmInstruction> {
@@ -559,7 +553,7 @@ pub fn generate_data_list(producer: &WASMProducer) -> Vec<WasmInstruction> {
         producer.get_shared_rw_memory_start() - 8,
         "\\00\\00\\00\\00\\00\\00\\00\\80"
     ));
-    let map = generate_hash_map(&producer.get_main_input_list());
+    let map = generate_hash_map(producer.get_main_input_list());
     wdata.push(format!(
         "(data (i32.const {}) \"{}\")",
         producer.get_input_signals_hashmap_start(),
@@ -580,17 +574,17 @@ pub fn generate_data_list(producer: &WASMProducer) -> Vec<WasmInstruction> {
     wdata.push(format!(
         "(data (i32.const {}) \"{}\")",
         producer.get_template_instance_to_io_signal_start(),
-        generate_data_template_instance_to_io(&producer, producer.get_io_map())
+        generate_data_template_instance_to_io(producer, producer.get_io_map())
     ));
     wdata.push(format!(
         "(data (i32.const {}) \"{}\")",
         producer.get_io_signals_to_info_start(),
-        generate_data_io_signals_to_info(&producer, producer.get_io_map())
+        generate_data_io_signals_to_info(producer, producer.get_io_map())
     ));
     wdata.push(format!(
         "(data (i32.const {}) \"{}\")",
         producer.get_io_signals_info_start(),
-        generate_data_io_signals_info(&producer, producer.get_io_map())
+        generate_data_io_signals_info(producer, producer.get_io_map())
     ));
     let ml = producer.get_message_list();
     let m = producer.get_message_list_start();
@@ -612,7 +606,7 @@ pub fn generate_data_list(producer: &WASMProducer) -> Vec<WasmInstruction> {
     wdata.push(format!(
         "(data (i32.const {}) \"{}\")",
         producer.get_constant_numbers_start(),
-        generate_data_constants(&producer, producer.get_field_constant_list())
+        generate_data_constants(producer, producer.get_field_constant_list())
     ));
     wdata
 }
@@ -620,11 +614,11 @@ pub fn generate_data_list(producer: &WASMProducer) -> Vec<WasmInstruction> {
 // ------ stack handling operations
 
 pub fn reserve_stack_fr(producer: &WASMProducer, nbytes: usize) -> Vec<WasmInstruction> {
-    let mut instructions = vec![];
-    instructions.push(set_constant(&nbytes.to_string()));
-    instructions.push(call("$reserveStackFr"));
-    instructions.push(set_local(producer.get_cstack_tag()));
-    instructions
+    vec![
+        set_constant(&nbytes.to_string()),
+        call("$reserveStackFr"),
+        set_local(producer.get_cstack_tag()),
+    ]
 }
 
 pub fn reserve_stack_fr_function_generator() -> Vec<WasmInstruction> {
@@ -677,11 +671,7 @@ pub fn reserve_stack_fr_function_generator() -> Vec<WasmInstruction> {
 }
 
 pub fn free_stack(producer: &WASMProducer) -> Vec<WasmInstruction> {
-    let mut instructions = vec![];
-    instructions.push(set_constant("0"));
-    instructions.push(get_local(producer.get_cstack_tag()));
-    instructions.push(store32(Option::None));
-    instructions
+    vec![set_constant("0"), get_local(producer.get_cstack_tag()), store32(None)]
 }
 
 // ---------------------- functions ------------------------
@@ -886,9 +876,9 @@ pub fn check_if_input_signal_set_generator(producer: &WASMProducer) -> Vec<WasmI
 
 pub fn set_input_signal_generator(producer: &WASMProducer) -> Vec<WasmInstruction> {
     let mut instructions = vec![];
-    let mut code_aux = get_input_signal_map_position_generator(&producer);
+    let mut code_aux = get_input_signal_map_position_generator(producer);
     instructions.append(&mut code_aux);
-    code_aux = check_if_input_signal_set_generator(&producer);
+    code_aux = check_if_input_signal_set_generator(producer);
     instructions.append(&mut code_aux);
     let header = "(func $setInputSignal (type $_t_i32i32i32)".to_string();
     instructions.push(header);
@@ -1430,16 +1420,13 @@ pub fn main_sample_generator(producer: &WASMProducer) -> Vec<WasmInstruction> {
 
 fn get_file_instructions(name: &str) -> Vec<WasmInstruction> {
     use std::io::BufReader;
-    use std::path::Path;
     let mut instructions = vec![];
     let path = format!("./{}.wat", name);
     if Path::new(&path).exists() {
         let file = File::open(path).unwrap();
         let reader = BufReader::new(file);
-        for rline in reader.lines() {
-            if let Result::Ok(line) = rline {
-                instructions.push(line);
-            }
+        for line in reader.lines().flatten() {
+            instructions.push(line);
         }
     } else {
         panic!("FILE NOT FOUND {}", name);
@@ -1507,12 +1494,9 @@ pub fn generate_utils_js_file(js_folder: &PathBuf) -> std::io::Result<()> {
 }
  */
 
-pub fn generate_generate_witness_js_file(
-    js_folder: &PathBuf,
-    prime: &String,
-) -> std::io::Result<()> {
+pub fn generate_generate_witness_js_file(js_folder: &Path, prime: &String) -> std::io::Result<()> {
     use std::io::BufWriter;
-    let mut file_path = js_folder.clone();
+    let mut file_path = js_folder.to_path_buf();
     file_path.push("generate_witness");
     file_path.set_extension("js");
     let file_name = file_path.to_str().unwrap();
@@ -1533,11 +1517,11 @@ pub fn generate_generate_witness_js_file(
 }
 
 pub fn generate_witness_calculator_js_file(
-    js_folder: &PathBuf,
+    js_folder: &Path,
     prime: &String,
 ) -> std::io::Result<()> {
     use std::io::BufWriter;
-    let mut file_path = js_folder.clone();
+    let mut file_path = js_folder.to_path_buf();
     file_path.push("witness_calculator");
     file_path.set_extension("js");
     let file_name = file_path.to_str().unwrap();
@@ -1562,7 +1546,7 @@ mod tests {
     use super::*;
     use std::io::{BufRead, BufReader, BufWriter, Write};
     use std::path::Path;
-    const LOCATION: &'static str = "../target/code_generator_test";
+    const LOCATION: &str = "../target/code_generator_test";
 
     fn create_producer() -> WASMProducer {
         WASMProducer::default()
@@ -1584,11 +1568,9 @@ mod tests {
         if Path::new(&path).exists() {
             let file = File::open(path).unwrap();
             let reader = BufReader::new(file);
-            for rline in reader.lines() {
-                if let Result::Ok(line) = rline {
-                    instructions.push(line);
-                    //                    println!("line added");
-                }
+            for line in reader.lines().flatten() {
+                instructions.push(line);
+                //                    println!("line added");
             }
         } else {
             eprintln!("NO FILE FOUND");
@@ -1615,8 +1597,8 @@ mod tests {
         // For every block of code that you want to write in code.wat the following two lines.
         // In the first line the code you want tow write is produced. Then, to write that code the
         // test function "write_block" is called.
-        let mut code = vec![];
-        code.push("(module".to_string());
+        let mut code = vec!["(module".to_string()];
+
         let mut code_aux = generate_imports_list();
         code.append(&mut code_aux);
         code_aux = generate_memory_def_list(&producer);
@@ -1705,6 +1687,5 @@ mod tests {
 
         // After this test is executed the output can be find in:
         // circom_compiler/target/code_generator_test/code.wat
-        assert!(true);
     }
 }

@@ -1,5 +1,5 @@
 use num_bigint_dig::BigInt;
-use std::fmt::{Display, Formatter};
+use std::fmt::{Display, Formatter, Write};
 pub enum MemoryError {
     OutOfBoundsError,
     AssignmentError,
@@ -34,9 +34,9 @@ impl<C: Default + Clone + Display + Eq> Display for MemorySlice<C> {
         } else {
             let mut msg = format!("[{}", self.values[0]);
             for i in 1..self.values.len() {
-                msg.push_str(&format!(",{}", self.values[i]));
+                write!(msg, ",{}", self.values[i]).unwrap();
             }
-            msg.push_str("]");
+            msg.push(']');
             f.write_str(&msg)
         }
     }
@@ -49,7 +49,7 @@ impl<C: Clone> MemorySlice<C> {
         access: &[SliceCapacity],
     ) -> Result<SliceCapacity, MemoryError> {
         if access.len() > memory_slice.route.len() {
-            return Result::Err(MemoryError::OutOfBoundsError);
+            return Err(MemoryError::OutOfBoundsError);
         }
 
         let mut cell = 0;
@@ -57,13 +57,13 @@ impl<C: Clone> MemorySlice<C> {
         let mut i: SliceCapacity = 0;
         while i < access.len() {
             if access[i] >= memory_slice.route[i] {
-                return Result::Err(MemoryError::OutOfBoundsError);
+                return Err(MemoryError::OutOfBoundsError);
             }
             cell_jump /= memory_slice.route[i];
             cell += cell_jump * access[i];
             i += 1;
         }
-        Result::Ok(cell)
+        Ok(cell)
     }
     // Returns the new route and the total number of cells
     // that a slice with such route will have
@@ -72,7 +72,7 @@ impl<C: Clone> MemorySlice<C> {
         access: &[SliceCapacity],
     ) -> Result<(Vec<SliceCapacity>, SliceCapacity), MemoryError> {
         if access.len() > memory_slice.route.len() {
-            return Result::Err(MemoryError::OutOfBoundsError);
+            return Err(MemoryError::OutOfBoundsError);
         }
 
         let mut size = Vec::new();
@@ -81,7 +81,7 @@ impl<C: Clone> MemorySlice<C> {
             number_of_cells *= memory_slice.route[i];
             size.push(memory_slice.route[i]);
         }
-        Result::Ok((size, number_of_cells))
+        Ok((size, number_of_cells))
     }
 
     fn generate_slice_from_access(
@@ -89,7 +89,7 @@ impl<C: Clone> MemorySlice<C> {
         access: &[SliceCapacity],
     ) -> Result<MemorySlice<C>, MemoryError> {
         if access.is_empty() {
-            return Result::Ok(memory_slice.clone());
+            return Ok(memory_slice.clone());
         }
 
         let (size, number_of_cells) =
@@ -103,7 +103,7 @@ impl<C: Clone> MemorySlice<C> {
             offset += 1;
         }
 
-        Result::Ok(MemorySlice { route: size, values })
+        Ok(MemorySlice { route: size, values })
     }
 
     // User operations
@@ -135,13 +135,13 @@ impl<C: Clone> MemorySlice<C> {
         if MemorySlice::get_number_of_cells(new_values)
             > (MemorySlice::get_number_of_cells(memory_slice) - cell)
         {
-            return Result::Err(MemoryError::OutOfBoundsError);
+            return Err(MemoryError::OutOfBoundsError);
         }
         for value in new_values.values.iter() {
             memory_slice.values[cell] = value.clone();
             cell += 1;
         }
-        Result::Ok(())
+        Ok(())
     }
 
     pub fn access_values(
@@ -156,7 +156,7 @@ impl<C: Clone> MemorySlice<C> {
     ) -> Result<&'a C, MemoryError> {
         assert_eq!(memory_slice.route.len(), access.len());
         let cell = MemorySlice::get_initial_cell(memory_slice, access)?;
-        Result::Ok(&memory_slice.values[cell])
+        Ok(&memory_slice.values[cell])
     }
     pub fn get_mut_reference_to_single_value<'a>(
         memory_slice: &'a mut MemorySlice<C>,
@@ -164,7 +164,7 @@ impl<C: Clone> MemorySlice<C> {
     ) -> Result<&'a mut C, MemoryError> {
         assert_eq!(memory_slice.route.len(), access.len());
         let cell = MemorySlice::get_initial_cell(memory_slice, access)?;
-        Result::Ok(&mut memory_slice.values[cell])
+        Ok(&mut memory_slice.values[cell])
     }
     pub fn get_number_of_cells(memory_slice: &MemorySlice<C>) -> SliceCapacity {
         memory_slice.values.len()
@@ -209,10 +209,10 @@ mod tests {
         for f in 0..3 {
             for c in 0..4 {
                 let result = U32Slice::get_reference_to_single_value(&slice, &[f, c]);
-                if let Result::Ok(v) = result {
+                if let Ok(v) = result {
                     assert_eq!(*v, 0);
                 } else {
-                    assert!(false);
+                    panic!();
                 }
             }
         }
@@ -222,10 +222,10 @@ mod tests {
         let slice = U32Slice::new(&4);
         assert_eq!(U32Slice::get_number_of_cells(&slice), 1);
         let memory_response = U32Slice::get_reference_to_single_value(&slice, &[]);
-        if let Result::Ok(val) = memory_response {
+        if let Ok(val) = memory_response {
             assert_eq!(*val, 4);
         } else {
-            assert!(false);
+            panic!();
         }
     }
     #[test]
@@ -235,17 +235,17 @@ mod tests {
         let new_row = U32Slice::new_with_route(&[4], &4);
 
         let res = U32Slice::insert_values(&mut slice, &[2], &new_row);
-        if let Result::Ok(_) = res {
+        if res.is_ok() {
             for c in 0..4 {
                 let memory_result = U32Slice::get_reference_to_single_value(&slice, &[2, c]);
-                if let Result::Ok(val) = memory_result {
+                if let Ok(val) = memory_result {
                     assert_eq!(*val, 4);
                 } else {
-                    assert!(false);
+                    panic!();
                 }
             }
         } else {
-            assert!(false);
+            panic!();
         }
     }
 }

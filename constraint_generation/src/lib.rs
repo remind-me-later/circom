@@ -46,10 +46,10 @@ pub fn build_circuit(program: ProgramArchive, config: BuildConfig) -> BuildRespo
     }
     if config.flag_f {
         sync_dag_and_vcp(&mut vcp, &mut dag);
-        Result::Ok((Box::new(dag), vcp))
+        Ok((Box::new(dag), vcp))
     } else {
         let list = simplification_process(&mut vcp, dag, &config);
-        Result::Ok((Box::new(list), vcp))
+        Ok((Box::new(list), vcp))
     }
 }
 
@@ -59,7 +59,7 @@ fn instantiation(
     flag_verbose: bool,
     prime: &String,
 ) -> InstantiationResponse {
-    let execution_result = execute::constraint_execution(&program, flag_verbose, prime);
+    let execution_result = execute::constraint_execution(program, flag_verbose, prime);
     match execution_result {
         Ok(program_exe) => {
             let no_nodes = program_exe.number_of_nodes();
@@ -73,8 +73,7 @@ fn instantiation(
 }
 
 fn export(exe: ExecutedProgram, program: ProgramArchive, flag_verbose: bool) -> ExportResult {
-    let exported = exe.export(program, flag_verbose);
-    exported
+    exe.export(program, flag_verbose)
 }
 
 fn sync_dag_and_vcp(vcp: &mut VCP, dag: &mut DAG) {

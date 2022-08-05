@@ -66,20 +66,17 @@ pub fn custom_gate_analysis(
             }
             Substitution { meta, op, .. } => {
                 use AssignOp::*;
-                match op {
-                    AssignConstraintSignal => {
-                        let mut error = Report::error(
-                            String::from("Added constraint inside custom gate"),
-                            ReportCode::CustomGateConstraint,
-                        );
-                        error.add_primary(
-                            meta.location().clone(),
-                            meta.unwrap_file_id(),
-                            String::from("Added constraint"),
-                        );
-                        errors.push(error);
-                    }
-                    _ => {}
+                if let AssignConstraintSignal = op {
+                    let mut error = Report::error(
+                        String::from("Added constraint inside custom gate"),
+                        ReportCode::CustomGateConstraint,
+                    );
+                    error.add_primary(
+                        meta.location().clone(),
+                        meta.unwrap_file_id(),
+                        String::from("Added constraint"),
+                    );
+                    errors.push(error);
                 }
             }
             ConstraintEquality { meta, .. } => {
@@ -109,8 +106,8 @@ pub fn custom_gate_analysis(
     custom_gate_analysis(custom_gate_name, custom_gate_body, &mut warnings, &mut errors);
 
     if errors.is_empty() {
-        Result::Ok(warnings)
+        Ok(warnings)
     } else {
-        Result::Err(errors)
+        Err(errors)
     }
 }

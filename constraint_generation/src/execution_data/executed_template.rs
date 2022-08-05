@@ -51,7 +51,7 @@ impl ExecutedTemplate {
             is_parallel,
             has_parallel_sub_cmp: false,
             is_custom_gate,
-            code: code.clone(),
+            code,
             template_name: name,
             parameter_instances: instance,
             inputs: SignalCollector::new(),
@@ -370,8 +370,8 @@ fn as_big_int(exprs: Vec<ArithmeticExpression<String>>) -> Vec<BigInt> {
 }
 
 fn filter_used_components(tmp: &ExecutedTemplate) -> (ComponentCollector, usize) {
-    fn compute_number_cmp(lengths: &Vec<usize>) -> usize {
-        lengths.iter().fold(1, |p, c| p * (*c))
+    fn compute_number_cmp(lengths: &[usize]) -> usize {
+        lengths.iter().product()
     }
     let mut used = HashSet::with_capacity(tmp.components.len());
     for cnn in &tmp.connexions {
@@ -382,7 +382,7 @@ fn filter_used_components(tmp: &ExecutedTemplate) -> (ComponentCollector, usize)
     for cmp in &tmp.components {
         if used.contains(&cmp.0) {
             filtered.push(cmp.clone());
-            number_of_components = number_of_components + compute_number_cmp(&cmp.1);
+            number_of_components += compute_number_cmp(&cmp.1);
         }
     }
     (filtered, number_of_components)
@@ -451,9 +451,7 @@ fn build_clusters(tmp: &ExecutedTemplate, instances: &[TemplateInstance]) -> Vec
         let mut end = index;
         let mut defined_positions: Vec<Vec<usize>> = vec![];
         loop {
-            if end == connexions.len() {
-                break;
-            } else if connexions[end].inspect.name != cnn_data.name {
+            if end == connexions.len() || connexions[end].inspect.name != cnn_data.name {
                 break;
             } else {
                 defined_positions.push(connexions[end].inspect.indexed_with.clone());
@@ -463,7 +461,7 @@ fn build_clusters(tmp: &ExecutedTemplate, instances: &[TemplateInstance]) -> Vec
         let cluster = TriggerCluster {
             slice: start..end,
             length: end - start,
-            defined_positions: defined_positions,
+            defined_positions,
             cmp_name: cnn_data.name.clone(),
             xtype: ClusterType::Uniform {
                 offset_jump,

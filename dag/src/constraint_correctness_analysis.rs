@@ -5,16 +5,17 @@ use circom_error::error_definition::{Report, ReportCollection};
 use std::collections::{HashMap, HashSet};
 
 type C = Constraint<usize>;
-const UNCONSTRAINED_SIGNAL: &'static str = "Unconstrained signal.";
+const UNCONSTRAINED_SIGNAL: &str = "Unconstrained signal.";
 const UNCONSTRAINED_SIGNAL_CODE: ReportCode = ReportCode::UnconstrainedSignal;
 
-const ONE_CONSTRAINT_INTERMEDIATE: &'static str = "One constraint intermediate:";
+const ONE_CONSTRAINT_INTERMEDIATE: &str = "One constraint intermediate:";
 const ONE_CONSTRAINT_INTERMEDIATE_CODE: ReportCode = ReportCode::OneConstraintIntermediate;
 
-const NO_OUTPUT: &'static str = "There is no output signal";
+const NO_OUTPUT: &str = "There is no output signal";
 const NO_OUTPUT_CODE: ReportCode = ReportCode::NoOutputInInstance;
 
 struct UnconstrainedSignal;
+
 impl UnconstrainedSignal {
     pub fn new(signal: &str, template: &str) -> Report {
         let msg = format!("In template \"{}\". {} \"{}\"", template, UNCONSTRAINED_SIGNAL, signal);

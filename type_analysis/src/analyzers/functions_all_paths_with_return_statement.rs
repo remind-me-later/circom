@@ -7,12 +7,12 @@ pub fn all_paths_with_return_check(function_data: &FunctionData) -> Result<(), R
     let function_body = function_data.get_body();
     let function_name = function_data.get_name();
     if !analyse_statement(function_body) {
-        return Result::Err(Report::error(
+        return Err(Report::error(
             format!("In {} there are paths without return", function_name),
             ReportCode::FunctionReturnError,
         ));
     }
-    Result::Ok(())
+    Ok(())
 }
 
 fn analyse_statement(stmt: &Statement) -> bool {
@@ -21,7 +21,7 @@ fn analyse_statement(stmt: &Statement) -> bool {
         Statement::While { .. } => false,
         Statement::IfThenElse { if_case, else_case, .. } => {
             let else_returns = match else_case {
-                Option::Some(s) => analyse_statement(s),
+                Some(s) => analyse_statement(s),
                 _ => false,
             };
             else_returns && analyse_statement(if_case)
@@ -31,7 +31,7 @@ fn analyse_statement(stmt: &Statement) -> bool {
     }
 }
 
-fn analyse_block(block: &Vec<Statement>) -> bool {
+fn analyse_block(block: &[Statement]) -> bool {
     let mut has_return_path = false;
     for stmt in block.iter() {
         has_return_path = has_return_path || analyse_statement(stmt);

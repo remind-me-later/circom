@@ -66,7 +66,7 @@ fn extend_statement(stmt: &mut Statement, state: &mut State, context: &Context) 
         IfThenElse { cond, if_case, else_case, .. } => {
             let mut expands = vec![];
             expands.append(&mut extend_statement(if_case, state, context));
-            if let Option::Some(s) = else_case {
+            if let Some(s) = else_case {
                 expands.append(&mut extend_statement(s, state, context));
             }
             let mut cond_extension = extend_expression(cond, state, context);
@@ -287,7 +287,7 @@ fn split_return(stmt: Statement, id: usize) -> ReturnSplit {
         let mut declaration_meta = meta.clone();
         let mut substitution_meta = meta.clone();
         let mut variable_meta = meta.clone();
-        let return_meta = meta.clone();
+        let return_meta = meta;
         declaration_meta.get_mut_memory_knowledge().set_concrete_dimensions(lengths.clone());
         declaration_meta.get_mut_type_knowledge().set_reduces_to(TypeReduction::Variable);
         substitution_meta.get_mut_type_knowledge().set_reduces_to(TypeReduction::Variable);
@@ -329,7 +329,7 @@ fn into_single_substitution(stmt: Statement, stmts: &mut Vec<Statement>) {
                 meta: meta.clone(),
                 var: var.clone(),
                 access: access.clone(),
-                op: op.clone(),
+                op,
                 rhe: *if_true,
             };
             if_assigns.push(sub_if);
@@ -344,7 +344,7 @@ fn into_single_substitution(stmt: Statement, stmts: &mut Vec<Statement>) {
                 meta,
                 cond: *cond,
                 if_case: Box::new(if_body),
-                else_case: Option::Some(Box::new(else_body)),
+                else_case: Some(Box::new(else_body)),
             };
 
             stmts.push(stmt);

@@ -42,7 +42,7 @@ fn substitution_process(
     field: &BigInt,
 ) {
     let mut lconst = LinkedList::new();
-    while let Option::Some(actual_constraint) = LinkedList::pop_back(constraints) {
+    while let Some(actual_constraint) = LinkedList::pop_back(constraints) {
         treat_constraint(signals, substitutions, &mut lconst, actual_constraint, field);
     }
     *constraints = lconst;
@@ -67,7 +67,7 @@ fn treat_constraint(
         let out = out.unwrap();
         signals.delete(out);
         let substitution = C::clear_signal_from_linear(work, &out, field);
-        let in_conflict = substitutions.get(&substitution.from()).cloned();
+        let in_conflict = substitutions.get(substitution.from()).cloned();
         if in_conflict.is_none() {
             substitutions.insert(*substitution.from(), substitution);
             break;
@@ -82,7 +82,7 @@ fn treat_constraint(
 }
 
 fn take_signal(signals: &SignalDefinition, constraint: &C) -> Option<usize> {
-    let mut ret = Option::None;
+    let mut ret = None;
     for k in constraint.c().keys() {
         if signals.can_be_taken(*k) {
             if signals.is_deleted(*k) {
@@ -100,7 +100,7 @@ fn take_signal(signals: &SignalDefinition, constraint: &C) -> Option<usize> {
 fn take_substitutions_to_be_applied<'a>(sh: &'a HashMap<usize, S>, subs: &S) -> Vec<&'a S> {
     let mut to_be_applied = vec![];
     for s in subs.to().keys() {
-        if let Option::Some(s) = sh.get(s) {
+        if let Some(s) = sh.get(s) {
             to_be_applied.push(s);
         }
     }

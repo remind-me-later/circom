@@ -35,9 +35,9 @@ pub fn manage_functions(
         program_archive.get_mut_function_data(&k).replace_body(v);
     }
     if reports.is_empty() {
-        Result::Ok(())
+        Ok(())
     } else {
-        Result::Err(reports)
+        Err(reports)
     }
 }
 
@@ -54,9 +54,9 @@ pub fn compute_vct(
         treat_statement(&mut instance.code, &context, &mut reports, flag_verbose, prime);
     }
     if reports.is_empty() {
-        Result::Ok(())
+        Ok(())
     } else {
-        Result::Err(reports)
+        Err(reports)
     }
 }
 
@@ -96,7 +96,7 @@ fn treat_statement(
         }
         Block { stmts, .. } => {
             stmts
-                .into_iter()
+                .iter_mut()
                 .for_each(|s| treat_statement(s, context, reports, flag_verbose, prime));
         }
         IfThenElse { if_case, else_case, .. } => {
@@ -152,11 +152,11 @@ fn treat_dimension(
         let execution_result =
             execute_constant_expression(dim, program, env.clone(), flag_verbose, prime);
         match execution_result {
-            Result::Err(mut r) => {
+            Err(mut r) => {
                 reports.append(&mut r);
                 None
             }
-            Result::Ok(v) => transform_big_int_to_usize(v),
+            Ok(v) => transform_big_int_to_usize(v),
         }
     }
 }

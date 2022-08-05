@@ -123,7 +123,7 @@ impl<C: Default + Clone + Display + Hash + Eq> ArithmeticExpression<C> {
         ArithmeticExpression::initialize_hashmap_for_expression(&mut c);
         match arithmetic_expression {
             NonQuadratic => {
-                return Option::None;
+                return None;
             }
             Quadratic { a: old_a, b: old_b, c: old_c } => {
                 a = old_a;
@@ -141,7 +141,7 @@ impl<C: Default + Clone + Display + Hash + Eq> ArithmeticExpression<C> {
             }
         }
         ArithmeticExpression::multiply_coefficients_by_constant(&BigInt::from(-1), &mut c, field);
-        Option::Some(Constraint::new(a, b, c))
+        Some(Constraint::new(a, b, c))
     }
 
     // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -238,7 +238,7 @@ impl<C: Default + Clone + Display + Hash + Eq> ArithmeticExpression<C> {
             *value = modular_arithmetic::div(value, constant, field)?;
         }
         debug_assert!(ArithmeticExpression::valid_hashmap_for_expression(coefficients));
-        Result::Ok(())
+        Ok(())
     }
     fn idivide_coefficients_by_constant(
         constant: &BigInt,
@@ -250,7 +250,7 @@ impl<C: Default + Clone + Display + Hash + Eq> ArithmeticExpression<C> {
             *value = modular_arithmetic::idiv(value, constant, field)?;
         }
         debug_assert!(ArithmeticExpression::valid_hashmap_for_expression(coefficients));
-        Result::Ok(())
+        Ok(())
     }
 
     pub fn add(
@@ -467,7 +467,7 @@ impl<C: Default + Clone + Display + Hash + Eq> ArithmeticExpression<C> {
         match (left, right) {
             (Number { value: value_0 }, Number { value: value_1 }) => {
                 let value = modular_arithmetic::div(value_0, value_1, field)?;
-                Result::Ok(Number { value })
+                Ok(Number { value })
             }
             (Signal { symbol }, Number { value }) => {
                 let mut coefficients = HashMap::new();
@@ -483,7 +483,7 @@ impl<C: Default + Clone + Display + Hash + Eq> ArithmeticExpression<C> {
                     &mut coefficients,
                     field,
                 )?;
-                Result::Ok(Linear { coefficients })
+                Ok(Linear { coefficients })
             }
             (Linear { coefficients }, Number { value }) => {
                 let mut coefficients = coefficients.clone();
@@ -492,7 +492,7 @@ impl<C: Default + Clone + Display + Hash + Eq> ArithmeticExpression<C> {
                     &mut coefficients,
                     field,
                 )?;
-                Result::Ok(Linear { coefficients })
+                Ok(Linear { coefficients })
             }
             (Quadratic { a, b, c }, Number { value }) => {
                 let mut a = a.clone();
@@ -500,9 +500,9 @@ impl<C: Default + Clone + Display + Hash + Eq> ArithmeticExpression<C> {
                 let mut c = c.clone();
                 ArithmeticExpression::divide_coefficients_by_constant(value, &mut a, field)?;
                 ArithmeticExpression::divide_coefficients_by_constant(value, &mut c, field)?;
-                Result::Ok(Quadratic { a, b, c })
+                Ok(Quadratic { a, b, c })
             }
-            _ => Result::Ok(NonQuadratic),
+            _ => Ok(NonQuadratic),
         }
     }
     pub fn idiv(
@@ -514,7 +514,7 @@ impl<C: Default + Clone + Display + Hash + Eq> ArithmeticExpression<C> {
         match (left, right) {
             (Number { value: value_0 }, Number { value: value_1 }) => {
                 let value = modular_arithmetic::idiv(value_0, value_1, field)?;
-                Result::Ok(Number { value })
+                Ok(Number { value })
             }
             (Signal { symbol }, Number { value }) => {
                 let mut coefficients = HashMap::new();
@@ -530,7 +530,7 @@ impl<C: Default + Clone + Display + Hash + Eq> ArithmeticExpression<C> {
                     &mut coefficients,
                     field,
                 )?;
-                Result::Ok(Linear { coefficients })
+                Ok(Linear { coefficients })
             }
             (Linear { coefficients }, Number { value }) => {
                 let mut coefficients = coefficients.clone();
@@ -539,7 +539,7 @@ impl<C: Default + Clone + Display + Hash + Eq> ArithmeticExpression<C> {
                     &mut coefficients,
                     field,
                 )?;
-                Result::Ok(Linear { coefficients })
+                Ok(Linear { coefficients })
             }
             (Quadratic { a, b, c }, Number { value }) => {
                 let mut a = a.clone();
@@ -547,9 +547,9 @@ impl<C: Default + Clone + Display + Hash + Eq> ArithmeticExpression<C> {
                 let mut c = c.clone();
                 ArithmeticExpression::idivide_coefficients_by_constant(value, &mut a, field)?;
                 ArithmeticExpression::idivide_coefficients_by_constant(value, &mut c, field)?;
-                Result::Ok(Quadratic { a, b, c })
+                Ok(Quadratic { a, b, c })
             }
-            _ => Result::Ok(NonQuadratic),
+            _ => Ok(NonQuadratic),
         }
     }
     pub fn mod_op(
@@ -560,9 +560,9 @@ impl<C: Default + Clone + Display + Hash + Eq> ArithmeticExpression<C> {
         use ArithmeticExpression::*;
         if let (Number { value: value_0 }, Number { value: value_1 }) = (left, right) {
             let value = modular_arithmetic::mod_op(value_0, value_1, field)?;
-            Result::Ok(Number { value })
+            Ok(Number { value })
         } else {
-            Result::Ok(NonQuadratic)
+            Ok(NonQuadratic)
         }
     }
     pub fn pow(
@@ -615,9 +615,9 @@ impl<C: Default + Clone + Display + Hash + Eq> ArithmeticExpression<C> {
         use ArithmeticExpression::*;
         if let (Number { value: value_0 }, Number { value: value_1 }) = (left, right) {
             let shifted_elem = modular_arithmetic::shift_l(value_0, value_1, field)?;
-            Result::Ok(Number { value: shifted_elem })
+            Ok(Number { value: shifted_elem })
         } else {
-            Result::Ok(NonQuadratic)
+            Ok(NonQuadratic)
         }
     }
     pub fn shift_r(
@@ -628,9 +628,9 @@ impl<C: Default + Clone + Display + Hash + Eq> ArithmeticExpression<C> {
         use ArithmeticExpression::*;
         if let (Number { value: value_0 }, Number { value: value_1 }) = (left, right) {
             let shifted_elem = modular_arithmetic::shift_r(value_0, value_1, field)?;
-            Result::Ok(Number { value: shifted_elem })
+            Ok(Number { value: shifted_elem })
         } else {
-            Result::Ok(NonQuadratic)
+            Ok(NonQuadratic)
         }
     }
     pub fn bit_or(
@@ -677,9 +677,9 @@ impl<C: Default + Clone + Display + Hash + Eq> ArithmeticExpression<C> {
     pub fn get_boolean_equivalence(elem: &ArithmeticExpression<C>, field: &BigInt) -> Option<bool> {
         use ArithmeticExpression::*;
         if let Number { value } = elem {
-            Option::Some(modular_arithmetic::as_bool(value, field))
+            Some(modular_arithmetic::as_bool(value, field))
         } else {
-            Option::None
+            None
         }
     }
     pub fn not(elem: &ArithmeticExpression<C>, field: &BigInt) -> ArithmeticExpression<C> {
@@ -821,7 +821,7 @@ impl<C: Default + Clone + Display + Hash + Eq> ArithmeticExpression<C> {
         if let Number { value } = expr {
             value.to_usize()
         } else {
-            Option::None
+            None
         }
     }
     pub fn is_number(&self) -> bool {
@@ -860,17 +860,17 @@ impl<C: Default + Clone + Display + Hash + Eq> Substitution<C> {
             Number { value } => {
                 let mut to = HashMap::new();
                 to.insert(ArithmeticExpression::constant_coefficient(), value);
-                Option::Some(Substitution { from, to })
+                Some(Substitution { from, to })
             }
             Signal { symbol } => {
                 let mut to = HashMap::new();
                 to.insert(symbol, BigInt::from(1));
-                Option::Some(Substitution { from, to })
+                Some(Substitution { from, to })
             }
             Linear { coefficients: to } if !to.contains_key(&from) => {
-                Option::Some(Substitution { from, to })
+                Some(Substitution { from, to })
             }
-            _ => Option::None,
+            _ => None,
         }
     }
 
@@ -1073,7 +1073,7 @@ impl<C: Default + Clone + Display + Hash + Eq> Constraint<C> {
     ) -> Substitution<C> {
         debug_assert!(Constraint::is_linear(&constraint));
         debug_assert!(constraint.c.contains_key(signal));
-        let raw_expression = Constraint::clear_signal(constraint.c, &signal, field);
+        let raw_expression = Constraint::clear_signal(constraint.c, signal, field);
         Substitution { from: signal.clone(), to: raw_expression }
     }
 
@@ -1112,7 +1112,7 @@ impl<C: Default + Clone + Display + Hash + Eq> Constraint<C> {
         key: &C,
         field: &BigInt,
     ) -> HashMap<C, BigInt> {
-        let key_value = symbols.remove(&key).unwrap();
+        let key_value = symbols.remove(key).unwrap();
         assert!(!key_value.is_zero());
         let value_to_the_right = modular_arithmetic::mul(&key_value, &BigInt::from(-1), field);
         ArithmeticExpression::initialize_hashmap_for_expression(&mut symbols);
@@ -1210,7 +1210,7 @@ impl Constraint<usize> {
         let c = apply_raw_offset(&self.c, offset);
         Constraint::new(a, b, c)
     }
-    pub fn apply_witness(&self, witness: &Vec<usize>) -> Constraint<usize> {
+    pub fn apply_witness(&self, witness: &[usize]) -> Constraint<usize> {
         let a = apply_vectored_correspondence(&self.a, witness);
         let b = apply_vectored_correspondence(&self.b, witness);
         let c = apply_vectored_correspondence(&self.c, witness);
@@ -1223,7 +1223,7 @@ type RawExpr<C> = HashMap<C, BigInt>;
 
 fn apply_vectored_correspondence(
     symbols: &HashMap<usize, BigInt>,
-    map: &Vec<usize>,
+    map: &[usize],
 ) -> HashMap<usize, BigInt> {
     let mut mapped = HashMap::new();
     for (s, v) in symbols {
@@ -1246,7 +1246,7 @@ where
         let id = if key.eq(&constant_coefficient) {
             ArithmeticExpression::constant_coefficient()
         } else {
-            map.get(&key).expect(&format!("Unknown signal: {}", key)).clone()
+            map.get(key).unwrap_or_else(|| panic!("Unknown signal: {}", key)).clone()
         };
         coefficients_as_correspondence.insert(id, value.clone());
     }
@@ -1274,7 +1274,7 @@ fn raw_substitution<C>(
     C: Default + Clone + Display + Hash + Eq,
 {
     ArithmeticExpression::initialize_hashmap_for_expression(change);
-    if let Option::Some(val) = change.remove(&substitution.from) {
+    if let Some(val) = change.remove(&substitution.from) {
         let mut coefficients = substitution.to.clone();
         ArithmeticExpression::initialize_hashmap_for_expression(&mut coefficients);
         ArithmeticExpression::multiply_coefficients_by_constant(&val, &mut coefficients, field);

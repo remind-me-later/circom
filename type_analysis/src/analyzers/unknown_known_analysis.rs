@@ -6,7 +6,6 @@ use circom_error::file_definition::{generate_file_location, FileID};
 use program_structure::program_archive::ProgramArchive;
 use std::collections::HashSet;
 use std::cmp::max;
-use std::option::Option;
 
 struct EntryInformation {
     file_id: FileID,
@@ -42,9 +41,9 @@ pub fn unknown_known_analysis(
     let entry = EntryInformation { file_id, environment };
     let result = analyze(template_body, entry);
     if result.reports.is_empty() {
-        Result::Ok(())
+        Ok(())
     } else {
-        Result::Err(result.reports)
+        Err(result.reports)
     }
 }
 
@@ -149,7 +148,7 @@ fn analyze(stmt: &Statement, entry_information: EntryInformation) -> ExitInforma
                 EntryInformation { environment: environment.clone(), file_id };
             let new_entry_if_case = EntryInformation { environment, file_id };
             let if_case_info = analyze(if_case, new_entry_if_case);
-            let else_case_info = if let Option::Some(else_stmt) = else_case {
+            let else_case_info = if let Some(else_stmt) = else_case {
                 analyze(else_stmt, new_entry_else_case)
             } else {
                 ExitInformation {
@@ -407,7 +406,7 @@ fn unknown_index(exp: &Expression, environment: &Environment) -> bool {
         if index == rec.len() || has_unknown_index {
             break has_unknown_index;
         }
-        has_unknown_index = unknown_index(&rec[index], environment);
+        has_unknown_index = unknown_index(rec[index], environment);
         index += 1;
     }
 }

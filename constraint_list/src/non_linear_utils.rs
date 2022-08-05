@@ -13,7 +13,7 @@ pub fn obtain_and_simplify_non_linear(
     let (_, non_linear) = EncodingIterator::take(&mut iter);
     for mut constraint in non_linear {
         for frame in frames {
-            fast_encoded_constraint_substitution(&mut constraint, frame, &field);
+            fast_encoded_constraint_substitution(&mut constraint, frame, field);
         }
         if C::is_linear(&constraint) {
             linear.push_back(constraint);

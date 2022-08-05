@@ -57,7 +57,7 @@ fn statement_inspection(
     match stmt {
         IfThenElse { if_case, else_case, .. } => {
             statement_inspection(if_case, file_id, template_info, reports, environment);
-            if let Option::Some(else_stmt) = else_case {
+            if let Some(else_stmt) = else_case {
                 statement_inspection(else_stmt, file_id, template_info, reports, environment);
             }
         }
@@ -155,7 +155,7 @@ fn expression_inspection(
         Number { .. } => ExpressionResult::ArithmeticExpression(SignalElementType::FieldElement),
         Call { id, .. } => {
             if template_info.contains_key(id) {
-                ExpressionResult::Template(Option::Some(id.clone()))
+                ExpressionResult::Template(Some(id.clone()))
             } else {
                 ExpressionResult::ArithmeticExpression(SignalElementType::FieldElement)
             }

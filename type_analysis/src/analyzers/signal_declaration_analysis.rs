@@ -12,9 +12,9 @@ pub fn check_signal_correctness(template_data: &TemplateData) -> Result<(), Repo
         treat_statement(stmt, true, template_id, &mut reports);
     }
     if reports.is_empty() {
-        Result::Ok(())
+        Ok(())
     } else {
-        Result::Err(reports)
+        Err(reports)
     }
 }
 
@@ -28,7 +28,7 @@ fn treat_statement(
     match stmt {
         IfThenElse { if_case, else_case, .. } => {
             treat_statement(if_case, false, template_id, reports);
-            if let Option::Some(else_block) = else_case {
+            if let Some(else_block) = else_case {
                 treat_statement(else_block, false, template_id, reports);
             }
         }
@@ -51,7 +51,7 @@ fn treat_statement(
                         file_definition::generate_file_location(meta.get_start(), meta.get_end());
                     report.add_primary(
                         location,
-                        template_id.clone(),
+                        template_id,
                         "Is outside the initial scope".to_string(),
                     );
                     reports.push(report);

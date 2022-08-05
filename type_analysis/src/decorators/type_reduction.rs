@@ -118,7 +118,7 @@ fn reduce_types_in_conditional(
 ) {
     reduce_types_in_expression(cond, environment);
     reduce_types_in_statement(if_branch, environment);
-    if let Option::Some(else_stmt) = else_branch {
+    if let Some(else_stmt) = else_branch {
         reduce_types_in_statement(else_stmt, environment);
     }
 }

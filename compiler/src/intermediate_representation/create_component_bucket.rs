@@ -177,11 +177,7 @@ impl WriteC for CreateCmpBucket {
         instructions.push("{".to_string());
         instructions.push(format!("uint aux_create = {};", scmp_idx));
         instructions.push(format!("int aux_cmp_num = {}+{}+1;", self.component_offset, CTX_INDEX));
-        instructions.push(format!(
-            "uint csoffset = {}+{};",
-            MY_SIGNAL_START.to_string(),
-            self.signal_offset
-        ));
+        instructions.push(format!("uint csoffset = {}+{};", MY_SIGNAL_START, self.signal_offset));
         if self.number_of_cmp > 1 {
             instructions.push(format!(
                 "uint aux_dimensions[{}] = {};",
@@ -205,14 +201,14 @@ impl WriteC for CreateCmpBucket {
                 "for (uint i_aux = 0; i_aux < {}; i_aux++) {{",
                 self.defined_positions.len()
             ));
-            instructions.push(format!("uint i = aux_positions[i_aux];"));
+            instructions.push("uint i = aux_positions[i_aux];".to_string());
         }
 
         let sub_cmp_template_create = format!("{}_create", self.symbol);
         if self.number_of_cmp > 1 {
             instructions.push(format!(
                 "std::string new_cmp_name = \"{}\"+{};",
-                self.name_subcomponent.to_string(),
+                self.name_subcomponent,
                 generate_my_array_position(
                     "aux_dimensions".to_string(),
                     self.dimensions.len().to_string(),
@@ -220,10 +216,8 @@ impl WriteC for CreateCmpBucket {
                 )
             ));
         } else {
-            instructions.push(format!(
-                "std::string new_cmp_name = \"{}\";",
-                self.name_subcomponent.to_string()
-            ));
+            instructions
+                .push(format!("std::string new_cmp_name = \"{}\";", self.name_subcomponent));
         }
         let create_args = vec![
             "csoffset".to_string(),

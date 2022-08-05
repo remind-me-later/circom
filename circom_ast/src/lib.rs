@@ -24,7 +24,30 @@ impl MainComponent {
     }
 }
 
-pub type Version = (usize, usize, usize);
+#[derive(Clone, Debug)]
+pub struct Version {
+    major: usize,
+    minor: usize,
+    patch: usize,
+}
+
+impl Version {
+    pub fn new(major: usize, minor: usize, patch: usize) -> Self {
+        Self { major, minor, patch }
+    }
+
+    pub fn major(&self) -> usize {
+        self.major
+    }
+
+    pub fn minor(&self) -> usize {
+        self.minor
+    }
+
+    pub fn patch(&self) -> usize {
+        self.patch
+    }
+}
 
 #[derive(Clone)]
 pub struct AST {

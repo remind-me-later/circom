@@ -93,7 +93,7 @@ fn if_then_else_constant_inference(
     environment: &mut Constants,
 ) {
     statement_constant_inference(if_case, environment);
-    if let Option::Some(stmt) = else_case {
+    if let Some(stmt) = else_case {
         statement_constant_inference(stmt.as_mut(), environment);
     }
 }
@@ -185,7 +185,7 @@ fn if_then_else_invariant_check(
     environment: &mut Constants,
 ) -> ReportCollection {
     let mut reports = statement_invariant_check(if_case, environment);
-    if let Option::Some(s) = else_case {
+    if let Some(s) = else_case {
         let mut r = statement_invariant_check(s, environment);
         reports.append(&mut r);
     }
@@ -290,7 +290,7 @@ fn expand_if_then_else(
 ) {
     *cond = expand_expression(cond.clone(), environment);
     expand_statement(if_case, environment);
-    if let Option::Some(s) = else_case {
+    if let Some(s) = else_case {
         expand_statement(s, environment);
     }
 }

@@ -71,19 +71,15 @@ fn infer_type_expresion(expr: &Expression, state: &State, context: &mut SearchIn
             } else {
                 context.open_calls.insert(id.clone());
                 context.environment.add_variable_block();
-                let mut index = 0;
                 let body = &state.generic_functions.get(id).unwrap().body;
                 let names = &state.generic_functions.get(id).unwrap().params_names;
                 let arg_types = infer_args(args, state, context);
 
-                if arg_types.is_none() {
-                    return None;
-                }
+                arg_types.as_ref()?;
 
                 let arg_types = arg_types.unwrap();
-                for arg_type in arg_types {
+                for (index, arg_type) in arg_types.into_iter().enumerate() {
                     context.environment.add_variable(&names[index], arg_type);
-                    index += 1;
                 }
 
                 let inferred = infer_type_stmt(body, state, context);

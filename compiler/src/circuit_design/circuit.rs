@@ -12,6 +12,7 @@ pub struct CompilationFlags {
     pub wat_flag: bool,
 }
 
+#[derive(Default)]
 pub struct Circuit {
     pub wasm_producer: WASMProducer,
     pub c_producer: CProducer,
@@ -19,25 +20,14 @@ pub struct Circuit {
     pub functions: Vec<FunctionCode>,
 }
 
-impl Default for Circuit {
-    fn default() -> Self {
-        Circuit {
-            c_producer: CProducer::default(),
-            wasm_producer: WASMProducer::default(),
-            templates: Vec::new(),
-            functions: Vec::new(),
-        }
-    }
-}
-
 impl WriteWasm for Circuit {
     fn produce_wasm(&self, producer: &WASMProducer) -> Vec<String> {
         use code_producers::wasm_elements::wasm_code_generator::*;
-        let mut code = vec![];
-        code.push("(module".to_string());
+        let mut code = vec!["(module".to_string()];
+
         let mut code_aux = generate_imports_list();
         code.append(&mut code_aux);
-        code_aux = generate_memory_def_list(&producer);
+        code_aux = generate_memory_def_list(producer);
         code.append(&mut code_aux);
 
         code_aux = fr_types(&producer.prime_str);
@@ -51,58 +41,58 @@ impl WriteWasm for Circuit {
         code_aux = fr_code(&producer.prime_str);
         code.append(&mut code_aux);
 
-        code_aux = desp_io_subcomponent_generator(&producer);
+        code_aux = desp_io_subcomponent_generator(producer);
         code.append(&mut code_aux);
 
-        code_aux = get_version_generator(&producer);
+        code_aux = get_version_generator(producer);
         code.append(&mut code_aux);
 
-        code_aux = get_shared_rw_memory_start_generator(&producer);
+        code_aux = get_shared_rw_memory_start_generator(producer);
         code.append(&mut code_aux);
 
-        code_aux = read_shared_rw_memory_generator(&producer);
+        code_aux = read_shared_rw_memory_generator(producer);
         code.append(&mut code_aux);
 
-        code_aux = write_shared_rw_memory_generator(&producer);
+        code_aux = write_shared_rw_memory_generator(producer);
         code.append(&mut code_aux);
 
         code_aux = reserve_stack_fr_function_generator();
         code.append(&mut code_aux);
 
-        code_aux = init_generator(&producer);
+        code_aux = init_generator(producer);
         code.append(&mut code_aux);
 
-        code_aux = set_input_signal_generator(&producer);
+        code_aux = set_input_signal_generator(producer);
         code.append(&mut code_aux);
 
-        code_aux = get_input_signal_size_generator(&producer);
+        code_aux = get_input_signal_size_generator(producer);
         code.append(&mut code_aux);
 
-        code_aux = get_raw_prime_generator(&producer);
+        code_aux = get_raw_prime_generator(producer);
         code.append(&mut code_aux);
 
-        code_aux = get_field_num_len32_generator(&producer);
+        code_aux = get_field_num_len32_generator(producer);
         code.append(&mut code_aux);
 
-        code_aux = get_input_size_generator(&producer);
+        code_aux = get_input_size_generator(producer);
         code.append(&mut code_aux);
 
-        code_aux = get_witness_size_generator(&producer);
+        code_aux = get_witness_size_generator(producer);
         code.append(&mut code_aux);
 
-        code_aux = get_witness_generator(&producer);
+        code_aux = get_witness_generator(producer);
         code.append(&mut code_aux);
 
-        code_aux = copy_32_in_shared_rw_memory_generator(&producer);
+        code_aux = copy_32_in_shared_rw_memory_generator(producer);
         code.append(&mut code_aux);
 
-        code_aux = copy_fr_in_shared_rw_memory_generator(&producer);
+        code_aux = copy_fr_in_shared_rw_memory_generator(producer);
         code.append(&mut code_aux);
 
-        code_aux = get_message_char_generator(&producer);
+        code_aux = get_message_char_generator(producer);
         code.append(&mut code_aux);
 
-        code_aux = build_buffer_message_generator(&producer);
+        code_aux = build_buffer_message_generator(producer);
         code.append(&mut code_aux);
 
         // Actual code from the program
@@ -115,13 +105,13 @@ impl WriteWasm for Circuit {
             code.append(&mut t.produce_wasm(producer));
         }
 
-        code_aux = generate_table_of_template_runs(&producer);
+        code_aux = generate_table_of_template_runs(producer);
         code.append(&mut code_aux);
 
         code_aux = fr_data(&producer.prime_str);
         code.append(&mut code_aux);
 
-        code_aux = generate_data_list(&producer);
+        code_aux = generate_data_list(producer);
         code.append(&mut code_aux);
 
         code.push(")".to_string());
@@ -138,7 +128,7 @@ impl WriteWasm for Circuit {
         writer.write_all(code.as_bytes()).map_err(|_| {})?;
         writer.flush().map_err(|_| {})?;
 
-        code_aux = generate_memory_def_list(&producer);
+        code_aux = generate_memory_def_list(producer);
         code = merge_code(code_aux);
         writer.write_all(code.as_bytes()).map_err(|_| {})?;
         writer.flush().map_err(|_| {})?;
@@ -163,27 +153,27 @@ impl WriteWasm for Circuit {
         writer.write_all(code.as_bytes()).map_err(|_| {})?;
         writer.flush().map_err(|_| {})?;
 
-        code_aux = desp_io_subcomponent_generator(&producer);
+        code_aux = desp_io_subcomponent_generator(producer);
         code = merge_code(code_aux);
         writer.write_all(code.as_bytes()).map_err(|_| {})?;
         writer.flush().map_err(|_| {})?;
 
-        code_aux = get_version_generator(&producer);
+        code_aux = get_version_generator(producer);
         code = merge_code(code_aux);
         writer.write_all(code.as_bytes()).map_err(|_| {})?;
         writer.flush().map_err(|_| {})?;
 
-        code_aux = get_shared_rw_memory_start_generator(&producer);
+        code_aux = get_shared_rw_memory_start_generator(producer);
         code = merge_code(code_aux);
         writer.write_all(code.as_bytes()).map_err(|_| {})?;
         writer.flush().map_err(|_| {})?;
 
-        code_aux = read_shared_rw_memory_generator(&producer);
+        code_aux = read_shared_rw_memory_generator(producer);
         code = merge_code(code_aux);
         writer.write_all(code.as_bytes()).map_err(|_| {})?;
         writer.flush().map_err(|_| {})?;
 
-        code_aux = write_shared_rw_memory_generator(&producer);
+        code_aux = write_shared_rw_memory_generator(producer);
         code = merge_code(code_aux);
         writer.write_all(code.as_bytes()).map_err(|_| {})?;
         writer.flush().map_err(|_| {})?;
@@ -193,62 +183,62 @@ impl WriteWasm for Circuit {
         writer.write_all(code.as_bytes()).map_err(|_| {})?;
         writer.flush().map_err(|_| {})?;
 
-        code_aux = init_generator(&producer);
+        code_aux = init_generator(producer);
         code = merge_code(code_aux);
         writer.write_all(code.as_bytes()).map_err(|_| {})?;
         writer.flush().map_err(|_| {})?;
 
-        code_aux = set_input_signal_generator(&producer);
+        code_aux = set_input_signal_generator(producer);
         code = merge_code(code_aux);
         writer.write_all(code.as_bytes()).map_err(|_| {})?;
         writer.flush().map_err(|_| {})?;
 
-        code_aux = get_input_signal_size_generator(&producer);
+        code_aux = get_input_signal_size_generator(producer);
         code = merge_code(code_aux);
         writer.write_all(code.as_bytes()).map_err(|_| {})?;
         writer.flush().map_err(|_| {})?;
 
-        code_aux = get_raw_prime_generator(&producer);
+        code_aux = get_raw_prime_generator(producer);
         code = merge_code(code_aux);
         writer.write_all(code.as_bytes()).map_err(|_| {})?;
         writer.flush().map_err(|_| {})?;
 
-        code_aux = get_field_num_len32_generator(&producer);
+        code_aux = get_field_num_len32_generator(producer);
         code = merge_code(code_aux);
         writer.write_all(code.as_bytes()).map_err(|_| {})?;
         writer.flush().map_err(|_| {})?;
 
-        code_aux = get_input_size_generator(&producer);
+        code_aux = get_input_size_generator(producer);
         code = merge_code(code_aux);
         writer.write_all(code.as_bytes()).map_err(|_| {})?;
         writer.flush().map_err(|_| {})?;
 
-        code_aux = get_witness_size_generator(&producer);
+        code_aux = get_witness_size_generator(producer);
         code = merge_code(code_aux);
         writer.write_all(code.as_bytes()).map_err(|_| {})?;
         writer.flush().map_err(|_| {})?;
 
-        code_aux = get_witness_generator(&producer);
+        code_aux = get_witness_generator(producer);
         code = merge_code(code_aux);
         writer.write_all(code.as_bytes()).map_err(|_| {})?;
         writer.flush().map_err(|_| {})?;
 
-        code_aux = copy_32_in_shared_rw_memory_generator(&producer);
+        code_aux = copy_32_in_shared_rw_memory_generator(producer);
         code = merge_code(code_aux);
         writer.write_all(code.as_bytes()).map_err(|_| {})?;
         writer.flush().map_err(|_| {})?;
 
-        code_aux = copy_fr_in_shared_rw_memory_generator(&producer);
+        code_aux = copy_fr_in_shared_rw_memory_generator(producer);
         code = merge_code(code_aux);
         writer.write_all(code.as_bytes()).map_err(|_| {})?;
         writer.flush().map_err(|_| {})?;
 
-        code_aux = get_message_char_generator(&producer);
+        code_aux = get_message_char_generator(producer);
         code = merge_code(code_aux);
         writer.write_all(code.as_bytes()).map_err(|_| {})?;
         writer.flush().map_err(|_| {})?;
 
-        code_aux = build_buffer_message_generator(&producer);
+        code_aux = build_buffer_message_generator(producer);
         code = merge_code(code_aux);
         writer.write_all(code.as_bytes()).map_err(|_| {})?;
         writer.flush().map_err(|_| {})?;
@@ -265,7 +255,7 @@ impl WriteWasm for Circuit {
             writer.flush().map_err(|_| {})?;
         }
 
-        code_aux = generate_table_of_template_runs(&producer);
+        code_aux = generate_table_of_template_runs(producer);
         code = merge_code(code_aux);
         writer.write_all(code.as_bytes()).map_err(|_| {})?;
         writer.flush().map_err(|_| {})?;
@@ -275,7 +265,7 @@ impl WriteWasm for Circuit {
         writer.write_all(code.as_bytes()).map_err(|_| {})?;
         writer.flush().map_err(|_| {})?;
 
-        code_aux = generate_data_list(&producer);
+        code_aux = generate_data_list(producer);
         code = merge_code(code_aux);
         writer.write_all(code.as_bytes()).map_err(|_| {})?;
         writer.flush().map_err(|_| {})?;
@@ -288,13 +278,14 @@ impl WriteWasm for Circuit {
 impl WriteC for Circuit {
     fn produce_c(&self, producer: &CProducer) -> (Vec<String>, String) {
         use c_code_generator::*;
-        let mut code = vec![];
-        // Prologue
-        code.push("#include <stdio.h>".to_string());
-        code.push("#include <iostream>".to_string());
-        code.push("#include <assert.h>".to_string());
-        code.push("#include \"circom.hpp\"".to_string());
-        code.push("#include \"calcwit.hpp\"".to_string());
+        let mut code = vec![
+            // Prologue
+            "#include <stdio.h>".to_string(),
+            "#include <iostream>".to_string(),
+            "#include <assert.h>".to_string(),
+            "#include \"circom.hpp\"".to_string(),
+            "#include \"calcwit.hpp\"".to_string(),
+        ];
 
         let mut template_headers = collect_template_headers(producer.get_template_instance_list());
         let function_headers: Vec<_> = self.functions.iter().map(|f| f.header.clone()).collect();
@@ -374,11 +365,13 @@ impl WriteC for Circuit {
         // let end_msg = "printf(\"End\\n\");".to_string();
 
         let main_template_run = producer.main_header.clone() + "_run";
-        let mut run_args = vec![];
-        // run_args.push(CTX_INDEX.to_string());
-        run_args.push("0".to_string());
-        run_args.push(CIRCOM_CALC_WIT.to_string());
-        let run_call = format!("{};", build_call(main_template_run, run_args.clone()));
+        let run_args = vec![
+            // CTX_INDEX.to_string(),
+            "0".to_string(),
+            CIRCOM_CALC_WIT.to_string(),
+        ];
+
+        let run_call = format!("{};", build_call(main_template_run, run_args));
 
         //let main_run_body = vec![start_msg, ctx_index, run_call, end_msg];
         let main_run_body = vec![ctx_index, run_call];
@@ -424,7 +417,7 @@ impl Circuit {
         c_dat: &mut W,
     ) -> Result<(), ()> {
         use std::path::Path;
-        let c_folder_path = Path::new(c_folder.clone()).to_path_buf();
+        let c_folder_path = Path::new(c_folder).to_path_buf();
         c_code_generator::generate_main_cpp_file(&c_folder_path, &self.c_producer.prime_str)
             .map_err(|_err| {})?;
         c_code_generator::generate_circom_hpp_file(&c_folder_path, &self.c_producer.prime_str)
@@ -456,7 +449,7 @@ impl Circuit {
         writer: &mut W,
     ) -> Result<(), ()> {
         use std::path::Path;
-        let js_folder_path = Path::new(js_folder.clone()).to_path_buf();
+        let js_folder_path = Path::new(js_folder).to_path_buf();
         wasm_code_generator::generate_generate_witness_js_file(
             &js_folder_path,
             &self.wasm_producer.prime_str,

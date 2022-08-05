@@ -3,32 +3,12 @@ use crate::execution_data::type_definitions::NodePointer;
 use crate::execution_data::ExecutedProgram;
 use std::collections::HashMap;
 
+#[derive(Default, Clone)]
 pub struct ComponentRepresentation {
     pub node_pointer: Option<NodePointer>,
     unassigned_inputs: HashMap<String, SliceCapacity>,
     inputs: HashMap<String, SignalSlice>,
     outputs: HashMap<String, SignalSlice>,
-}
-
-impl Default for ComponentRepresentation {
-    fn default() -> Self {
-        ComponentRepresentation {
-            node_pointer: Option::None,
-            unassigned_inputs: HashMap::new(),
-            inputs: HashMap::new(),
-            outputs: HashMap::new(),
-        }
-    }
-}
-impl Clone for ComponentRepresentation {
-    fn clone(&self) -> Self {
-        ComponentRepresentation {
-            node_pointer: self.node_pointer,
-            unassigned_inputs: self.unassigned_inputs.clone(),
-            inputs: self.inputs.clone(),
-            outputs: self.outputs.clone(),
-        }
-    }
 }
 
 impl ComponentRepresentation {
@@ -38,7 +18,7 @@ impl ComponentRepresentation {
         scheme: &ExecutedProgram,
     ) -> Result<(), MemoryError> {
         if component.is_initialized() {
-            return Result::Err(MemoryError::AssignmentError);
+            return Err(MemoryError::AssignmentError);
         }
         let possible_node = ExecutedProgram::get_node(scheme, node_pointer);
         assert!(possible_node.is_some());
@@ -60,12 +40,12 @@ impl ComponentRepresentation {
             outputs.insert(symbol.clone(), SignalSlice::new_with_route(route, &true));
         }
         *component = ComponentRepresentation {
-            node_pointer: Option::Some(node_pointer),
+            node_pointer: Some(node_pointer),
             unassigned_inputs,
             inputs,
             outputs,
         };
-        Result::Ok(())
+        Ok(())
     }
     pub fn signal_has_value(
         component: &ComponentRepresentation,
@@ -73,10 +53,10 @@ impl ComponentRepresentation {
         access: &[SliceCapacity],
     ) -> Result<bool, MemoryError> {
         if component.node_pointer.is_none() {
-            return Result::Err(MemoryError::InvalidAccess);
+            return Err(MemoryError::InvalidAccess);
         }
         if component.outputs.contains_key(signal_name) && !component.unassigned_inputs.is_empty() {
-            return Result::Err(MemoryError::InvalidAccess);
+            return Err(MemoryError::InvalidAccess);
         }
 
         let slice = if component.inputs.contains_key(signal_name) {
@@ -85,14 +65,14 @@ impl ComponentRepresentation {
             component.outputs.get(signal_name).unwrap()
         };
         let enabled = *SignalSlice::get_reference_to_single_value(slice, access)?;
-        Result::Ok(enabled)
+        Ok(enabled)
     }
     pub fn get_signal(&self, signal_name: &str) -> Result<&SignalSlice, MemoryError> {
         if self.node_pointer.is_none() {
-            return Result::Err(MemoryError::InvalidAccess);
+            return Err(MemoryError::InvalidAccess);
         }
         if self.outputs.contains_key(signal_name) && !self.unassigned_inputs.is_empty() {
-            return Result::Err(MemoryError::InvalidAccess);
+            return Err(MemoryError::InvalidAccess);
         }
 
         let slice = if self.inputs.contains_key(signal_name) {
@@ -100,7 +80,7 @@ impl ComponentRepresentation {
         } else {
             self.outputs.get(signal_name).unwrap()
         };
-        Result::Ok(slice)
+        Ok(slice)
     }
 
     pub fn assign_value_to_signal(
@@ -111,7 +91,7 @@ impl ComponentRepresentation {
         let signal_has_value =
             ComponentRepresentation::signal_has_value(component, signal_name, access)?;
         if signal_has_value {
-            return Result::Err(MemoryError::AssignmentError);
+            return Err(MemoryError::AssignmentError);
         }
 
         let slice = component.inputs.get_mut(signal_name).unwrap();
@@ -122,7 +102,7 @@ impl ComponentRepresentation {
         if *left == 0 {
             component.unassigned_inputs.remove(signal_name);
         }
-        Result::Ok(())
+        Ok(())
     }
     pub fn is_initialized(&self) -> bool {
         self.node_pointer.is_some()

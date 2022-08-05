@@ -96,8 +96,8 @@ impl WriteWasm for ReturnBucket {
 impl WriteC for ReturnBucket {
     fn produce_c(&self, producer: &CProducer) -> (Vec<String>, String) {
         use c_code_generator::*;
-        let mut instructions = vec![];
-        instructions.push("// return bucket".to_string());
+        let mut instructions = vec!["// return bucket".to_string()];
+
         let (mut instructions_value, src) = self.value.produce_c(producer);
         instructions.append(&mut instructions_value);
         if self.with_size > 1 {

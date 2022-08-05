@@ -61,10 +61,10 @@ impl WriteWasm for LoadBucket {
                 instructions.push(mul32());
                 match &self.address_type {
                     AddressType::Variable => {
-                        instructions.push(get_local(producer.get_lvar_tag()).to_string());
+                        instructions.push(get_local(producer.get_lvar_tag()));
                     }
                     AddressType::Signal => {
-                        instructions.push(get_local(producer.get_signal_start_tag()).to_string());
+                        instructions.push(get_local(producer.get_signal_start_tag()));
                     }
                     AddressType::SubcmpSignal { cmp_address, .. } => {
                         if producer.needs_comments() {
@@ -165,7 +165,7 @@ impl WriteWasm for LoadBucket {
                         }
                     }
                     _ => {
-                        assert!(false);
+                        panic!();
                     }
                 }
             }
@@ -194,15 +194,15 @@ impl WriteC for LoadBucket {
             } else if let LocationRule::Mapped { signal_code, indexes } = &self.src {
                 let mut map_prologue = vec![];
                 let sub_component_pos_in_memory =
-                    format!("{}[{}]", MY_SUBCOMPONENTS, cmp_index_ref.clone());
+                    format!("{}[{}]", MY_SUBCOMPONENTS, cmp_index_ref);
                 let mut map_access = format!(
                     "{}->{}[{}].defs[{}].offset",
                     circom_calc_wit(),
                     template_ins_2_io_info(),
                     template_id_in_component(sub_component_pos_in_memory.clone()),
-                    signal_code.to_string()
+                    signal_code
                 );
-                if indexes.len() > 0 {
+                if !indexes.is_empty() {
                     let (mut index_code_0, mut map_index) = indexes[0].produce_c(producer);
                     map_prologue.append(&mut index_code_0);
                     for i in 1..indexes.len() {
@@ -214,8 +214,8 @@ impl WriteC for LoadBucket {
                             circom_calc_wit(),
                             template_ins_2_io_info(),
                             template_id_in_component(sub_component_pos_in_memory.clone()),
-                            signal_code.to_string(),
-                            (i - 1).to_string(),
+                            signal_code,
+                            (i - 1),
                             index_exp
                         );
                     }
@@ -223,8 +223,8 @@ impl WriteC for LoadBucket {
                 }
                 (map_prologue, map_access)
             } else {
-                assert!(false);
-                (vec![], "".to_string())
+                panic!();
+                //(vec![], "".to_string())
             };
         prologue.append(&mut src_prologue);
         let access = match &self.address_type {
@@ -236,9 +236,9 @@ impl WriteC for LoadBucket {
             }
             AddressType::SubcmpSignal { is_parallel, is_output, .. } => {
                 if *is_parallel && *is_output {
-                    prologue.push(format!("{{"));
-                    prologue.push(format!("int aux1 = {};", cmp_index_ref.clone()));
-                    prologue.push(format!("int aux2 = {};", src_index.clone()));
+                    prologue.push("{".to_string());
+                    prologue.push(format!("int aux1 = {};", cmp_index_ref));
+                    prologue.push(format!("int aux2 = {};", src_index));
                     prologue.push(format!(
                     "std::unique_lock<std::mutex> lk({}->componentMemory[{}[aux1]].mutexes[aux2]);",
                     CIRCOM_CALC_WIT, MY_SUBCOMPONENTS));
@@ -247,7 +247,7 @@ impl WriteC for LoadBucket {
 			CIRCOM_CALC_WIT, MY_SUBCOMPONENTS, CIRCOM_CALC_WIT,
 			MY_SUBCOMPONENTS, CIRCOM_CALC_WIT, MY_SUBCOMPONENTS)
                     );
-                    prologue.push(format!("}}"));
+                    prologue.push("}".to_string());
                 }
                 let sub_cmp_start = format!(
                     "{}->componentMemory[{}[{}]].signalStart",

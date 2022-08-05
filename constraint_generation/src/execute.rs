@@ -10,6 +10,7 @@ use super::environment_utils::{
     },
 };
 
+use std::fmt::Write;
 use program_structure::constants::UsefulConstants;
 
 use super::execution_data::analysis::Analysis;
@@ -53,22 +54,18 @@ impl RuntimeInformation {
     }
 }
 
+#[derive(Default)]
 struct FoldedValue {
     pub arithmetic_slice: Option<AExpressionSlice>,
     pub node_pointer: Option<NodePointer>,
 }
+
 impl FoldedValue {
     pub fn valid_arithmetic_slice(f_value: &FoldedValue) -> bool {
         f_value.arithmetic_slice.is_some() && f_value.node_pointer.is_none()
     }
     pub fn valid_node_pointer(f_value: &FoldedValue) -> bool {
         f_value.node_pointer.is_some() && f_value.arithmetic_slice.is_none()
-    }
-}
-
-impl Default for FoldedValue {
-    fn default() -> Self {
-        FoldedValue { arithmetic_slice: Option::None, node_pointer: Option::None }
     }
 }
 
@@ -93,10 +90,10 @@ pub fn constraint_execution(
         flag_verbose,
     );
     match folded_value_result {
-        Result::Err(_) => Result::Err(runtime_information.runtime_errors),
-        Result::Ok(folded_value) => {
+        Err(_) => Err(runtime_information.runtime_errors),
+        Ok(folded_value) => {
             debug_assert!(FoldedValue::valid_node_pointer(&folded_value));
-            Result::Ok(runtime_information.exec_program)
+            Ok(runtime_information.exec_program)
         }
     }
 }
@@ -115,12 +112,12 @@ pub fn execute_constant_expression(
     let folded_value_result =
         execute_expression(expression, program_archive, &mut runtime_information, flag_verbose);
     match folded_value_result {
-        Result::Err(_) => Result::Err(runtime_information.runtime_errors),
-        Result::Ok(folded_value) => {
+        Err(_) => Err(runtime_information.runtime_errors),
+        Ok(folded_value) => {
             debug_assert!(FoldedValue::valid_arithmetic_slice(&folded_value));
             let value = safe_unwrap_to_single_arithmetic_expression(folded_value, line!());
             if let AExpr::Number { value } = value {
-                Result::Ok(value)
+                Ok(value)
             } else {
                 unreachable!();
             }
@@ -164,12 +161,11 @@ fn execute_statement(
                 &mut runtime.runtime_errors,
                 &runtime.call_trace,
             )?;
-            let usable_dimensions =
-                if let Option::Some(dimensions) = cast_indexing(&arithmetic_values) {
-                    dimensions
-                } else {
-                    unreachable!()
-                };
+            let usable_dimensions = if let Some(dimensions) = cast_indexing(&arithmetic_values) {
+                dimensions
+            } else {
+                unreachable!()
+            };
             match xtype {
                 VariableType::Component => execute_component_declaration(
                     name,
@@ -190,7 +186,7 @@ fn execute_statement(
                     actual_node,
                 ),
             }
-            Option::None
+            None
         }
         Substitution { meta, var, access, op, rhe, .. } => {
             let access_information =
@@ -198,11 +194,11 @@ fn execute_statement(
             let r_folded = execute_expression(rhe, program_archive, runtime, flag_verbose)?;
             let possible_constraint =
                 perform_assign(meta, var, &access_information, r_folded, actual_node, runtime)?;
-            if let (Option::Some(node), AssignOp::AssignConstraintSignal) = (actual_node, op) {
+            if let (Some(node), AssignOp::AssignConstraintSignal) = (actual_node, op) {
                 debug_assert!(possible_constraint.is_some());
                 let constrained = possible_constraint.unwrap();
                 if constrained.right.is_nonquadratic() {
-                    let err = Result::Err(ExecutionError::NonQuadraticConstraint);
+                    let err = Err(ExecutionError::NonQuadraticConstraint);
                     treat_result_with_execution_error(
                         err,
                         meta,
@@ -217,7 +213,7 @@ fn execute_statement(
                     node.add_constraint(ctr);
                 }
             }
-            Option::None
+            None
         }
         ConstraintEquality { meta, lhe, rhe, .. } => {
             debug_assert!(actual_node.is_some());
@@ -226,10 +222,10 @@ fn execute_statement(
             let arith_left = safe_unwrap_to_single_arithmetic_expression(f_left, line!());
             let arith_right = safe_unwrap_to_single_arithmetic_expression(f_right, line!());
             let possible_non_quadratic =
-                AExpr::sub(&arith_left, &arith_right, &runtime.constants.get_p());
+                AExpr::sub(&arith_left, &arith_right, runtime.constants.get_p());
             if possible_non_quadratic.is_nonquadratic() {
                 treat_result_with_execution_error(
-                    Result::Err(ExecutionError::NonQuadraticConstraint),
+                    Err(ExecutionError::NonQuadraticConstraint),
                     meta,
                     &mut runtime.runtime_errors,
                     &runtime.call_trace,
@@ -241,20 +237,20 @@ fn execute_statement(
                 runtime.constants.get_p(),
             )
             .unwrap();
-            if let Option::Some(node) = actual_node {
+            if let Some(node) = actual_node {
                 node.add_constraint(constraint_expression);
             }
-            Option::None
+            None
         }
         Return { value, .. } => {
             let mut f_return = execute_expression(value, program_archive, runtime, flag_verbose)?;
-            if let Option::Some(slice) = &mut f_return.arithmetic_slice {
+            if let Some(slice) = &mut f_return.arithmetic_slice {
                 if runtime.block_type == BlockType::Unknown {
                     *slice = AExpressionSlice::new_with_route(slice.route(), &AExpr::NonQuadratic);
                 }
             }
             debug_assert!(FoldedValue::valid_arithmetic_slice(&f_return));
-            Option::Some(f_return)
+            Some(f_return)
         }
         IfThenElse { cond, if_case, else_case, .. } => {
             let else_case = else_case.as_ref().map(|e| e.as_ref());
@@ -273,7 +269,7 @@ fn execute_statement(
             let (returned, condition_result) = execute_conditional_statement(
                 cond,
                 stmt,
-                Option::None,
+                None,
                 program_archive,
                 runtime,
                 actual_node,
@@ -318,7 +314,7 @@ fn execute_statement(
                     println!("Unknown")
                 }
             }
-            Option::None
+            None
         }
         Assert { arg, meta, .. } => {
             let f_result = execute_expression(arg, program_archive, runtime, flag_verbose)?;
@@ -336,7 +332,7 @@ fn execute_statement(
             )?
         }
     };
-    Result::Ok(res)
+    Ok(res)
 }
 
 fn execute_expression(
@@ -350,7 +346,7 @@ fn execute_expression(
         Number { value, .. } => {
             let a_value = AExpr::Number { value: value.clone() };
             let ae_slice = AExpressionSlice::new(&a_value);
-            FoldedValue { arithmetic_slice: Option::Some(ae_slice), ..FoldedValue::default() }
+            FoldedValue { arithmetic_slice: Some(ae_slice), ..FoldedValue::default() }
         }
         Variable { meta, name, access, .. } => {
             if ExecutionEnvironment::has_signal(&runtime.environment, name) {
@@ -392,7 +388,7 @@ fn execute_expression(
                 )?;
                 row += 1;
             }
-            FoldedValue { arithmetic_slice: Option::Some(array_slice), ..FoldedValue::default() }
+            FoldedValue { arithmetic_slice: Some(array_slice), ..FoldedValue::default() }
         }
         InfixOp { meta, lhe, infix_op, rhe, .. } => {
             let l_fold = execute_expression(lhe, program_archive, runtime, flag_verbose)?;
@@ -401,7 +397,7 @@ fn execute_expression(
             let r_value = safe_unwrap_to_single_arithmetic_expression(r_fold, line!());
             let r_value = execute_infix_op(meta, *infix_op, &l_value, &r_value, runtime)?;
             let r_slice = AExpressionSlice::new(&r_value);
-            FoldedValue { arithmetic_slice: Option::Some(r_slice), ..FoldedValue::default() }
+            FoldedValue { arithmetic_slice: Some(r_slice), ..FoldedValue::default() }
         }
         PrefixOp { prefix_op, rhe, .. } => {
             let folded_value = execute_expression(rhe, program_archive, runtime, flag_verbose)?;
@@ -409,21 +405,21 @@ fn execute_expression(
                 safe_unwrap_to_single_arithmetic_expression(folded_value, line!());
             let arithmetic_result = execute_prefix_op(*prefix_op, &arithmetic_value, runtime)?;
             let slice_result = AExpressionSlice::new(&arithmetic_result);
-            FoldedValue { arithmetic_slice: Option::Some(slice_result), ..FoldedValue::default() }
+            FoldedValue { arithmetic_slice: Some(slice_result), ..FoldedValue::default() }
         }
         TernaryOp { cond, if_true, if_false, .. } => {
             let f_cond = execute_expression(cond, program_archive, runtime, flag_verbose)?;
             let ae_cond = safe_unwrap_to_single_arithmetic_expression(f_cond, line!());
             let possible_bool_cond =
                 AExpr::get_boolean_equivalence(&ae_cond, runtime.constants.get_p());
-            if let Option::Some(bool_cond) = possible_bool_cond {
+            if let Some(bool_cond) = possible_bool_cond {
                 if bool_cond {
                     execute_expression(if_true, program_archive, runtime, flag_verbose)?
                 } else {
                     execute_expression(if_false, program_archive, runtime, flag_verbose)?
                 }
             } else {
-                let arithmetic_slice = Option::Some(AExpressionSlice::new(&AExpr::NonQuadratic));
+                let arithmetic_slice = Some(AExpressionSlice::new(&AExpr::NonQuadratic));
                 FoldedValue { arithmetic_slice, ..FoldedValue::default() }
             }
         }
@@ -466,7 +462,7 @@ fn execute_expression(
             Analysis::computed(&mut runtime.analysis, expr_id, value);
         }
     }
-    Result::Ok(res)
+    Ok(res)
 }
 
 //************************************************* Statement execution support *************************************************
@@ -477,7 +473,7 @@ fn execute_component_declaration(
     environment: &mut ExecutionEnvironment,
     actual_node: &mut Option<ExecutedTemplate>,
 ) {
-    if let Option::Some(node) = actual_node {
+    if let Some(node) = actual_node {
         node.add_component(component_name, dimensions);
         environment_shortcut_add_component(environment, component_name, dimensions);
     } else {
@@ -493,7 +489,7 @@ fn execute_signal_declaration(
     actual_node: &mut Option<ExecutedTemplate>,
 ) {
     use SignalType::*;
-    if let Option::Some(node) = actual_node {
+    if let Some(node) = actual_node {
         node.add_ordered_signal(signal_name, dimensions);
         match signal_type {
             Input => {
@@ -532,7 +528,7 @@ fn perform_assign(
 ) -> Result<Option<Constrained>, ()> {
     use super::execution_data::type_definitions::SubComponentData;
     let environment = &mut runtime.environment;
-    let full_symbol = create_symbol(symbol, &accessing_information);
+    let full_symbol = create_symbol(symbol, accessing_information);
 
     let possible_arithmetic_expression = if ExecutionEnvironment::has_variable(environment, symbol)
     {
@@ -552,8 +548,7 @@ fn perform_assign(
         if accessing_information.undefined {
             let new_value =
                 AExpressionSlice::new_with_route(symbol_content.route(), &AExpr::NonQuadratic);
-            let memory_result =
-                AExpressionSlice::insert_values(symbol_content, &vec![], &new_value);
+            let memory_result = AExpressionSlice::insert_values(symbol_content, &[], &new_value);
             treat_result_with_memory_error(
                 memory_result,
                 meta,
@@ -573,7 +568,7 @@ fn perform_assign(
                 &runtime.call_trace,
             )?;
         }
-        Option::None
+        None
     } else if ExecutionEnvironment::has_signal(environment, symbol) {
         debug_assert!(accessing_information.signal_access.is_none());
         debug_assert!(accessing_information.after_signal.is_empty());
@@ -598,7 +593,7 @@ fn perform_assign(
         debug_assert!(signal_previous_value.is_single());
         let signal_was_assigned = SignalSlice::unwrap_to_single(signal_previous_value);
         let access_response = if signal_was_assigned {
-            Result::Err(MemoryError::AssignmentError)
+            Err(MemoryError::AssignmentError)
         } else {
             SignalSlice::insert_values(
                 reference_to_signal_content,
@@ -612,7 +607,7 @@ fn perform_assign(
             &mut runtime.runtime_errors,
             &runtime.call_trace,
         )?;
-        Option::Some(safe_unwrap_to_single_arithmetic_expression(r_folded, line!()))
+        Some(safe_unwrap_to_single_arithmetic_expression(r_folded, line!()))
     } else if ExecutionEnvironment::has_component(environment, symbol) {
         let environment_response = ExecutionEnvironment::get_mut_component_res(environment, symbol);
         let component_slice = treat_result_with_environment_error(
@@ -634,7 +629,7 @@ fn perform_assign(
         if accessing_information.signal_access.is_none() {
             debug_assert!(accessing_information.after_signal.is_empty());
             let node_pointer = safe_unwrap_to_valid_node_pointer(r_folded, line!());
-            if let Option::Some(actual_node) = actual_node {
+            if let Some(actual_node) = actual_node {
                 let data = SubComponentData {
                     name: symbol.to_string(),
                     goes_to: node_pointer,
@@ -655,7 +650,7 @@ fn perform_assign(
                 &mut runtime.runtime_errors,
                 &runtime.call_trace,
             )?;
-            Option::None
+            None
         } else {
             let signal_accessed = accessing_information.signal_access.clone().unwrap();
             debug_assert!(FoldedValue::valid_arithmetic_slice(&r_folded));
@@ -672,16 +667,16 @@ fn perform_assign(
                 &mut runtime.runtime_errors,
                 &runtime.call_trace,
             )?;
-            Option::Some(AExpressionSlice::unwrap_to_single(arithmetic_slice))
+            Some(AExpressionSlice::unwrap_to_single(arithmetic_slice))
         }
     } else {
         unreachable!();
     };
-    if let Option::Some(arithmetic_expression) = possible_arithmetic_expression {
+    if let Some(arithmetic_expression) = possible_arithmetic_expression {
         let ret = Constrained { left: full_symbol, right: arithmetic_expression };
-        Result::Ok(Some(ret))
+        Ok(Some(ret))
     } else {
-        Result::Ok(None)
+        Ok(None)
     }
 }
 
@@ -707,13 +702,13 @@ fn execute_conditional_statement(
             None if !cond_bool_value => None,
             _ => execute_statement(true_case, program_archive, runtime, actual_node, flag_verbose)?,
         };
-        Result::Ok((ret_value, Option::Some(cond_bool_value)))
+        Ok((ret_value, Some(cond_bool_value)))
     } else {
         let previous_block_type = runtime.block_type;
         runtime.block_type = BlockType::Unknown;
         let mut ret_value =
             execute_statement(true_case, program_archive, runtime, actual_node, flag_verbose)?;
-        if let Option::Some(else_stmt) = false_case {
+        if let Some(else_stmt) = false_case {
             let else_ret =
                 execute_statement(else_stmt, program_archive, runtime, actual_node, flag_verbose)?;
             if ret_value.is_none() {
@@ -721,7 +716,7 @@ fn execute_conditional_statement(
             }
         }
         runtime.block_type = previous_block_type;
-        return Result::Ok((ret_value, Option::None));
+        Ok((ret_value, None))
     }
 }
 
@@ -735,10 +730,10 @@ fn execute_sequence_of_statements(
     for stmt in stmts.iter() {
         let f_value = execute_statement(stmt, program_archive, runtime, actual_node, flag_verbose)?;
         if f_value.is_some() {
-            return Result::Ok(f_value);
+            return Ok(f_value);
         }
     }
-    Result::Ok(Option::None)
+    Ok(None)
 }
 
 //************************************************* Expression execution support *************************************************
@@ -748,7 +743,7 @@ fn create_symbol(symbol: &str, access_information: &AccessingInformation) -> Str
     let bf_signal = create_index_appendix(&access_information.before_signal);
     let af_signal = create_index_appendix(&access_information.after_signal);
     appendix.push_str(&bf_signal);
-    if let Option::Some(signal_accessed) = &access_information.signal_access {
+    if let Some(signal_accessed) = &access_information.signal_access {
         let signal = format!(".{}", signal_accessed);
         appendix.push_str(&signal);
     }
@@ -775,8 +770,8 @@ fn execute_variable(
 ) -> Result<FoldedValue, ()> {
     let access_information = treat_accessing(meta, access, program_archive, runtime, flag_verbose)?;
     if access_information.undefined {
-        let arithmetic_slice = Option::Some(AExpressionSlice::new(&AExpr::NonQuadratic));
-        return Result::Ok(FoldedValue { arithmetic_slice, ..FoldedValue::default() });
+        let arithmetic_slice = Some(AExpressionSlice::new(&AExpr::NonQuadratic));
+        return Ok(FoldedValue { arithmetic_slice, ..FoldedValue::default() });
     }
     debug_assert!(access_information.signal_access.is_none());
     debug_assert!(access_information.after_signal.is_empty());
@@ -788,14 +783,14 @@ fn execute_variable(
         &mut runtime.runtime_errors,
         &runtime.call_trace,
     )?;
-    let memory_response = AExpressionSlice::access_values(&ae_slice, &indexing);
+    let memory_response = AExpressionSlice::access_values(ae_slice, &indexing);
     let ae_slice = treat_result_with_memory_error(
         memory_response,
         meta,
         &mut runtime.runtime_errors,
         &runtime.call_trace,
     )?;
-    Result::Ok(FoldedValue { arithmetic_slice: Option::Some(ae_slice), ..FoldedValue::default() })
+    Ok(FoldedValue { arithmetic_slice: Some(ae_slice), ..FoldedValue::default() })
 }
 
 fn execute_signal(
@@ -808,8 +803,8 @@ fn execute_signal(
 ) -> Result<FoldedValue, ()> {
     let access_information = treat_accessing(meta, access, program_archive, runtime, flag_verbose)?;
     if access_information.undefined {
-        let arithmetic_slice = Option::Some(AExpressionSlice::new(&AExpr::NonQuadratic));
-        return Result::Ok(FoldedValue { arithmetic_slice, ..FoldedValue::default() });
+        let arithmetic_slice = Some(AExpressionSlice::new(&AExpr::NonQuadratic));
+        return Ok(FoldedValue { arithmetic_slice, ..FoldedValue::default() });
     }
     debug_assert!(access_information.signal_access.is_none());
     debug_assert!(access_information.after_signal.is_empty());
@@ -844,10 +839,7 @@ fn execute_signal(
         &mut runtime.runtime_errors,
         &runtime.call_trace,
     )?;
-    Result::Ok(FoldedValue {
-        arithmetic_slice: Option::Some(arith_slice),
-        ..FoldedValue::default()
-    })
+    Ok(FoldedValue { arithmetic_slice: Some(arith_slice), ..FoldedValue::default() })
 }
 
 fn signal_to_arith(symbol: String, slice: SignalSlice) -> Result<AExpressionSlice, MemoryError> {
@@ -861,9 +853,9 @@ fn signal_to_arith(symbol: String, slice: SignalSlice) -> Result<AExpressionSlic
         index += 1;
     }
     if index == symbols.len() {
-        Result::Ok(AExpressionSlice::new_array(route, expressions))
+        Ok(AExpressionSlice::new_array(route, expressions))
     } else {
-        Result::Err(MemoryError::InvalidAccess)
+        Err(MemoryError::InvalidAccess)
     }
 }
 
@@ -887,8 +879,8 @@ fn execute_component(
 ) -> Result<FoldedValue, ()> {
     let access_information = treat_accessing(meta, access, program_archive, runtime, flag_verbose)?;
     if access_information.undefined {
-        let arithmetic_slice = Option::Some(AExpressionSlice::new(&AExpr::NonQuadratic));
-        return Result::Ok(FoldedValue { arithmetic_slice, ..FoldedValue::default() });
+        let arithmetic_slice = Some(AExpressionSlice::new(&AExpr::NonQuadratic));
+        return Ok(FoldedValue { arithmetic_slice, ..FoldedValue::default() });
     }
     let indexing = &access_information.before_signal;
     let environment_response =
@@ -908,9 +900,9 @@ fn execute_component(
     )?;
     let resulting_component = safe_unwrap_to_single(slice_result, line!());
     let read_result = if resulting_component.is_initialized() {
-        Result::Ok(resulting_component)
+        Ok(resulting_component)
     } else {
-        Result::Err(MemoryError::InvalidAccess)
+        Err(MemoryError::InvalidAccess)
     };
     let checked_component = treat_result_with_memory_error(
         read_result,
@@ -918,7 +910,7 @@ fn execute_component(
         &mut runtime.runtime_errors,
         &runtime.call_trace,
     )?;
-    if let Option::Some(signal_name) = &access_information.signal_access {
+    if let Some(signal_name) = &access_information.signal_access {
         let access_after_signal = &access_information.after_signal;
         let signal = treat_result_with_memory_error(
             checked_component.get_signal(signal_name),
@@ -926,7 +918,7 @@ fn execute_component(
             &mut runtime.runtime_errors,
             &runtime.call_trace,
         )?;
-        let slice = SignalSlice::access_values(signal, &access_after_signal);
+        let slice = SignalSlice::access_values(signal, access_after_signal);
         let slice = treat_result_with_memory_error(
             slice,
             meta,
@@ -935,7 +927,7 @@ fn execute_component(
         )?;
         let symbol = create_symbol(symbol, &access_information);
         let result = signal_to_arith(symbol, slice)
-            .map(|s| FoldedValue { arithmetic_slice: Option::Some(s), ..FoldedValue::default() });
+            .map(|s| FoldedValue { arithmetic_slice: Some(s), ..FoldedValue::default() });
         treat_result_with_memory_error(
             result,
             meta,
@@ -943,10 +935,7 @@ fn execute_component(
             &runtime.call_trace,
         )
     } else {
-        Result::Ok(FoldedValue {
-            node_pointer: checked_component.node_pointer,
-            ..FoldedValue::default()
-        })
+        Ok(FoldedValue { node_pointer: checked_component.node_pointer, ..FoldedValue::default() })
     }
 }
 
@@ -983,13 +972,13 @@ fn execute_function_call(
         function_body,
         program_archive,
         runtime,
-        &mut Option::None,
+        &mut None,
         flag_verbose,
     )?;
     runtime.block_type = previous_block;
     let return_value = function_result.unwrap();
     debug_assert!(FoldedValue::valid_arithmetic_slice(&return_value));
-    Result::Ok(return_value)
+    Ok(return_value)
 }
 
 fn execute_template_call(
@@ -1000,7 +989,7 @@ fn execute_template_call(
     flag_verbose: bool,
 ) -> Result<FoldedValue, ()> {
     debug_assert!(runtime.block_type == BlockType::Known);
-    let is_main = std::mem::replace(&mut runtime.public_inputs, vec![]);
+    let is_main = std::mem::take(&mut runtime.public_inputs);
     let is_parallel = program_archive.get_template_data(id).is_parallel();
     let is_custom_gate = program_archive.get_template_data(id).is_custom_gate();
     let args_names = program_archive.get_template_data(id).get_name_of_params();
@@ -1009,7 +998,7 @@ fn execute_template_call(
     debug_assert_eq!(args_names.len(), parameter_values.len());
     let mut instantiation_name = format!("{}(", id);
     for (name, value) in args_names.iter().zip(parameter_values) {
-        instantiation_name.push_str(&format!("{},", value.to_string()));
+        write!(instantiation_name, "{},", value).unwrap();
         args_to_values.insert(name.clone(), value.clone());
     }
     if !parameter_values.is_empty() {
@@ -1017,13 +1006,13 @@ fn execute_template_call(
     }
     instantiation_name.push(')');
     let existent_node = runtime.exec_program.identify_node(id, &args_to_values);
-    let node_pointer = if let Option::Some(pointer) = existent_node {
+    let node_pointer = if let Some(pointer) = existent_node {
         pointer
     } else {
         let analysis =
             std::mem::replace(&mut runtime.analysis, Analysis::new(program_archive.id_max));
         let code = program_archive.get_template_data(id).get_body().clone();
-        let mut node_wrap = Option::Some(ExecutedTemplate::new(
+        let mut node_wrap = Some(ExecutedTemplate::new(
             is_main,
             id.to_string(),
             instantiation_name,
@@ -1042,10 +1031,10 @@ fn execute_template_call(
         debug_assert!(ret.is_none());
         let new_node = node_wrap.unwrap();
         let analysis = std::mem::replace(&mut runtime.analysis, analysis);
-        let node_pointer = runtime.exec_program.add_node_to_scheme(new_node, analysis);
-        node_pointer
+
+        runtime.exec_program.add_node_to_scheme(new_node, analysis)
     };
-    Result::Ok(FoldedValue { node_pointer: Option::Some(node_pointer), ..FoldedValue::default() })
+    Ok(FoldedValue { node_pointer: Some(node_pointer), ..FoldedValue::default() })
 }
 
 fn execute_infix_op(
@@ -1058,26 +1047,26 @@ fn execute_infix_op(
     use ExpressionInfixOpcode::*;
     let field = runtime.constants.get_p();
     let possible_result = match infix {
-        Mul => Result::Ok(AExpr::mul(l_value, r_value, field)),
+        Mul => Ok(AExpr::mul(l_value, r_value, field)),
         Div => AExpr::div(l_value, r_value, field),
-        Add => Result::Ok(AExpr::add(l_value, r_value, field)),
-        Sub => Result::Ok(AExpr::sub(l_value, r_value, field)),
-        Pow => Result::Ok(AExpr::pow(l_value, r_value, field)),
+        Add => Ok(AExpr::add(l_value, r_value, field)),
+        Sub => Ok(AExpr::sub(l_value, r_value, field)),
+        Pow => Ok(AExpr::pow(l_value, r_value, field)),
         IntDiv => AExpr::idiv(l_value, r_value, field),
         Mod => AExpr::mod_op(l_value, r_value, field),
         ShiftL => AExpr::shift_l(l_value, r_value, field),
         ShiftR => AExpr::shift_r(l_value, r_value, field),
-        LesserEq => Result::Ok(AExpr::lesser_eq(l_value, r_value, field)),
-        GreaterEq => Result::Ok(AExpr::greater_eq(l_value, r_value, field)),
-        Lesser => Result::Ok(AExpr::lesser(l_value, r_value, field)),
-        Greater => Result::Ok(AExpr::greater(l_value, r_value, field)),
-        Eq => Result::Ok(AExpr::eq(l_value, r_value, field)),
-        NotEq => Result::Ok(AExpr::not_eq(l_value, r_value, field)),
-        BoolOr => Result::Ok(AExpr::bool_or(l_value, r_value, field)),
-        BoolAnd => Result::Ok(AExpr::bool_and(l_value, r_value, field)),
-        BitOr => Result::Ok(AExpr::bit_or(l_value, r_value, field)),
-        BitAnd => Result::Ok(AExpr::bit_and(l_value, r_value, field)),
-        BitXor => Result::Ok(AExpr::bit_xor(l_value, r_value, field)),
+        LesserEq => Ok(AExpr::lesser_eq(l_value, r_value, field)),
+        GreaterEq => Ok(AExpr::greater_eq(l_value, r_value, field)),
+        Lesser => Ok(AExpr::lesser(l_value, r_value, field)),
+        Greater => Ok(AExpr::greater(l_value, r_value, field)),
+        Eq => Ok(AExpr::eq(l_value, r_value, field)),
+        NotEq => Ok(AExpr::not_eq(l_value, r_value, field)),
+        BoolOr => Ok(AExpr::bool_or(l_value, r_value, field)),
+        BoolAnd => Ok(AExpr::bool_and(l_value, r_value, field)),
+        BitOr => Ok(AExpr::bit_or(l_value, r_value, field)),
+        BitAnd => Ok(AExpr::bit_and(l_value, r_value, field)),
+        BitXor => Ok(AExpr::bit_xor(l_value, r_value, field)),
     };
     treat_result_with_arithmetic_error(
         possible_result,
@@ -1099,7 +1088,7 @@ fn execute_prefix_op(
         Sub => AExpr::prefix_sub(value, field),
         Complement => AExpr::complement_256(value, field),
     };
-    Result::Ok(result)
+    Ok(result)
 }
 
 //************************************************* Indexing support *************************************************
@@ -1118,7 +1107,7 @@ fn treat_indexing(
     flag_verbose: bool,
 ) -> Result<(Vec<AExpr>, Option<String>, usize), ()> {
     let mut index_accesses = Vec::new();
-    let mut signal_name = Option::None;
+    let mut signal_name = None;
     let mut act = start;
     loop {
         if act >= access.len() {
@@ -1133,12 +1122,12 @@ fn treat_indexing(
                 act += 1;
             }
             Access::ComponentAccess(name) => {
-                signal_name = Option::Some(name.clone());
+                signal_name = Some(name.clone());
                 break;
             }
         }
     }
-    Result::Ok((index_accesses, signal_name, act))
+    Ok((index_accesses, signal_name, act))
 }
 
 /*
@@ -1148,37 +1137,37 @@ fn treat_indexing(
 fn valid_indexing(ae_indexes: &[AExpr]) -> Result<(), MemoryError> {
     for ae_index in ae_indexes {
         if ae_index.is_number() && AExpr::get_usize(ae_index).is_none() {
-            return Result::Err(MemoryError::OutOfBoundsError);
+            return Err(MemoryError::OutOfBoundsError);
         }
     }
-    Result::Ok(())
+    Ok(())
 }
 
 fn valid_array_declaration(ae_indexes: &[AExpr]) -> Result<(), MemoryError> {
     for ae_index in ae_indexes {
         if !ae_index.is_number() {
-            return Result::Err(MemoryError::UnknownSizeDimension);
+            return Err(MemoryError::UnknownSizeDimension);
         }
     }
-    Result::Ok(())
+    Ok(())
 }
 
 /*
     ae_indexes Numbers MUST fit in usize,
     this function must be call just
     if valid_indexing does not return
-    Result::Err(..)
+    Err(..)
 */
 fn cast_indexing(ae_indexes: &[AExpr]) -> Option<Vec<SliceCapacity>> {
     let mut sc_indexes = Vec::new();
     for ae_index in ae_indexes.iter() {
         if !ae_index.is_number() {
-            return Option::None;
+            return None;
         }
         let index = AExpr::get_usize(ae_index).unwrap();
         sc_indexes.push(index);
     }
-    Option::Some(sc_indexes)
+    Some(sc_indexes)
 }
 
 /*
@@ -1230,7 +1219,7 @@ fn treat_accessing(
     } else {
         (Vec::new(), Vec::new())
     };
-    Result::Ok(AccessingInformation { undefined, before_signal, after_signal, signal_access })
+    Ok(AccessingInformation { undefined, before_signal, after_signal, signal_access })
 }
 
 //************************************************* Safe transformations *************************************************
@@ -1262,8 +1251,8 @@ fn treat_result_with_arithmetic_error<C>(
 ) -> Result<C, ()> {
     use ReportCode::RuntimeError;
     match arithmetic_error {
-        Result::Ok(c) => Result::Ok(c),
-        Result::Err(arithmetic_error) => {
+        Ok(c) => Ok(c),
+        Err(arithmetic_error) => {
             let report = match arithmetic_error {
                 ArithmeticError::DivisionByZero => {
                     Report::error("Division by zero".to_string(), RuntimeError)
@@ -1273,7 +1262,7 @@ fn treat_result_with_arithmetic_error<C>(
                 }
             };
             add_report_to_runtime(report, meta, runtime_errors, call_trace);
-            Result::Err(())
+            Err(())
         }
     }
 }
@@ -1286,8 +1275,8 @@ fn treat_result_with_memory_error<C>(
 ) -> Result<C, ()> {
     use ReportCode::RuntimeError;
     match memory_error {
-        Result::Ok(c) => Result::Ok(c),
-        Result::Err(memory_error) => {
+        Ok(c) => Ok(c),
+        Err(memory_error) => {
             let report = match memory_error {
                 MemoryError::InvalidAccess => {
                     Report::error("Exception caused by invalid access".to_string(), RuntimeError)
@@ -1304,7 +1293,7 @@ fn treat_result_with_memory_error<C>(
                 }
             };
             add_report_to_runtime(report, meta, runtime_errors, call_trace);
-            Result::Err(())
+            Err(())
         }
     }
 }
@@ -1317,15 +1306,15 @@ fn treat_result_with_environment_error<C>(
 ) -> Result<C, ()> {
     use ReportCode::*;
     match environment_error {
-        Result::Ok(c) => Result::Ok(c),
-        Result::Err(environment_error) => {
+        Ok(c) => Ok(c),
+        Err(environment_error) => {
             let report = match environment_error {
                 ExecutionEnvironmentError::NonExistentSymbol => {
                     Report::error("Accessing non existent symbol".to_string(), RuntimeError)
                 }
             };
             add_report_to_runtime(report, meta, runtime_errors, call_trace);
-            Result::Err(())
+            Err(())
         }
     }
 }
@@ -1338,8 +1327,8 @@ fn treat_result_with_execution_error<C>(
 ) -> Result<C, ()> {
     use ExecutionError::*;
     match execution_error {
-        Result::Ok(c) => Result::Ok(c),
-        Result::Err(execution_error) => {
+        Ok(c) => Ok(c),
+        Err(execution_error) => {
             let report = match execution_error {
                 NonQuadraticConstraint => Report::error(
                     "Non quadratic constraints are not allowed!".to_string(),
@@ -1350,7 +1339,7 @@ fn treat_result_with_execution_error<C>(
                 }
             };
             add_report_to_runtime(report, meta, runtime_errors, call_trace);
-            Result::Err(())
+            Err(())
         }
     }
 }
@@ -1369,7 +1358,7 @@ fn add_report_to_runtime(
     for call in call_trace.iter() {
         let msg = format!("{}->{}\n", spacing, call);
         trace.push_str(msg.as_str());
-        spacing.push_str(" ");
+        spacing.push(' ');
     }
     report.add_note(trace);
     runtime_errors.push(report);

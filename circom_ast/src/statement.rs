@@ -81,6 +81,7 @@ impl Statement {
     ) -> Statement {
         Statement::InitializationBlock { meta, xtype, initializations }
     }
+
     pub fn build_block(meta: Meta, stmts: Vec<Statement>) -> Statement {
         Statement::Block { meta, stmts }
     }
@@ -240,6 +241,7 @@ impl Access {
     pub fn build_component_access(acc: String) -> Access {
         Access::ComponentAccess(acc)
     }
+
     pub fn build_array_access(expr: Expression) -> Access {
         Access::ArrayAccess(expr)
     }

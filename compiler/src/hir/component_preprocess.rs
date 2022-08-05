@@ -38,13 +38,11 @@ fn rm_statement(stmt: &mut Statement) {
                 }
             }
         }
-        InitializationBlock { initializations, xtype, .. } => {
-            if let VariableType::Signal(..) = xtype {
-                let work = std::mem::take(initializations);
-                for i in work {
-                    if matches!(i, Substitution { .. }) {
-                        initializations.push(i);
-                    }
+        InitializationBlock { initializations, xtype: VariableType::Signal(..), .. } => {
+            let work = std::mem::take(initializations);
+            for i in work {
+                if matches!(i, Substitution { .. }) {
+                    initializations.push(i);
                 }
             }
         }

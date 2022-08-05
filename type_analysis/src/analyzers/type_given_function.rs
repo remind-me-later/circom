@@ -23,19 +23,20 @@ fn add_variable_to_environment(
     has_type: &Type,
 ) {
     let last = environment.last_mut().unwrap();
-    last.insert(var_name.to_string(), has_type.clone());
+    last.insert(var_name.to_string(), *has_type);
 }
 
 fn get_type(function_name: &str, environment: &Environment, var_name: &str) -> Type {
-    let mut var_type = Option::None;
+    let mut var_type = None;
     for block in environment.iter() {
         if block.get(var_name).is_some() {
             var_type = block.get(var_name);
         }
     }
+
     match var_type {
-        Option::Some(v) => v.clone(),
-        Option::None => panic!(
+        Some(v) => *v,
+        None => panic!(
             "in get_type variable {:?} not found in the environment of the function {:?}",
             var_name, function_name
         ),
@@ -53,7 +54,7 @@ fn start(
     let mut initial_block = Block::new();
     explored_functions.insert(function_name.to_string());
     for (name, t) in function_data.get_name_of_params().iter().zip(params_types.iter()) {
-        initial_block.insert(name.clone(), t.clone());
+        initial_block.insert(name.clone(), *t);
     }
     environment.push(initial_block);
     look_for_return_value(
@@ -86,7 +87,7 @@ fn look_for_return_value(
             return ret;
         }
     }
-    Option::None
+    None
 }
 fn look_for_return_in_statement(
     function_name: &str,
@@ -109,8 +110,9 @@ fn look_for_return_in_statement(
             if ret1.is_some() {
                 return ret1;
             }
-            let ret2 = match else_case {
-                Option::Some(s) => look_for_return_in_statement(
+
+            match else_case {
+                Some(s) => look_for_return_in_statement(
                     function_name,
                     environment,
                     explored_functions,
@@ -118,9 +120,8 @@ fn look_for_return_in_statement(
                     function_info,
                     s,
                 ),
-                Option::None => Option::None,
-            };
-            ret2
+                None => None,
+            }
         }
         Statement::While { stmt, .. } => look_for_return_in_statement(
             function_name,
@@ -149,11 +150,11 @@ fn look_for_return_in_statement(
                     initialization,
                 );
             }
-            Option::None
+            None
         }
         Statement::Declaration { name, dimensions, .. } => {
             add_variable_to_environment(function_name, environment, name, &dimensions.len());
-            Option::None
+            None
         }
         Statement::Block { stmts, .. } => look_for_return_in_block(
             function_name,
@@ -163,7 +164,7 @@ fn look_for_return_in_statement(
             function_info,
             stmts,
         ),
-        _ => Option::None,
+        _ => None,
     }
 }
 
@@ -173,7 +174,7 @@ fn look_for_return_in_block(
     explored_functions: &mut NodeRegister,
     function_data: &FunctionData,
     function_info: &HashMap<String, FunctionData>,
-    stmts: &Vec<Statement>,
+    stmts: &[Statement],
 ) -> Option<Type> {
     environment.push(Block::new());
     for stmt in stmts.iter() {
@@ -191,7 +192,7 @@ fn look_for_return_in_block(
         }
     }
     environment.pop();
-    Option::None
+    None
 }
 
 fn look_for_type_in_expression(
@@ -215,15 +216,15 @@ fn look_for_type_in_expression(
             if lhe_type.is_some() {
                 return lhe_type;
             }
-            let rhe_type = look_for_type_in_expression(
+
+            look_for_type_in_expression(
                 function_name,
                 environment,
                 explored_functions,
                 function_data,
                 function_info,
                 rhe,
-            );
-            rhe_type
+            )
         }
         Expression::PrefixOp { rhe, .. } => look_for_type_in_expression(
             function_name,
@@ -245,25 +246,25 @@ fn look_for_type_in_expression(
             if if_true_type.is_some() {
                 return if_true_type;
             }
-            let if_false_type = look_for_type_in_expression(
+
+            look_for_type_in_expression(
                 function_name,
                 environment,
                 explored_functions,
                 function_data,
                 function_info,
                 if_false,
-            );
-            if_false_type
+            )
         }
         Expression::Variable { name, access, .. } => {
             let var_type = get_type(function_name, environment, name);
             if access.len() > var_type {
-                Option::None
+                None
             } else {
-                Option::Some(var_type - access.len())
+                Some(var_type - access.len())
             }
         }
-        Expression::Number { .. } => Option::Some(0),
+        Expression::Number { .. } => Some(0),
         Expression::ArrayInLine { values, .. } => look_for_type_in_expression(
             function_name,
             environment,
@@ -275,7 +276,7 @@ fn look_for_type_in_expression(
         .map(|v| v + 1),
         Expression::Call { id, args, .. } => {
             if explored_functions.contains(id) {
-                return Option::None;
+                return None;
             }
             let mut params_types = Vec::new();
             for arg in args {
@@ -289,8 +290,8 @@ fn look_for_type_in_expression(
                 )?;
                 params_types.push(arg_type);
             }
-            let has_type = start(id, explored_functions, function_info, &params_types);
-            has_type
+
+            start(id, explored_functions, function_info, &params_types)
         }
     }
 }

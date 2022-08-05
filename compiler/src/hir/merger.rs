@@ -27,7 +27,7 @@ fn produce_vcf(vcp: &VCP, state: &mut State) {
     let mut index = 0;
     while index < state.vcf_collector.len() {
         state.external_signals = build_component_info(&vec![]);
-        let mut env = build_environment(&vec![], &state.vcf_collector[index].params_types);
+        let mut env = build_environment(&[], &state.vcf_collector[index].params_types);
         let body = state.vcf_collector[index].body.clone();
         produce_vcf_stmt(&body, state, &mut env);
         index += 1;
@@ -36,7 +36,7 @@ fn produce_vcf(vcp: &VCP, state: &mut State) {
 
 fn link_circuit(vcp: &mut VCP, state: &mut State) {
     for node in &mut vcp.templates {
-        let mut env = build_environment(&node.header, &vec![]);
+        let mut env = build_environment(&node.header, &[]);
         state.external_signals = build_component_info(&node.triggers);
         link_stmt(&mut node.code, state, &mut env);
     }
@@ -79,10 +79,10 @@ fn look_for_existing_instance(
         let return_type = &state.vcf_collector[*i].return_type;
         let params_types = &state.vcf_collector[*i].params_types;
         if params_types.eq(args) {
-            return Option::Some((*i, return_type.clone()));
+            return Some((*i, return_type.clone()));
         }
     }
-    Option::None
+    None
 }
 
 // Algorithm for producing the code's vcf
@@ -130,7 +130,7 @@ fn produce_vcf_stmt(stmt: &Statement, state: &mut State, environment: &mut E) {
         IfThenElse { cond, if_case, else_case, .. } => {
             produce_vcf_expr(cond, state, environment);
             produce_vcf_stmt(if_case, state, environment);
-            if let Option::Some(s) = else_case {
+            if let Some(s) = else_case {
                 produce_vcf_stmt(s, state, environment);
             }
         }
@@ -196,7 +196,7 @@ fn link_stmt(stmt: &mut Statement, state: &State, env: &mut E) {
         IfThenElse { cond, if_case, else_case, .. } => {
             link_expression(cond, state, env);
             link_stmt(if_case, state, env);
-            if let Option::Some(s) = else_case {
+            if let Some(s) = else_case {
                 link_stmt(s, state, env);
             }
         }
@@ -296,7 +296,7 @@ fn cast_type_expression(expr: &Expression, state: &State, environment: &E) -> VC
             result
         }
         Call { id, args, .. } => {
-            if let Option::Some(returns) = state.quick_knowledge.get(id) {
+            if let Some(returns) = state.quick_knowledge.get(id) {
                 returns.clone()
             } else if !state.generic_functions.contains_key(id) {
                 vec![]
