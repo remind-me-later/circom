@@ -55,12 +55,12 @@ fn reduce_types_in_expression(expression: &mut Expression, environment: &Environ
         }
         InfixOp { lhe, rhe, .. } => reduce_types_in_infix(lhe, rhe, environment),
         PrefixOp { rhe, .. } => reduce_types_in_expression(rhe, environment),
-        InlineSwitchOp { cond, if_true, if_false, .. } => {
+        TernaryOp { cond, if_true, if_false, .. } => {
             reduce_types_in_inline_switch(cond, if_true, if_false, environment)
         }
         Call { args, .. } => reduce_types_in_vec_of_expressions(args, environment),
         ArrayInLine { values, .. } => reduce_types_in_vec_of_expressions(values, environment),
-        Number(..) => {}
+        Number { .. } => (),
     }
 }
 

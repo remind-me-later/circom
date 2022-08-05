@@ -1,6 +1,7 @@
-use crate::*;
-use super::expression_builders::*;
-use super::statement_builders::*;
+use crate::{
+    expression::{ExpressionInfixOpcode},
+    Statement, Meta, AssignOp,
+};
 use crate::{Access, Expression, VariableType};
 use num_bigint_dig::BigInt;
 
@@ -18,18 +19,18 @@ pub fn assign_with_op_shortcut(
     rhe: Expression,
 ) -> Statement {
     let (var, access) = variable;
-    let variable = build_variable(meta.clone(), var.clone(), access.clone());
-    let infix = build_infix(meta.clone(), variable, op, rhe);
-    build_substitution(meta, var, access, AssignOp::AssignVar, infix)
+    let variable = Expression::build_variable(meta.clone(), var.clone(), access.clone());
+    let infix = Expression::build_infix(meta.clone(), variable, op, rhe);
+    Statement::build_substitution(meta, var, access, AssignOp::AssignVar, infix)
 }
 
 pub fn plusplus(meta: Meta, variable: (String, Vec<Access>)) -> Statement {
-    let one = build_number(meta.clone(), BigInt::from(1));
+    let one = Expression::build_number(meta.clone(), BigInt::from(1));
     assign_with_op_shortcut(ExpressionInfixOpcode::Add, meta, variable, one)
 }
 
 pub fn subsub(meta: Meta, variable: (String, Vec<Access>)) -> Statement {
-    let one = build_number(meta.clone(), BigInt::from(1));
+    let one = Expression::build_number(meta.clone(), BigInt::from(1));
     assign_with_op_shortcut(ExpressionInfixOpcode::Sub, meta, variable, one)
 }
 
@@ -40,9 +41,9 @@ pub fn for_into_while(
     step: Statement,
     body: Statement,
 ) -> Statement {
-    let while_body = build_block(body.get_meta().clone(), vec![body, step]);
-    let while_statement = build_while_block(meta.clone(), cond, while_body);
-    build_block(meta, vec![init, while_statement])
+    let while_body = Statement::build_block(body.get_meta().clone(), vec![body, step]);
+    let while_statement = Statement::build_while_block(meta.clone(), cond, while_body);
+    Statement::build_block(meta, vec![init, while_statement])
 }
 
 pub fn split_declaration_into_single_nodes(
@@ -59,12 +60,14 @@ pub fn split_declaration_into_single_nodes(
         let name = symbol.name.clone();
         let dimensions = symbol.is_array;
         let possible_init = symbol.init;
-        let single_declaration = build_declaration(with_meta, has_type, name, dimensions);
+        let single_declaration =
+            Statement::build_declaration(with_meta, has_type, name, dimensions);
         initializations.push(single_declaration);
         if let Option::Some(init) = possible_init {
-            let substitution = build_substitution(meta.clone(), symbol.name, vec![], op, init);
+            let substitution =
+                Statement::build_substitution(meta.clone(), symbol.name, vec![], op, init);
             initializations.push(substitution);
         }
     }
-    build_initialization_block(meta, xtype, initializations)
+    Statement::build_initialization_block(meta, xtype, initializations)
 }

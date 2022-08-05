@@ -233,7 +233,7 @@ fn look_for_type_in_expression(
             function_info,
             rhe,
         ),
-        Expression::InlineSwitchOp { if_true, if_false, .. } => {
+        Expression::TernaryOp { if_true, if_false, .. } => {
             let if_true_type = look_for_type_in_expression(
                 function_name,
                 environment,
@@ -263,7 +263,7 @@ fn look_for_type_in_expression(
                 Option::Some(var_type - access.len())
             }
         }
-        Expression::Number(..) => Option::Some(0),
+        Expression::Number { .. } => Option::Some(0),
         Expression::ArrayInLine { values, .. } => look_for_type_in_expression(
             function_name,
             environment,

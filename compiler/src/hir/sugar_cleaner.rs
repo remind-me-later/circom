@@ -258,8 +258,8 @@ fn extend_infix(expr: &mut Expression, state: &mut State, context: &Context) -> 
 }
 
 fn extend_switch(expr: &mut Expression, state: &mut State, context: &Context) -> ExtendedSyntax {
-    use Expression::InlineSwitchOp;
-    if let InlineSwitchOp { if_true, if_false, .. } = expr {
+    use Expression::TernaryOp;
+    if let TernaryOp { if_true, if_false, .. } = expr {
         let mut true_expand = extend_expression(if_true, state, context);
         let mut false_expand = extend_expression(if_false, state, context);
         true_expand.initializations.append(&mut false_expand.initializations);
@@ -415,8 +415,10 @@ fn split_return(stmt: Statement, id: usize) -> ReturnSplit {
     use Statement::{Declaration, Return, Substitution};
     if let Return { value, meta } = stmt {
         let lengths = value.get_meta().get_memory_knowledge().get_concrete_dimensions().to_vec();
-        let expr_lengths: Vec<Expression> =
-            lengths.iter().map(|v| Number(meta.clone(), BigInt::from(*v))).collect();
+        let expr_lengths: Vec<Expression> = lengths
+            .iter()
+            .map(|v| Number { meta: meta.clone(), value: BigInt::from(*v) })
+            .collect();
         let mut declaration_meta = meta.clone();
         let mut substitution_meta = meta.clone();
         let mut variable_meta = meta.clone();
@@ -459,10 +461,10 @@ fn into_single_substitution(stmt: Statement, stmts: &mut Vec<Statement>) {
 }
 
 fn rhe_switch_case(stmt: Statement, stmts: &mut Vec<Statement>) {
-    use Expression::InlineSwitchOp;
+    use Expression::TernaryOp;
     use Statement::{Block, IfThenElse, Substitution};
     if let Substitution { var, access, op, rhe, meta } = stmt {
-        if let InlineSwitchOp { cond, if_true, if_false, .. } = rhe {
+        if let TernaryOp { cond, if_true, if_false, .. } = rhe {
             let mut if_assigns = vec![];
             let sub_if = Substitution {
                 meta: meta.clone(),
@@ -502,7 +504,7 @@ fn rhe_array_case(stmt: Statement, stmts: &mut Vec<Statement>) {
             for v in values {
                 let mut index_meta = meta.clone();
                 index_meta.get_mut_memory_knowledge().set_concrete_dimensions(vec![]);
-                let expr_index = Number(index_meta, BigInt::from(index));
+                let expr_index = Number { meta: index_meta, value: BigInt::from(index) };
                 let as_access = Access::ArrayAccess(expr_index);
                 let mut accessed_with = access.clone();
                 accessed_with.push(as_access);

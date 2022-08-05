@@ -347,7 +347,7 @@ fn execute_expression(
 ) -> Result<FoldedValue, ()> {
     use Expression::*;
     let res = match expr {
-        Number(_, value) => {
+        Number { value, .. } => {
             let a_value = AExpr::Number { value: value.clone() };
             let ae_slice = AExpressionSlice::new(&a_value);
             FoldedValue { arithmetic_slice: Option::Some(ae_slice), ..FoldedValue::default() }
@@ -411,7 +411,7 @@ fn execute_expression(
             let slice_result = AExpressionSlice::new(&arithmetic_result);
             FoldedValue { arithmetic_slice: Option::Some(slice_result), ..FoldedValue::default() }
         }
-        InlineSwitchOp { cond, if_true, if_false, .. } => {
+        TernaryOp { cond, if_true, if_false, .. } => {
             let f_cond = execute_expression(cond, program_archive, runtime, flag_verbose)?;
             let ae_cond = safe_unwrap_to_single_arithmetic_expression(f_cond, line!());
             let possible_bool_cond =

@@ -61,7 +61,7 @@ fn infer_component_types(stmt: &Statement, templates: &TemplateInfo, data: &mut 
 fn into_template_inference(expr: &Expression, templates: &TemplateInfo) -> Option<String> {
     use Expression::*;
     match expr {
-        InlineSwitchOp { if_true, if_false, .. } => {
+        TernaryOp { if_true, if_false, .. } => {
             let mut ret = into_template_inference(if_true, templates);
             if ret.is_none() {
                 ret = into_template_inference(if_false, templates);

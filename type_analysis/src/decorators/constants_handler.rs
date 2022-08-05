@@ -2,7 +2,6 @@ use num_bigint::BigInt;
 use circom_ast::*;
 use circom_error::error_code::ReportCode;
 use circom_error::error_definition::{Report, ReportCollection};
-use circom_ast::expression_builders::*;
 use program_structure::utils::environment::VarEnvironment;
 use program_structure::{function_data::FunctionData, template_data::TemplateData};
 use std::collections::HashSet;
@@ -29,7 +28,7 @@ pub fn _handle_template_constants(template: &mut TemplateData) -> ReportCollecti
         let meta = template.get_body().get_meta().clone();
         let name = p.clone();
         let access = vec![];
-        let expression = build_variable(meta, name, access);
+        let expression = Expression::build_variable(meta, name, access);
         expression_holder.add_variable(p, expression);
     }
     statement_constant_inference(template.get_mut_body(), &mut environment);
@@ -212,11 +211,11 @@ fn block_invariant_check(stmts: &[Statement], environment: &mut Constants) -> Re
 fn has_constant_value(expr: &Expression, environment: &Constants) -> bool {
     use Expression::*;
     match expr {
-        Number(..) => number(),
+        Number { .. } => number(),
         Call { args, .. } => call(args, environment),
         InfixOp { lhe, rhe, .. } => infix_op(lhe, rhe, environment),
         PrefixOp { rhe, .. } => prefix_op(rhe, environment),
-        InlineSwitchOp { cond, if_false, if_true, .. } => {
+        TernaryOp { cond, if_false, if_true, .. } => {
             inline_switch(cond, if_true, if_false, environment)
         }
         Variable { name, .. } => variable(name, environment),
@@ -378,14 +377,14 @@ fn expand_block(stmts: &mut [Statement], environment: &mut ExpressionHolder) {
 fn expand_expression(expr: Expression, environment: &ExpressionHolder) -> Expression {
     use Expression::*;
     match expr {
-        Number(meta, value) => expand_number(meta, value),
+        Number { meta, value } => expand_number(meta, value),
         ArrayInLine { meta, values } => expand_array(meta, values, environment),
         Call { id, meta, args } => expand_call(id, meta, args, environment),
         InfixOp { meta, lhe, rhe, infix_op } => {
             expand_infix(meta, *lhe, infix_op, *rhe, environment)
         }
         PrefixOp { meta, prefix_op, rhe } => expand_prefix(meta, prefix_op, *rhe, environment),
-        InlineSwitchOp { meta, cond, if_true, if_false } => {
+        TernaryOp { meta, cond, if_true, if_false } => {
             expand_inline_switch_op(meta, *cond, *if_true, *if_false, environment)
         }
         Variable { meta, name, access } => expand_variable(meta, name, access, environment),
@@ -393,7 +392,7 @@ fn expand_expression(expr: Expression, environment: &ExpressionHolder) -> Expres
 }
 
 fn expand_number(meta: Meta, value: BigInt) -> Expression {
-    build_number(meta, value)
+    Expression::build_number(meta, value)
 }
 
 fn expand_array(
@@ -406,7 +405,7 @@ fn expand_array(
         let new_expression = expand_expression(expr, environment);
         values.push(new_expression);
     }
-    build_array_in_line(meta, values)
+    Expression::build_array_in_line(meta, values)
 }
 
 fn expand_call(
@@ -420,7 +419,7 @@ fn expand_call(
         let new_expression = expand_expression(expr, environment);
         args.push(new_expression);
     }
-    build_call(meta, id, args)
+    Expression::build_call(meta, id, args)
 }
 
 fn expand_infix(
@@ -432,7 +431,7 @@ fn expand_infix(
 ) -> Expression {
     let lhe = expand_expression(old_lhe, environment);
     let rhe = expand_expression(old_rhe, environment);
-    build_infix(meta, lhe, infix_op, rhe)
+    Expression::build_infix(meta, lhe, infix_op, rhe)
 }
 
 fn expand_prefix(
@@ -442,7 +441,7 @@ fn expand_prefix(
     environment: &ExpressionHolder,
 ) -> Expression {
     let rhe = expand_expression(old_rhe, environment);
-    build_prefix(meta, prefix_op, rhe)
+    Expression::build_prefix(meta, prefix_op, rhe)
 }
 
 fn expand_inline_switch_op(
@@ -455,7 +454,7 @@ fn expand_inline_switch_op(
     let cond = expand_expression(old_cond, environment);
     let if_true = expand_expression(old_if_true, environment);
     let if_false = expand_expression(old_if_false, environment);
-    build_inline_switch_op(meta, cond, if_true, if_false)
+    Expression::build_ternary_op(meta, cond, if_true, if_false)
 }
 
 fn expand_variable(
@@ -479,7 +478,7 @@ fn expand_variable(
             };
             access.push(new_access);
         }
-        build_variable(meta, name, access)
+        Expression::build_variable(meta, name, access)
     }
 }
 

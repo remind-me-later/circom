@@ -737,7 +737,7 @@ fn translate_number(
     context: &Context,
 ) -> InstructionPointer {
     use Expression::Number;
-    if let Number(meta, value) = expression {
+    if let Number { meta, value } = expression {
         let cid = bigint_to_cid(&mut state.field_tracker, &value);
         ValueBucket {
             line: context.files.get_line(meta.start, meta.get_file_id()).unwrap(),

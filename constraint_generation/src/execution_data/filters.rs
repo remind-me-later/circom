@@ -134,8 +134,8 @@ fn apply_computed_expr_vec(exprs: &mut Vec<Expression>, analysis: &Analysis) {
 
 fn computed_or_original(analysis: &Analysis, expr: &Expression) -> Expression {
     let id = expr.get_meta().elem_id;
-    if let Some(val) = Analysis::read_computed(analysis, id) {
-        Expression::Number(expr.get_meta().clone(), val)
+    if let Some(value) = Analysis::read_computed(analysis, id) {
+        Expression::Number { meta: expr.get_meta().clone(), value }
     } else {
         expr.clone()
     }
@@ -154,7 +154,7 @@ fn apply_computed_expr(expr: &mut Expression, analysis: &Analysis) {
             *rhe = Box::new(computed_or_original(analysis, rhe));
             apply_computed_expr(rhe, analysis);
         }
-        InlineSwitchOp { if_true, if_false, cond, .. } => {
+        TernaryOp { if_true, if_false, cond, .. } => {
             *if_true = Box::new(computed_or_original(analysis, if_true));
             *if_false = Box::new(computed_or_original(analysis, if_false));
             *cond = Box::new(computed_or_original(analysis, cond));
@@ -165,7 +165,7 @@ fn apply_computed_expr(expr: &mut Expression, analysis: &Analysis) {
         Variable { access, .. } => {
             apply_computed_to_access(access, analysis);
         }
-        Number(..) => {}
+        Number { .. } => {}
         Call { args, .. } => {
             apply_computed_expr_vec(args, analysis);
         }

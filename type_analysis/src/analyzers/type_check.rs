@@ -326,7 +326,7 @@ fn type_expression(
 ) -> Result<FoldedType, ()> {
     use Expression::*;
     match expression {
-        Number(..) => Result::Ok(FoldedType::arithmetic_type(0)),
+        Number { .. } => Result::Ok(FoldedType::arithmetic_type(0)),
         ArrayInLine { meta, values } => {
             let values_types =
                 type_array_of_expressions(values, program_archive, analysis_information)?;
@@ -390,7 +390,7 @@ fn type_expression(
                 Result::Ok(FoldedType::arithmetic_type(0))
             }
         }
-        InlineSwitchOp { cond, if_true, if_false, .. } => {
+        TernaryOp { cond, if_true, if_false, .. } => {
             let cond_response = type_expression(cond, program_archive, analysis_information);
             let if_true_response = type_expression(if_true, program_archive, analysis_information);
             let if_false_response =

@@ -254,7 +254,7 @@ fn tag(expression: &Expression, environment: &Environment) -> Tag {
     use Expression::*;
     use Tag::*;
     match expression {
-        Number(_, _) => Known,
+        Number { .. } => Known,
         Variable { name, access, .. } => {
             let mut symbol_tag = if environment.has_variable(name) {
                 *environment.get_variable_or_break(name, file!(), line!())
@@ -282,7 +282,7 @@ fn tag(expression: &Expression, environment: &Environment) -> Tag {
         ArrayInLine { values, .. } | Call { args: values, .. } => {
             expression_iterator(values, Known, Unknown, environment)
         }
-        InlineSwitchOp { cond, if_true, if_false, .. } => {
+        TernaryOp { cond, if_true, if_false, .. } => {
             let tag_cond = tag(cond, environment);
             let tag_true = tag(if_true, environment);
             let tag_false = tag(if_false, environment);
@@ -374,7 +374,7 @@ fn unknown_index(exp: &Expression, environment: &Environment) -> bool {
     use Expression::*;
     use Tag::*;
     let (init, rec) = match exp {
-        Number(..) => (false, vec![]),
+        Number { .. } => (false, vec![]),
         Variable { access, .. } => {
             let mut has_unknown_index = false;
             let mut index = 0;
@@ -390,7 +390,7 @@ fn unknown_index(exp: &Expression, environment: &Environment) -> bool {
         }
         InfixOp { lhe, rhe, .. } => (false, vec![lhe.as_ref(), rhe.as_ref()]),
         PrefixOp { rhe, .. } => (false, vec![rhe.as_ref()]),
-        InlineSwitchOp { cond, if_true, if_false, .. } => {
+        TernaryOp { cond, if_true, if_false, .. } => {
             (false, vec![cond.as_ref(), if_true.as_ref(), if_false.as_ref()])
         }
         Call { args: exprs, .. } | ArrayInLine { values: exprs, .. } => {

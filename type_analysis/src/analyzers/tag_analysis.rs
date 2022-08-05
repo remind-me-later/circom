@@ -129,7 +129,7 @@ fn expression_inspection(
                 _ => ExpressionResult::ArithmeticExpression(SignalElementType::FieldElement),
             }
         }
-        InlineSwitchOp { if_true, if_false, .. } => {
+        TernaryOp { if_true, if_false, .. } => {
             let if_true_info = expression_inspection(if_true, template_info, reports, environment);
             let if_false_info =
                 expression_inspection(if_false, template_info, reports, environment);
@@ -152,7 +152,7 @@ fn expression_inspection(
         Variable { name, access, .. } => {
             variable_inspection(name, access, environment, template_info)
         }
-        Number(..) => ExpressionResult::ArithmeticExpression(SignalElementType::FieldElement),
+        Number { .. } => ExpressionResult::ArithmeticExpression(SignalElementType::FieldElement),
         Call { id, .. } => {
             if template_info.contains_key(id) {
                 ExpressionResult::Template(Option::Some(id.clone()))

@@ -33,84 +33,35 @@ impl Statement {
     }
 
     pub fn is_if_then_else(&self) -> bool {
-        use Statement::IfThenElse;
-        if let IfThenElse { .. } = self {
-            true
-        } else {
-            false
-        }
+        matches!(self, Statement::IfThenElse { .. })
     }
     pub fn is_while(&self) -> bool {
-        use Statement::While;
-        if let While { .. } = self {
-            true
-        } else {
-            false
-        }
+        matches!(self, Statement::While { .. })
     }
     pub fn is_return(&self) -> bool {
         use Statement::Return;
-        if let Return { .. } = self {
-            true
-        } else {
-            false
-        }
+        matches!(self, Return { .. })
     }
     pub fn is_initialization_block(&self) -> bool {
-        use Statement::InitializationBlock;
-        if let InitializationBlock { .. } = self {
-            true
-        } else {
-            false
-        }
+        matches!(self, Statement::InitializationBlock { .. })
     }
     pub fn is_declaration(&self) -> bool {
-        use Statement::Declaration;
-        if let Declaration { .. } = self {
-            true
-        } else {
-            false
-        }
+        matches!(self, Statement::Declaration { .. })
     }
     pub fn is_substitution(&self) -> bool {
-        use Statement::Substitution;
-        if let Substitution { .. } = self {
-            true
-        } else {
-            false
-        }
+        matches!(self, Statement::Substitution { .. })
     }
     pub fn is_constraint_equality(&self) -> bool {
-        use Statement::ConstraintEquality;
-        if let ConstraintEquality { .. } = self {
-            true
-        } else {
-            false
-        }
+        matches!(self, Statement::ConstraintEquality { .. })
     }
     pub fn is_log_call(&self) -> bool {
-        use Statement::LogCall;
-        if let LogCall { .. } = self {
-            true
-        } else {
-            false
-        }
+        matches!(self, Statement::LogCall { .. })
     }
     pub fn is_block(&self) -> bool {
-        use Statement::Block;
-        if let Block { .. } = self {
-            true
-        } else {
-            false
-        }
+        matches!(self, Statement::Block { .. })
     }
     pub fn is_assert(&self) -> bool {
-        use Statement::Assert;
-        if let Assert { .. } = self {
-            true
-        } else {
-            false
-        }
+        matches!(self, Statement::Assert { .. })
     }
 }
 

@@ -281,8 +281,8 @@ fn produce_vcf_variable(expr: &Expression, state: &mut State, environment: &E) {
 }
 
 fn produce_vcf_switch(expr: &Expression, state: &mut State, environment: &E) {
-    use Expression::InlineSwitchOp;
-    if let InlineSwitchOp { if_true, if_false, .. } = expr {
+    use Expression::TernaryOp;
+    if let TernaryOp { if_true, if_false, .. } = expr {
         produce_vcf_expr(if_true, state, environment);
         produce_vcf_expr(if_false, state, environment);
     } else {
@@ -515,8 +515,8 @@ fn link_variable(expr: &mut Expression, state: &State, env: &E) {
 }
 
 fn link_switch(expr: &mut Expression, state: &State, env: &E) {
-    use Expression::InlineSwitchOp;
-    if let InlineSwitchOp { if_true, if_false, .. } = expr {
+    use Expression::TernaryOp;
+    if let TernaryOp { if_true, if_false, .. } = expr {
         link_expression(if_true, state, env);
         link_expression(if_false, state, env);
     } else {
@@ -613,8 +613,8 @@ fn cast_type_call(expr: &Expression, state: &State, environment: &E) -> VCT {
 }
 
 fn cast_type_switch(expr: &Expression, state: &State, environment: &E) -> VCT {
-    use Expression::InlineSwitchOp;
-    if let InlineSwitchOp { if_true, .. } = expr {
+    use Expression::TernaryOp;
+    if let TernaryOp { if_true, .. } = expr {
         cast_type_expression(if_true, state, environment)
     } else {
         unreachable!();

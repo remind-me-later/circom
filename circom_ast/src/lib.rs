@@ -1,14 +1,16 @@
-mod assign_op_impl;
 mod ast_impl;
 pub mod ast_shortcuts;
-pub mod expression_builders;
 mod expression_impl;
-pub mod statement_builders;
 mod statement_impl;
+pub mod knowledge;
+mod expression;
+mod statement;
 
 use circom_error::file_definition::FileLocation;
-use num_bigint_dig::BigInt;
-use serde_derive::{Deserialize, Serialize};
+
+pub use knowledge::{TypeKnowledge, MemoryKnowledge, TypeReduction};
+pub use expression::{Expression, ExpressionPrefixOpcode, ExpressionInfixOpcode};
+pub use statement::*;
 
 pub trait FillMeta {
     fn fill(&mut self, file_id: usize, elem_id: &mut usize);
@@ -32,6 +34,7 @@ pub struct Meta {
     type_knowledge: TypeKnowledge,
     memory_knowledge: MemoryKnowledge,
 }
+
 impl Meta {
     pub fn new(start: usize, end: usize) -> Meta {
         Meta {
@@ -92,6 +95,7 @@ pub struct AST {
     pub definitions: Vec<Definition>,
     pub main_component: Option<MainComponent>,
 }
+
 impl AST {
     pub fn new(
         meta: Meta,
@@ -135,264 +139,27 @@ pub enum Definition {
         body: Statement,
     },
 }
-pub fn build_template(
-    meta: Meta,
-    name: String,
-    args: Vec<String>,
-    arg_location: FileLocation,
-    body: Statement,
-    parallel: bool,
-    is_custom_gate: bool,
-) -> Definition {
-    Definition::Template { meta, name, args, arg_location, body, parallel, is_custom_gate }
-}
 
-pub fn build_function(
-    meta: Meta,
-    name: String,
-    args: Vec<String>,
-    arg_location: FileLocation,
-    body: Statement,
-) -> Definition {
-    Definition::Function { meta, name, args, arg_location, body }
-}
-
-#[derive(Clone)]
-pub enum Statement {
-    IfThenElse {
-        meta: Meta,
-        cond: Expression,
-        if_case: Box<Statement>,
-        else_case: Option<Box<Statement>>,
-    },
-    While {
-        meta: Meta,
-        cond: Expression,
-        stmt: Box<Statement>,
-    },
-    Return {
-        meta: Meta,
-        value: Expression,
-    },
-    InitializationBlock {
-        meta: Meta,
-        xtype: VariableType,
-        initializations: Vec<Statement>,
-    },
-    Declaration {
-        meta: Meta,
-        xtype: VariableType,
-        name: String,
-        dimensions: Vec<Expression>,
-        is_constant: bool,
-    },
-    Substitution {
-        meta: Meta,
-        var: String,
-        access: Vec<Access>,
-        op: AssignOp,
-        rhe: Expression,
-    },
-    ConstraintEquality {
-        meta: Meta,
-        lhe: Expression,
-        rhe: Expression,
-    },
-    LogCall {
-        meta: Meta,
-        arg: Expression,
-    },
-    Block {
-        meta: Meta,
-        stmts: Vec<Statement>,
-    },
-    Assert {
-        meta: Meta,
-        arg: Expression,
-    },
-}
-
-#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
-pub enum SignalElementType {
-    Empty,
-    Binary,
-    FieldElement,
-}
-
-#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
-pub enum SignalType {
-    Output,
-    Input,
-    Intermediate,
-}
-
-#[derive(Copy, Clone, PartialEq, Ord, PartialOrd, Eq)]
-pub enum VariableType {
-    Var,
-    Signal(SignalType, SignalElementType),
-    Component,
-}
-
-#[derive(Clone)]
-pub enum Expression {
-    InfixOp {
-        meta: Meta,
-        lhe: Box<Expression>,
-        infix_op: ExpressionInfixOpcode,
-        rhe: Box<Expression>,
-    },
-    PrefixOp {
-        meta: Meta,
-        prefix_op: ExpressionPrefixOpcode,
-        rhe: Box<Expression>,
-    },
-    InlineSwitchOp {
-        meta: Meta,
-        cond: Box<Expression>,
-        if_true: Box<Expression>,
-        if_false: Box<Expression>,
-    },
-    Variable {
+impl Definition {
+    pub fn build_template(
         meta: Meta,
         name: String,
-        access: Vec<Access>,
-    },
-    Number(Meta, BigInt),
-    Call {
+        args: Vec<String>,
+        arg_location: FileLocation,
+        body: Statement,
+        parallel: bool,
+        is_custom_gate: bool,
+    ) -> Definition {
+        Definition::Template { meta, name, args, arg_location, body, parallel, is_custom_gate }
+    }
+
+    pub fn build_function(
         meta: Meta,
-        id: String,
-        args: Vec<Expression>,
-    },
-    ArrayInLine {
-        meta: Meta,
-        values: Vec<Expression>,
-    },
-}
-
-#[derive(Clone)]
-pub enum Access {
-    ComponentAccess(String),
-    ArrayAccess(Expression),
-}
-pub fn build_component_access(acc: String) -> Access {
-    Access::ComponentAccess(acc)
-}
-pub fn build_array_access(expr: Expression) -> Access {
-    Access::ArrayAccess(expr)
-}
-
-#[derive(Copy, Clone, Eq, PartialEq)]
-pub enum AssignOp {
-    AssignVar,
-    AssignSignal,
-    AssignConstraintSignal,
-}
-
-#[derive(Copy, Clone, PartialEq)]
-pub enum ExpressionInfixOpcode {
-    Mul,
-    Div,
-    Add,
-    Sub,
-    Pow,
-    IntDiv,
-    Mod,
-    ShiftL,
-    ShiftR,
-    LesserEq,
-    GreaterEq,
-    Lesser,
-    Greater,
-    Eq,
-    NotEq,
-    BoolOr,
-    BoolAnd,
-    BitOr,
-    BitAnd,
-    BitXor,
-}
-
-#[derive(Copy, Clone, PartialEq)]
-pub enum ExpressionPrefixOpcode {
-    Sub,
-    BoolNot,
-    Complement,
-}
-
-// Knowledge buckets
-
-#[derive(Copy, Clone, PartialOrd, PartialEq, Ord, Eq)]
-pub enum TypeReduction {
-    Variable,
-    Component,
-    Signal,
-}
-
-#[derive(Default, Clone)]
-pub struct TypeKnowledge {
-    reduces_to: Option<TypeReduction>,
-}
-impl TypeKnowledge {
-    pub fn new() -> TypeKnowledge {
-        TypeKnowledge::default()
-    }
-    pub fn set_reduces_to(&mut self, reduces_to: TypeReduction) {
-        self.reduces_to = Option::Some(reduces_to);
-    }
-    pub fn get_reduces_to(&self) -> TypeReduction {
-        if let Option::Some(t) = &self.reduces_to {
-            *t
-        } else {
-            panic!("reduces_to knowledge is been look at without being initialized");
-        }
-    }
-    pub fn is_var(&self) -> bool {
-        self.get_reduces_to() == TypeReduction::Variable
-    }
-    pub fn is_component(&self) -> bool {
-        self.get_reduces_to() == TypeReduction::Component
-    }
-    pub fn is_signal(&self) -> bool {
-        self.get_reduces_to() == TypeReduction::Signal
-    }
-}
-
-#[derive(Default, Clone)]
-pub struct MemoryKnowledge {
-    concrete_dimensions: Option<Vec<usize>>,
-    full_length: Option<usize>,
-    abstract_memory_address: Option<usize>,
-}
-impl MemoryKnowledge {
-    pub fn new() -> MemoryKnowledge {
-        MemoryKnowledge::default()
-    }
-    pub fn set_concrete_dimensions(&mut self, value: Vec<usize>) {
-        self.full_length = Option::Some(value.iter().fold(1, |p, v| p * (*v)));
-        self.concrete_dimensions = Option::Some(value);
-    }
-    pub fn set_abstract_memory_address(&mut self, value: usize) {
-        self.abstract_memory_address = Option::Some(value);
-    }
-    pub fn get_concrete_dimensions(&self) -> &[usize] {
-        if let Option::Some(v) = &self.concrete_dimensions {
-            v
-        } else {
-            panic!("concrete dimensions was look at without being initialized");
-        }
-    }
-    pub fn get_full_length(&self) -> usize {
-        if let Option::Some(v) = &self.full_length {
-            *v
-        } else {
-            panic!("full dimension was look at without being initialized");
-        }
-    }
-    pub fn get_abstract_memory_address(&self) -> usize {
-        if let Option::Some(v) = &self.abstract_memory_address {
-            *v
-        } else {
-            panic!("abstract memory address was look at without being initialized");
-        }
+        name: String,
+        args: Vec<String>,
+        arg_location: FileLocation,
+        body: Statement,
+    ) -> Definition {
+        Definition::Function { meta, name, args, arg_location, body }
     }
 }

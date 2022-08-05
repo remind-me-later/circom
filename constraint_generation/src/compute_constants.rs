@@ -200,8 +200,8 @@ fn treat_dimension(
     use crate::execute::execute_constant_expression;
     if context.inside_template && !dim.is_number() {
         Option::None
-    } else if let Expression::Number(_, v) = dim {
-        transform_big_int_to_usize(v.clone())
+    } else if let Expression::Number { value, .. } = dim {
+        transform_big_int_to_usize(value.clone())
     } else {
         let program = context.program_archive;
         let env = context.environment;

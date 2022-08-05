@@ -148,13 +148,13 @@ fn analyse_expression(
         PrefixOp { rhe, .. } => {
             analyse_expression(rhe, function_names, reports);
         }
-        InlineSwitchOp { cond, if_true, if_false, .. } => {
+        TernaryOp { cond, if_true, if_false, .. } => {
             analyse_expression(cond, function_names, reports);
             analyse_expression(if_true, function_names, reports);
             analyse_expression(if_false, function_names, reports);
         }
         Variable { meta, access, .. } => analyse_access(access, meta, function_names, reports),
-        Number(..) => {}
+        Number { .. } => {}
         Call { meta, id, args, .. } => {
             if !function_names.contains(id) {
                 let mut report = Report::error(

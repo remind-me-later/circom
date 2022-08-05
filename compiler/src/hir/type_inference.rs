@@ -148,8 +148,8 @@ fn infer_type_expresion(expr: &Expression, state: &State, context: &mut SearchIn
 }
 
 fn infer_type_switch(expr: &Expression, state: &State, context: &mut SearchInfo) -> Option<VCT> {
-    use Expression::InlineSwitchOp;
-    if let InlineSwitchOp { if_true, if_false, .. } = expr {
+    use Expression::TernaryOp;
+    if let TernaryOp { if_true, if_false, .. } = expr {
         let casts_to = infer_type_expresion(if_true, state, context);
         if casts_to.is_none() {
             infer_type_expresion(if_false, state, context)
