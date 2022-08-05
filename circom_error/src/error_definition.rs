@@ -1,5 +1,5 @@
 use super::error_code::ReportCode;
-use super::file_definition::{FileID, FileLibrary, FileLocation};
+use super::file_definition::{FileID, FileLibrary, LocationInFile};
 use codespan_reporting::diagnostic::{Diagnostic, Label};
 use codespan_reporting::term;
 
@@ -50,12 +50,13 @@ impl Report {
             notes: Vec::new(),
         }
     }
+
     pub fn print_reports(reports: &[Report], file_library: &FileLibrary) {
         use codespan_reporting::term::termcolor::{ColorChoice, StandardStream};
         let writer = StandardStream::stderr(ColorChoice::Always);
         let config = term::Config::default();
         let mut diagnostics = Vec::new();
-        let files = file_library.to_storage();
+        let files = file_library.get_files();
         for report in reports.iter() {
             diagnostics.push(report.to_diagnostic());
         }
@@ -66,18 +67,22 @@ impl Report {
             }
         }
     }
+
     fn error_code_to_diagnostic_code(error_code: &ReportCode) -> DiagnosticCode {
         error_code.to_string()
     }
+
     pub fn error(error_message: String, code: ReportCode) -> Report {
         Report::new(MessageCategory::Error, error_message, code)
     }
+
     pub fn warning(error_message: String, code: ReportCode) -> Report {
         Report::new(MessageCategory::Warning, error_message, code)
     }
+
     pub fn add_primary(
         &mut self,
-        location: FileLocation,
+        location: LocationInFile,
         file_id: FileID,
         message: String,
     ) -> &mut Self {
@@ -85,9 +90,10 @@ impl Report {
         self.get_mut_primary().push(label);
         self
     }
+
     pub fn add_secondary(
         &mut self,
-        location: FileLocation,
+        location: LocationInFile,
         file_id: FileID,
         possible_message: Option<String>,
     ) -> &mut Self {
@@ -98,6 +104,7 @@ impl Report {
         self.get_mut_secondary().push(label);
         self
     }
+
     pub fn add_note(&mut self, note: String) -> &mut Self {
         self.get_mut_notes().push(note);
         self
@@ -118,33 +125,43 @@ impl Report {
     pub fn is_error(&self) -> bool {
         self.get_category().is_error()
     }
+
     pub fn is_warning(&self) -> bool {
         self.get_category().is_warning()
     }
+
     fn get_category(&self) -> &MessageCategory {
         &self.category
     }
+
     fn get_message(&self) -> &String {
         &self.error_message
     }
+
     fn get_code(&self) -> &ReportCode {
         &self.error_code
     }
+
     fn get_primary(&self) -> &Vec<ReportLabel> {
         &self.primary
     }
+
     fn get_mut_primary(&mut self) -> &mut Vec<ReportLabel> {
         &mut self.primary
     }
+
     fn get_secondary(&self) -> &Vec<ReportLabel> {
         &self.secondary
     }
+
     fn get_mut_secondary(&mut self) -> &mut Vec<ReportLabel> {
         &mut self.secondary
     }
+
     fn get_notes(&self) -> &Vec<ReportNote> {
         &self.notes
     }
+
     fn get_mut_notes(&mut self) -> &mut Vec<ReportNote> {
         &mut self.notes
     }

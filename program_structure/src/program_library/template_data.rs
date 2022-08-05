@@ -1,6 +1,6 @@
 use circom_ast::{FillMeta, SignalElementType, Statement};
 use circom_error::file_definition::FileID;
-use circom_error::file_definition::FileLocation;
+use circom_error::file_definition::LocationInFile;
 use std::collections::hash_map::HashMap;
 
 pub type TemplateInfo = HashMap<String, TemplateData>;
@@ -13,7 +13,7 @@ pub struct TemplateData {
     body: Statement,
     num_of_params: usize,
     name_of_params: Vec<String>,
-    param_location: FileLocation,
+    param_location: LocationInFile,
     input_signals: SignalInfo,
     output_signals: SignalInfo,
     is_parallel: bool,
@@ -27,7 +27,7 @@ impl TemplateData {
         mut body: Statement,
         num_of_params: usize,
         name_of_params: Vec<String>,
-        param_location: FileLocation,
+        param_location: LocationInFile,
         elem_id: &mut usize,
         is_parallel: bool,
         is_custom_gate: bool,
@@ -73,7 +73,7 @@ impl TemplateData {
     pub fn get_num_of_params(&self) -> usize {
         self.num_of_params
     }
-    pub fn get_param_location(&self) -> FileLocation {
+    pub fn get_param_location(&self) -> LocationInFile {
         self.param_location.clone()
     }
     pub fn get_name_of_params(&self) -> &Vec<String> {

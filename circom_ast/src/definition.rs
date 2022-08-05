@@ -1,4 +1,4 @@
-use circom_error::file_definition::FileLocation;
+use circom_error::file_definition::LocationInFile;
 
 use crate::{Statement, Meta};
 
@@ -8,7 +8,7 @@ pub enum Definition {
         meta: Meta,
         name: String,
         args: Vec<String>,
-        arg_location: FileLocation,
+        arg_location: LocationInFile,
         body: Statement,
         parallel: bool,
         is_custom_gate: bool,
@@ -17,7 +17,7 @@ pub enum Definition {
         meta: Meta,
         name: String,
         args: Vec<String>,
-        arg_location: FileLocation,
+        arg_location: LocationInFile,
         body: Statement,
     },
 }
@@ -27,7 +27,7 @@ impl Definition {
         meta: Meta,
         name: String,
         args: Vec<String>,
-        arg_location: FileLocation,
+        arg_location: LocationInFile,
         body: Statement,
         parallel: bool,
         is_custom_gate: bool,
@@ -39,7 +39,7 @@ impl Definition {
         meta: Meta,
         name: String,
         args: Vec<String>,
-        arg_location: FileLocation,
+        arg_location: LocationInFile,
         body: Statement,
     ) -> Definition {
         Definition::Function { meta, name, args, arg_location, body }

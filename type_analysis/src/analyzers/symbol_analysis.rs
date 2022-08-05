@@ -1,7 +1,7 @@
 use circom_ast::{Access, Expression, Meta, Statement};
 use circom_error::error_code::ReportCode;
 use circom_error::error_definition::{Report, ReportCollection};
-use circom_error::file_definition::{self, FileID, FileLocation};
+use circom_error::file_definition::{self, FileID, LocationInFile};
 use program_structure::function_data::FunctionInfo;
 use program_structure::program_archive::ProgramArchive;
 use program_structure::template_data::TemplateInfo;
@@ -100,7 +100,7 @@ fn analyze_main(program: &ProgramArchive) -> Result<(), Vec<Report>> {
 
 pub fn analyze_symbols(
     file_id: FileID,
-    param_location: FileLocation,
+    param_location: LocationInFile,
     params_names: &[String],
     body: &[Statement],
     function_info: &FunctionInfo,

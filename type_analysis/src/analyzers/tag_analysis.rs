@@ -223,7 +223,7 @@ fn add_report(
 ) {
     use ReportCode::*;
     let mut report = Report::error("Typing error found".to_string(), error_code);
-    let location = generate_file_location(meta.start, meta.end);
+    let location = generate_file_location(meta.get_start(), meta.get_end());
     let message = match error_code {
         WrongSignalTags => "Can not assign Field values to signals tagged as binary".to_string(),
         _ => panic!("Unimplemented error code"),

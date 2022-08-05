@@ -1,10 +1,10 @@
 use circom_error::error_code::ReportCode;
 use circom_error::error_definition::Report;
-use circom_error::file_definition::{FileID, FileLocation};
+use circom_error::file_definition::{FileID, LocationInFile};
 use circom_ast::Version;
 
 pub struct UnclosedCommentError {
-    pub location: FileLocation,
+    pub location: LocationInFile,
     pub file_id: FileID,
 }
 
@@ -17,7 +17,7 @@ impl UnclosedCommentError {
 }
 
 pub struct ParsingError {
-    pub location: FileLocation,
+    pub location: LocationInFile,
     pub file_id: FileID,
     pub msg: String,
 }

@@ -731,7 +731,7 @@ fn add_report(error_code: ReportCode, meta: &Meta, reports: &mut ReportCollectio
     use ReportCode::*;
     let file_id = meta.get_file_id();
     let mut report = Report::error("Typing error found".to_string(), error_code);
-    let location = generate_file_location(meta.start, meta.end);
+    let location = generate_file_location(meta.get_start(), meta.get_end());
     let message = match error_code {
         TypeCantBeUseAsCondition => "This type can not be used as a condition".to_string(),
         BadArrayAccess => "This type can not be used as index".to_string(),

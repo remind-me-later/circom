@@ -1,4 +1,4 @@
-use circom_error::file_definition::FileLocation;
+use circom_error::file_definition::LocationInFile;
 
 use crate::{TypeKnowledge, MemoryKnowledge};
 
@@ -9,9 +9,7 @@ pub trait FillMeta {
 #[derive(Clone)]
 pub struct Meta {
     pub elem_id: usize,
-    pub start: usize,
-    pub end: usize,
-    pub location: FileLocation,
+    pub location: LocationInFile,
     pub file_id: Option<usize>,
     pub component_inference: Option<String>,
     type_knowledge: TypeKnowledge,
@@ -21,18 +19,16 @@ pub struct Meta {
 impl Meta {
     pub fn new(start: usize, end: usize) -> Meta {
         Meta {
-            end,
-            start,
             elem_id: 0,
             location: start..end,
             file_id: None,
             component_inference: None,
-            type_knowledge: TypeKnowledge::default(),
-            memory_knowledge: MemoryKnowledge::default(),
+            type_knowledge: Default::default(),
+            memory_knowledge: Default::default(),
         }
     }
 
-    pub fn change_location(&mut self, location: FileLocation, file_id: Option<usize>) {
+    pub fn change_location(&mut self, location: LocationInFile, file_id: Option<usize>) {
         self.location = location;
         self.file_id = file_id;
     }
@@ -46,11 +42,7 @@ impl Meta {
     }
 
     pub fn get_file_id(&self) -> usize {
-        if let Some(id) = self.file_id {
-            id
-        } else {
-            panic!("Empty file id accessed")
-        }
+        self.file_id.expect("Empty file id accessed")
     }
 
     pub fn get_memory_knowledge(&self) -> &MemoryKnowledge {
@@ -69,7 +61,7 @@ impl Meta {
         &mut self.type_knowledge
     }
 
-    pub fn file_location(&self) -> FileLocation {
+    pub fn file_location(&self) -> LocationInFile {
         self.location.clone()
     }
 

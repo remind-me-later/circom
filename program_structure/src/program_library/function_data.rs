@@ -1,6 +1,6 @@
 use circom_ast::{FillMeta, Statement};
 use circom_error::file_definition::FileID;
-use circom_error::file_definition::FileLocation;
+use circom_error::file_definition::LocationInFile;
 use std::collections::HashMap;
 
 pub type FunctionInfo = HashMap<String, FunctionData>;
@@ -11,7 +11,7 @@ pub struct FunctionData {
     file_id: FileID,
     num_of_params: usize,
     name_of_params: Vec<String>,
-    param_location: FileLocation,
+    param_location: LocationInFile,
     body: Statement,
 }
 
@@ -22,7 +22,7 @@ impl FunctionData {
         mut body: Statement,
         num_of_params: usize,
         name_of_params: Vec<String>,
-        param_location: FileLocation,
+        param_location: LocationInFile,
         elem_id: &mut usize,
     ) -> FunctionData {
         body.fill(file_id, elem_id);
@@ -52,7 +52,7 @@ impl FunctionData {
             _ => panic!("Function body should be a block"),
         }
     }
-    pub fn get_param_location(&self) -> FileLocation {
+    pub fn get_param_location(&self) -> LocationInFile {
         self.param_location.clone()
     }
     pub fn get_num_of_params(&self) -> usize {
