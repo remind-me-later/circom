@@ -25,7 +25,7 @@ impl ProgramArchive {
     pub fn new(
         file_library: FileLibrary,
         file_id_main: FileID,
-        main_component: MainComponent,
+        mut main_component: MainComponent,
         program_contents: Contents,
     ) -> Result<ProgramArchive, (FileLibrary, Vec<Report>)> {
         let mut merger = Merger::new();
@@ -44,8 +44,7 @@ impl ProgramArchive {
         for key in templates.keys() {
             template_keys.insert(key.clone());
         }
-        let (public_inputs, mut initial_template_call) = main_component;
-        initial_template_call.fill(file_id_main, &mut fresh_id);
+        main_component.initial_template_call.fill(file_id_main, &mut fresh_id);
         if reports.is_empty() {
             Ok(ProgramArchive {
                 id_max: fresh_id,
@@ -53,8 +52,8 @@ impl ProgramArchive {
                 file_library,
                 functions,
                 templates,
-                public_inputs,
-                initial_template_call,
+                public_inputs: main_component.public_inputs,
+                initial_template_call: main_component.initial_template_call,
                 function_keys,
                 template_keys,
             })

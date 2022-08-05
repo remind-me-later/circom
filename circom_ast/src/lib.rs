@@ -1,89 +1,30 @@
-mod ast_impl;
 pub mod ast_shortcuts;
-mod expression_impl;
-mod statement_impl;
-pub mod knowledge;
+
+mod knowledge;
 mod expression;
 mod statement;
-
-use circom_error::file_definition::FileLocation;
+mod meta;
+mod definition;
 
 pub use knowledge::{TypeKnowledge, MemoryKnowledge, TypeReduction};
 pub use expression::{Expression, ExpressionPrefixOpcode, ExpressionInfixOpcode};
 pub use statement::*;
+pub use meta::{Meta, FillMeta};
+pub use definition::Definition;
 
-pub trait FillMeta {
-    fn fill(&mut self, file_id: usize, elem_id: &mut usize);
+#[derive(Clone)]
+pub struct MainComponent {
+    pub public_inputs: Vec<String>,
+    pub initial_template_call: Expression,
 }
 
-pub type MainComponent = (Vec<String>, Expression);
-pub fn build_main_component(public: Vec<String>, call: Expression) -> MainComponent {
-    (public, call)
+impl MainComponent {
+    pub fn new(public_inputs: Vec<String>, initial_template_call: Expression) -> Self {
+        Self { public_inputs, initial_template_call }
+    }
 }
 
 pub type Version = (usize, usize, usize);
-
-#[derive(Clone)]
-pub struct Meta {
-    pub elem_id: usize,
-    pub start: usize,
-    pub end: usize,
-    pub location: FileLocation,
-    pub file_id: Option<usize>,
-    pub component_inference: Option<String>,
-    type_knowledge: TypeKnowledge,
-    memory_knowledge: MemoryKnowledge,
-}
-
-impl Meta {
-    pub fn new(start: usize, end: usize) -> Meta {
-        Meta {
-            end,
-            start,
-            elem_id: 0,
-            location: start..end,
-            file_id: Option::None,
-            component_inference: None,
-            type_knowledge: TypeKnowledge::default(),
-            memory_knowledge: MemoryKnowledge::default(),
-        }
-    }
-    pub fn change_location(&mut self, location: FileLocation, file_id: Option<usize>) {
-        self.location = location;
-        self.file_id = file_id;
-    }
-    pub fn get_start(&self) -> usize {
-        self.location.start
-    }
-    pub fn get_end(&self) -> usize {
-        self.location.end
-    }
-    pub fn get_file_id(&self) -> usize {
-        if let Option::Some(id) = self.file_id {
-            id
-        } else {
-            panic!("Empty file id accessed")
-        }
-    }
-    pub fn get_memory_knowledge(&self) -> &MemoryKnowledge {
-        &self.memory_knowledge
-    }
-    pub fn get_type_knowledge(&self) -> &TypeKnowledge {
-        &self.type_knowledge
-    }
-    pub fn get_mut_memory_knowledge(&mut self) -> &mut MemoryKnowledge {
-        &mut self.memory_knowledge
-    }
-    pub fn get_mut_type_knowledge(&mut self) -> &mut TypeKnowledge {
-        &mut self.type_knowledge
-    }
-    pub fn file_location(&self) -> FileLocation {
-        self.location.clone()
-    }
-    pub fn set_file_id(&mut self, file_id: usize) {
-        self.file_id = Option::Some(file_id);
-    }
-}
 
 #[derive(Clone)]
 pub struct AST {
@@ -118,48 +59,22 @@ impl AST {
             main_component,
         }
     }
-}
 
-#[derive(Clone)]
-pub enum Definition {
-    Template {
-        meta: Meta,
-        name: String,
-        args: Vec<String>,
-        arg_location: FileLocation,
-        body: Statement,
-        parallel: bool,
-        is_custom_gate: bool,
-    },
-    Function {
-        meta: Meta,
-        name: String,
-        args: Vec<String>,
-        arg_location: FileLocation,
-        body: Statement,
-    },
-}
-
-impl Definition {
-    pub fn build_template(
-        meta: Meta,
-        name: String,
-        args: Vec<String>,
-        arg_location: FileLocation,
-        body: Statement,
-        parallel: bool,
-        is_custom_gate: bool,
-    ) -> Definition {
-        Definition::Template { meta, name, args, arg_location, body, parallel, is_custom_gate }
+    pub fn get_includes(&self) -> &Vec<String> {
+        &self.includes
     }
 
-    pub fn build_function(
-        meta: Meta,
-        name: String,
-        args: Vec<String>,
-        arg_location: FileLocation,
-        body: Statement,
-    ) -> Definition {
-        Definition::Function { meta, name, args, arg_location, body }
+    pub fn get_version(&self) -> &Option<Version> {
+        &self.compiler_version
+    }
+
+    pub fn get_definitions(&self) -> &Vec<Definition> {
+        &self.definitions
+    }
+
+    pub fn decompose(
+        self,
+    ) -> (Meta, Option<Version>, Vec<String>, Vec<Definition>, Option<MainComponent>) {
+        (self.meta, self.compiler_version, self.includes, self.definitions, self.main_component)
     }
 }

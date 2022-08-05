@@ -1,6 +1,6 @@
 use serde_derive::{Deserialize, Serialize};
 
-use crate::{Expression, Meta};
+use crate::{Expression, Meta, FillMeta};
 
 #[derive(Clone)]
 pub enum Statement {
@@ -121,6 +121,132 @@ impl Statement {
 
     pub fn build_assert(meta: Meta, arg: Expression) -> Statement {
         Statement::Assert { meta, arg }
+    }
+
+    pub fn get_meta(&self) -> &Meta {
+        use Statement::*;
+        match self {
+            IfThenElse { meta, .. }
+            | While { meta, .. }
+            | Return { meta, .. }
+            | Declaration { meta, .. }
+            | Substitution { meta, .. }
+            | LogCall { meta, .. }
+            | Block { meta, .. }
+            | Assert { meta, .. }
+            | ConstraintEquality { meta, .. }
+            | InitializationBlock { meta, .. } => meta,
+        }
+    }
+    pub fn get_mut_meta(&mut self) -> &mut Meta {
+        use Statement::*;
+        match self {
+            IfThenElse { meta, .. }
+            | While { meta, .. }
+            | Return { meta, .. }
+            | Declaration { meta, .. }
+            | Substitution { meta, .. }
+            | LogCall { meta, .. }
+            | Block { meta, .. }
+            | Assert { meta, .. }
+            | ConstraintEquality { meta, .. }
+            | InitializationBlock { meta, .. } => meta,
+        }
+    }
+
+    pub fn is_if_then_else(&self) -> bool {
+        matches!(self, Statement::IfThenElse { .. })
+    }
+
+    pub fn is_while(&self) -> bool {
+        matches!(self, Statement::While { .. })
+    }
+
+    pub fn is_return(&self) -> bool {
+        use Statement::Return;
+        matches!(self, Return { .. })
+    }
+
+    pub fn is_initialization_block(&self) -> bool {
+        matches!(self, Statement::InitializationBlock { .. })
+    }
+
+    pub fn is_declaration(&self) -> bool {
+        matches!(self, Statement::Declaration { .. })
+    }
+
+    pub fn is_substitution(&self) -> bool {
+        matches!(self, Statement::Substitution { .. })
+    }
+
+    pub fn is_constraint_equality(&self) -> bool {
+        matches!(self, Statement::ConstraintEquality { .. })
+    }
+
+    pub fn is_log_call(&self) -> bool {
+        matches!(self, Statement::LogCall { .. })
+    }
+
+    pub fn is_block(&self) -> bool {
+        matches!(self, Statement::Block { .. })
+    }
+
+    pub fn is_assert(&self) -> bool {
+        matches!(self, Statement::Assert { .. })
+    }
+}
+
+impl FillMeta for Statement {
+    fn fill(&mut self, file_id: usize, element_id: &mut usize) {
+        use Statement::*;
+        self.get_mut_meta().elem_id = *element_id;
+        *element_id += 1;
+
+        self.get_mut_meta().set_file_id(file_id);
+
+        match self {
+            IfThenElse { cond, if_case, else_case, .. } => {
+                cond.fill(file_id, element_id);
+                if_case.fill(file_id, element_id);
+                if let Some(s) = else_case {
+                    s.fill(file_id, element_id);
+                }
+            }
+            While { cond, stmt, .. } => {
+                cond.fill(file_id, element_id);
+                stmt.fill(file_id, element_id);
+            }
+            Return { value, .. } => {
+                value.fill(file_id, element_id);
+            }
+            InitializationBlock { initializations, .. } => {
+                initializations.iter_mut().for_each(|init| init.fill(file_id, element_id));
+            }
+            Declaration { dimensions, .. } => {
+                dimensions.iter_mut().for_each(|d| d.fill(file_id, element_id));
+            }
+            Substitution { access, rhe, .. } => {
+                rhe.fill(file_id, element_id);
+                for a in access {
+                    if let Access::ArrayAccess(e) = a {
+                        e.fill(file_id, element_id);
+                    }
+                }
+            }
+            ConstraintEquality { lhe, rhe, .. } => {
+                lhe.fill(file_id, element_id);
+                rhe.fill(file_id, element_id);
+            }
+            LogCall { arg, .. } => {
+                arg.fill(file_id, element_id);
+            }
+            Block { stmts, .. } => {
+                stmts.iter_mut().for_each(|s| s.fill(file_id, element_id));
+            }
+            Assert { arg, .. } => {
+                arg.fill(file_id, element_id);
+            }
+        }
     }
 }
 

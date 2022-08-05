@@ -21,7 +21,7 @@ IdentifierListDef : Vec<String> = {
 // Pragma is included at the start of the file.
 // Their structure is the following: pragma circom "version of the compiler"
 ParsePragma : Version = { // maybe change to usize instead of BigInt
-    "pragma circom" <version: Version>  ";"
+    "pragma" "circom" <version: Version>  ";"
     => version,
 };
 
@@ -61,11 +61,10 @@ ParsePublicList : Vec<String> = {
 pub ParseMainComponent : MainComponent = {
     <s:@L> "component" "main" <public_list: ParsePublicList?> "=" <init: ParseExpression> ";" <e:@L>
     => match public_list {
-        None => build_main_component(vec![],init),
-        Some(list) => build_main_component(list,init)
+        None => MainComponent::new(vec![],init),
+        Some(list) => MainComponent::new(list,init)
        },
 };
-
 
 pub ParseDefinition : Definition = {
     <s:@L> "function" <name: IDENTIFIER> "(" <args:@L> <arg_names: IdentifierListDef?>  <arge:@R> ")" <body: ParseBlock> <e:@R>
@@ -83,9 +82,6 @@ pub ParseDefinition : Definition = {
         => Definition::build_template(Meta::new(s,e), name, a, args..arge, body, parallel.is_some(), custom_gate.is_some()),
     },
 };
-
-
-
 
 // ====================================================================
 // VariableDefinitions
@@ -159,7 +155,6 @@ SignalSimpleSymbol : Symbol = {
     },
 };
 
-
 SomeSymbol : Symbol = {
     ComplexSymbol,
     SimpleSymbol,
@@ -202,19 +197,23 @@ ParseDeclaration : Statement = {
             ast_shortcuts::split_declaration_into_single_nodes(meta,xtype,symbols,AssignOp::AssignSignal)
     },
 };
+
 ParseSubstitution : Statement = {
     <s:@L> <variable: ParseVariable> <op: ParseAssignOp> <rhe: ParseExpression> <e:@R>
-    => {let (name,access) = variable;
+    => {
+        let (name,access) = variable;
         Statement::build_substitution(Meta::new(s,e),name,access,op,rhe)
-     },
+       },
     <s:@L> <lhe: ParseExpression> "-->" <variable: ParseVariable> <e:@R>
-     => {let (name,access) = variable;
+    => {
+        let (name,access) = variable;
         Statement::build_substitution(Meta::new(s,e),name,access,AssignOp::AssignSignal,lhe)
-     },
-     <s:@L> <lhe: ParseExpression> "==>" <variable: ParseVariable>  <e:@R>
-     => {let (name,access) = variable;
-         Statement::build_substitution(Meta::new(s,e),name,access,AssignOp::AssignConstraintSignal,lhe)
-     },
+       },
+    <s:@L> <lhe: ParseExpression> "==>" <variable: ParseVariable>  <e:@R>
+    => {
+        let (name,access) = variable;
+        Statement::build_substitution(Meta::new(s,e),name,access,AssignOp::AssignConstraintSignal,lhe)
+       },
     <s:@L> <variable: ParseVariable>  "\\=" <rhe: ParseExpression> <e:@R>
     => ast_shortcuts::assign_with_op_shortcut(ExpressionInfixOpcode::IntDiv,Meta::new(s,e),variable,rhe),
 
@@ -255,7 +254,7 @@ ParseSubstitution : Statement = {
     => ast_shortcuts::plusplus(Meta::new(s,e),variable),
 
     <s:@L> <variable: ParseVariable>  "--" <e:@R>
-     => ast_shortcuts::subsub(Meta::new(s,e),variable),
+    => ast_shortcuts::subsub(Meta::new(s,e),variable),
 };
 
 ParseBlock : Statement = {
@@ -292,6 +291,7 @@ ParseStatement1 : Statement = {
     =>  Statement::build_conditional_block(Meta::new(s,e),cond,if_case,Option::Some(else_case)),
     ParseStatement2
 };
+
 ParseStatement2 : Statement = {
     <s:@L> "for" "(" <init: ParseDeclaration> ";" <cond: ParseExpression> ";" <step: ParseSubstitution> ")" <body: ParseStatement2> <e:@R>
     => ast_shortcuts::for_into_while(Meta::new(s,e),init,cond,step,body),
@@ -327,9 +327,6 @@ ParseStatement3 : Statement = {
     ParseStatement
 };
 
-
-
-
 // ====================================================================
 // Variable
 // ====================================================================
@@ -338,16 +335,20 @@ ParseVarAccess : Access  = {
     <arr_dec: ParseArrayAcc> => Access::build_array_access(arr_dec),
     <component_acc: ParseComponentAcc> => Access::build_component_access(component_acc),
 };
+
 ParseArrayAcc: Expression = {
     "["<dim: ParseExpression>"]" => dim
 };
+
 ParseComponentAcc: String = {
     "." <id: IDENTIFIER> => id,
 };
+
 ParseVariable : (String,Vec<Access>) = {
     <name:IDENTIFIER> <access: ParseVarAccess*>
         => (name,access),
 };
+
 // ====================================================================
 // Expression
 // ====================================================================
@@ -451,12 +452,9 @@ Expression0: Expression = {
     "(" <Expression12> ")"
 };
 
-
 // ====================================================================
 // Terminals
 // ====================================================================
-
-
 
 ParseExpressionPrefixOpcode: ExpressionPrefixOpcode = {
     "!" => ExpressionPrefixOpcode::BoolNot,
@@ -514,7 +512,6 @@ ParseBitXOR : ExpressionInfixOpcode = {
     "^" =>  ExpressionInfixOpcode::BitXor,
 };
 
-
 ParseAssignOp: AssignOp = {
     "="   => AssignOp::AssignVar,
     "<--" => AssignOp::AssignSignal,
@@ -525,15 +522,15 @@ DECNUMBER: BigInt = {
     r"[0-9]+" => BigInt::parse_bytes(&<>.as_bytes(),10).expect("failed to parse base10")
 };
 
-HEXNUMBER : BigInt = {
+HEXNUMBER: BigInt = {
     r"0x[0-9A-Fa-f]*" => BigInt::parse_bytes(&(<>.as_bytes()[2..]),16).expect("failed to parse base16")
 };
 
-IDENTIFIER : String = {
+IDENTIFIER: String = {
     r"[$_]*[a-zA-Z][a-zA-Z$_0-9]*" => String::from(<>)
 };
 
-STRING : String = {
+STRING: String = {
     <s:r#""[^"]*""#> => String::from(&s[1..s.len()-1])
 };
 
@@ -541,9 +538,8 @@ SMALL_DECNUMBER: usize = {
     r"[0-9]+" => usize::from_str(<>).expect("failed to parse number")
 };
 
-
 // Version used by pragma to describe the compiler, its syntax is Number1.Number2.Number3...
-Version : Version = {
+Version: Version = {
     <version: SMALL_DECNUMBER> "." <subversion:SMALL_DECNUMBER> "." <subsubversion:SMALL_DECNUMBER> => {
         (version, subversion, subsubversion)
     }
