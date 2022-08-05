@@ -428,14 +428,16 @@ pub fn generate_hash_map(signal_name_list: &Vec<(String, usize, usize)>) -> Vec<
     assert!(signal_name_list.len() <= 256);
     let len = 256;
     let mut hash_map = vec![(0, 0, 0); len];
-    for i in 0..signal_name_list.len() {
-        let h = hasher(&signal_name_list[i].0);
+
+    for sig_name in signal_name_list {
+        let h = hasher(&sig_name.0);
         let mut p = (h % 256) as usize;
         while hash_map[p].1 != 0 {
             p = (p + 1) % 256;
         }
-        hash_map[p] = (h, signal_name_list[i].1 as u64, signal_name_list[i].2 as u64);
+        hash_map[p] = (h, sig_name.1 as u64, sig_name.2 as u64);
     }
+
     hash_map
 }
 
@@ -640,14 +642,14 @@ pub fn generate_dat_file(dat_file: &mut dyn Write, producer: &CProducer) -> std:
 pub fn generate_function_list(_producer: &CProducer, list: &TemplateList) -> String {
     use std::fmt::Write;
 
-    let mut func_list = "".to_string();
+    let mut func_list = String::new();
+
     if !list.is_empty() {
         write!(func_list, ",\n{}_run", list[0]).unwrap();
 
-        for i in 1..list.len() {
-            write!(func_list, ",\n{}_run", list[i]).unwrap();
-        }
+        list.iter().skip(1).for_each(|l| write!(func_list, ",\n{}_run", l).unwrap());
     }
+
     func_list
 }
 
@@ -659,9 +661,9 @@ pub fn generate_message_list_def(_producer: &CProducer, message_list: &MessageLi
     instructions.push(start);
     if !message_list.is_empty() {
         instructions.push(format!("\"{}\"", message_list[0]));
-        for i in 1..message_list.len() {
-            instructions.push(format!(",\n\"{}\"", message_list[i]));
-        }
+
+        message_list.iter().skip(1).for_each(|m| instructions.push(format!(",\n\"{}\"", m)));
+
         instructions.push("\n".to_string());
     }
     instructions.push("};\n".to_string());

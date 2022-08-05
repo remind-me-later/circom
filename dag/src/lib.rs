@@ -1,3 +1,5 @@
+#![allow(clippy::result_unit_err)]
+
 mod constraint_correctness_analysis;
 mod json_porting;
 mod map_to_constraint_list;

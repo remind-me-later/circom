@@ -229,16 +229,17 @@ impl WriteWasm for CallBucket {
                                                                      // compute de move with 2 or more dimensions
                                     let mut instructions_idx0 = indexes[0].produce_wasm(producer);
                                     instructions.append(&mut instructions_idx0); // start with dimension 0
-                                    for i in 1..indexes.len() {
+
+                                    for (i, idx) in indexes.iter().enumerate().skip(1) {
                                         instructions.push(get_local(producer.get_io_info_tag()));
                                         let offsetdim = 4 * i;
                                         instructions.push(load32(Some(&offsetdim.to_string()))); // get size of ith dimension
                                         instructions.push(mul32()); // multiply the current move by size of the ith dimension
-                                        let mut instructions_idxi =
-                                            indexes[i].produce_wasm(producer);
+                                        let mut instructions_idxi = idx.produce_wasm(producer);
                                         instructions.append(&mut instructions_idxi);
                                         instructions.push(add32()); // add move upto dimension i
                                     }
+
                                     //we have the total move; and is multiplied by the size of memory Fr in bytes
                                     let size = producer.get_size_32_bits_in_memory() * 4;
                                     instructions.push(set_constant(&size.to_string()));
@@ -346,10 +347,8 @@ impl WriteC for CallBucket {
             count += self.argument_types[i].size;
         }
         let result;
-        let mut call_arguments = vec![];
-        call_arguments.push(CIRCOM_CALC_WIT.to_string());
-        call_arguments.push(L_VAR_FUNC_CALL_STORAGE.to_string());
-        call_arguments.push(my_id());
+        let mut call_arguments =
+            vec![CIRCOM_CALC_WIT.to_string(), L_VAR_FUNC_CALL_STORAGE.to_string(), my_id()];
 
         match &self.return_info {
             ReturnType::Intermediate { op_aux_no } => {
@@ -390,8 +389,9 @@ impl WriteC for CallBucket {
                             map_prologue.append(&mut index_code_0);
                             map_prologue.push(format!("map_index_aux[0]={};", map_index));
                             map_index = "map_index_aux[0]".to_string();
-                            for i in 1..indexes.len() {
-                                let (mut index_code, index_exp) = indexes[i].produce_c(producer);
+
+                            for (i, idx) in indexes.iter().enumerate().skip(1) {
+                                let (mut index_code, index_exp) = idx.produce_c(producer);
                                 map_prologue.append(&mut index_code);
                                 map_prologue.push(format!("map_index_aux[{}]={};", i, index_exp));
                                 map_index = format!(
@@ -405,6 +405,7 @@ impl WriteC for CallBucket {
                                     i
                                 );
                             }
+
                             map_access = format!("{}+{}", map_access, map_index);
                         }
                         (

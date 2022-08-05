@@ -232,13 +232,13 @@ pub fn generate_hash_map(
     assert!(signal_name_list.len() <= 256);
     let len = 256;
     let mut hash_map = vec![(0, 0, 0); len];
-    for i in 0..signal_name_list.len() {
-        let h = hasher(&signal_name_list[i].0);
+    for sig_name in signal_name_list {
+        let h = hasher(&sig_name.0);
         let mut p = (h % 256) as usize;
         while hash_map[p].1 != 0 {
             p = (p + 1) % 256;
         }
-        hash_map[p] = (h, signal_name_list[i].1, signal_name_list[i].2);
+        hash_map[p] = (h, sig_name.1, sig_name.2);
     }
     hash_map
 }
@@ -586,23 +586,25 @@ pub fn generate_data_list(producer: &WASMProducer) -> Vec<WasmInstruction> {
         producer.get_io_signals_info_start(),
         generate_data_io_signals_info(producer, producer.get_io_map())
     ));
-    let ml = producer.get_message_list();
+    
     let m = producer.get_message_list_start();
-    for i in 0..ml.len() {
-        if ml[i].len() < producer.get_size_of_message_in_bytes() {
+
+    for (i, msg) in producer.get_message_list().iter().enumerate() {
+        if producer.get_message_list()[i].len() < producer.get_size_of_message_in_bytes() {
             wdata.push(format!(
                 "(data (i32.const {}) \"{}\\00\")",
                 m + i * producer.get_size_of_message_in_bytes(),
-                ml[i]
+                msg
             ));
         } else {
             wdata.push(format!(
                 "(data (i32.const {}) \"{}\")",
                 m + i * producer.get_size_of_message_in_bytes(),
-                ml[i]
+                msg
             ));
         }
     }
+
     wdata.push(format!(
         "(data (i32.const {}) \"{}\")",
         producer.get_constant_numbers_start(),

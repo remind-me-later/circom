@@ -300,9 +300,12 @@ pub fn build_circuit(vcp: VCP, flag: CompilationFlags) -> Circuit {
         write_main_inputs_log(&vcp);
     }
     let template_database = TemplateDB::build(&vcp.templates);
-    let mut circuit = Circuit::default();
-    circuit.wasm_producer = initialize_wasm_producer(&vcp, &template_database, flag.wat_flag);
-    circuit.c_producer = initialize_c_producer(&vcp, &template_database);
+
+    let mut circuit = Circuit {
+        wasm_producer: initialize_wasm_producer(&vcp, &template_database, flag.wat_flag),
+        c_producer: initialize_c_producer(&vcp, &template_database),
+        ..Default::default()
+    };
 
     let field_tracker = FieldTracker::new();
     let circuit_info = CircuitInfo {

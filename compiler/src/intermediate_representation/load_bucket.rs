@@ -138,12 +138,12 @@ impl WriteWasm for LoadBucket {
                                                              // compute de move with 2 or more dimensions
                             let mut instructions_idx0 = indexes[0].produce_wasm(producer);
                             instructions.append(&mut instructions_idx0); // start with dimension 0
-                            for i in 1..indexes.len() {
+                            for (i, idx) in indexes.iter().enumerate().skip(1) {
                                 instructions.push(get_local(producer.get_io_info_tag()));
                                 let offsetdim = 4 * i;
                                 instructions.push(load32(Some(&offsetdim.to_string()))); // get size of ith dimension
                                 instructions.push(mul32()); // multiply the current move by size of the ith dimension
-                                let mut instructions_idxi = indexes[i].produce_wasm(producer);
+                                let mut instructions_idxi = idx.produce_wasm(producer);
                                 instructions.append(&mut instructions_idxi);
                                 instructions.push(add32()); // add move upto dimension i
                             }
@@ -188,44 +188,44 @@ impl WriteC for LoadBucket {
             cmp_index_ref = "".to_string();
         }
 
-        let (mut src_prologue, src_index) =
-            if let LocationRule::Indexed { location, .. } = &self.src {
-                location.produce_c(producer)
-            } else if let LocationRule::Mapped { signal_code, indexes } = &self.src {
-                let mut map_prologue = vec![];
-                let sub_component_pos_in_memory =
-                    format!("{}[{}]", MY_SUBCOMPONENTS, cmp_index_ref);
-                let mut map_access = format!(
-                    "{}->{}[{}].defs[{}].offset",
-                    circom_calc_wit(),
-                    template_ins_2_io_info(),
-                    template_id_in_component(sub_component_pos_in_memory.clone()),
-                    signal_code
-                );
-                if !indexes.is_empty() {
-                    let (mut index_code_0, mut map_index) = indexes[0].produce_c(producer);
-                    map_prologue.append(&mut index_code_0);
-                    for i in 1..indexes.len() {
-                        let (mut index_code, index_exp) = indexes[i].produce_c(producer);
-                        map_prologue.append(&mut index_code);
-                        map_index = format!(
-                            "({})*{}->{}[{}].defs[{}].lengths[{}]+{}",
-                            map_index,
-                            circom_calc_wit(),
-                            template_ins_2_io_info(),
-                            template_id_in_component(sub_component_pos_in_memory.clone()),
-                            signal_code,
-                            (i - 1),
-                            index_exp
-                        );
-                    }
-                    map_access = format!("{}+{}", map_access, map_index);
+        let (mut src_prologue, src_index) = if let LocationRule::Indexed { location, .. } =
+            &self.src
+        {
+            location.produce_c(producer)
+        } else if let LocationRule::Mapped { signal_code, indexes } = &self.src {
+            let mut map_prologue = vec![];
+            let sub_component_pos_in_memory = format!("{}[{}]", MY_SUBCOMPONENTS, cmp_index_ref);
+            let mut map_access = format!(
+                "{}->{}[{}].defs[{}].offset",
+                circom_calc_wit(),
+                template_ins_2_io_info(),
+                template_id_in_component(sub_component_pos_in_memory.clone()),
+                signal_code
+            );
+            if !indexes.is_empty() {
+                let (mut index_code_0, mut map_index) = indexes[0].produce_c(producer);
+                map_prologue.append(&mut index_code_0);
+                for (i, idx) in indexes.iter().enumerate().skip(1) {
+                    let (mut index_code, index_exp) = idx.produce_c(producer);
+                    map_prologue.append(&mut index_code);
+                    map_index = format!(
+                        "({})*{}->{}[{}].defs[{}].lengths[{}]+{}",
+                        map_index,
+                        circom_calc_wit(),
+                        template_ins_2_io_info(),
+                        template_id_in_component(sub_component_pos_in_memory.clone()),
+                        signal_code,
+                        (i - 1),
+                        index_exp
+                    );
                 }
-                (map_prologue, map_access)
-            } else {
-                panic!();
-                //(vec![], "".to_string())
-            };
+                map_access = format!("{}+{}", map_access, map_index);
+            }
+            (map_prologue, map_access)
+        } else {
+            panic!();
+            //(vec![], "".to_string())
+        };
         prologue.append(&mut src_prologue);
         let access = match &self.address_type {
             AddressType::Variable => {

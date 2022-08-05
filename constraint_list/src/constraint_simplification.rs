@@ -238,9 +238,11 @@ fn eq_simplification(
         aux_constraints[id] = cons;
         LinkedList::append(&mut substitutions, &mut subs);
     }
+
     for id in 0..no_clusters {
         LinkedList::append(&mut constraints, &mut aux_constraints[id]);
     }
+
     log_substitutions(&substitutions, substitution_log);
     (substitutions, constraints)
 }

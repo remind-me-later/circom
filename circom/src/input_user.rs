@@ -199,7 +199,8 @@ mod input_processing {
         if route.is_file() {
             Ok(route)
         } else {
-            Err(eprintln!("{}", Colour::Red.paint("invalid input file")))
+            eprintln!("{}", Colour::Red.paint("invalid input file"));
+            Err(())
         }
     }
 
@@ -208,7 +209,8 @@ mod input_processing {
         if route.is_dir() {
             Ok(route)
         } else {
-            Err(eprintln!("{}", Colour::Red.paint("invalid output path")))
+            eprintln!("{}", Colour::Red.paint("invalid output path"));
+            Err(())
         }
     }
 
@@ -230,7 +232,10 @@ mod input_processing {
             (_, true, _, _) => Ok(SimplificationStyle::O1),
             (_, _, true, Ok(no_rounds)) => Ok(SimplificationStyle::O2(no_rounds)),
             (false, false, false, _) => Ok(SimplificationStyle::O1),
-            _ => Err(eprintln!("{}", Colour::Red.paint("invalid number of rounds"))),
+            _ => {
+                eprintln!("{}", Colour::Red.paint("invalid number of rounds"));
+                Err(())
+            }
         }
     }
 
@@ -291,7 +296,8 @@ mod input_processing {
                 {
                     Ok(String::from(matches.value_of("prime").unwrap()))
                 } else {
-                    Err(eprintln!("{}", Colour::Red.paint("invalid prime number")))
+                    eprintln!("{}", Colour::Red.paint("invalid prime number"));
+                    Err(())
                 }
             }
 
