@@ -114,34 +114,6 @@ impl Expression {
             | ArrayInLine { meta, .. } => meta,
         }
     }
-
-    pub fn is_array(&self) -> bool {
-        matches!(self, Expression::ArrayInLine { .. })
-    }
-
-    pub fn is_infix(&self) -> bool {
-        matches!(self, Expression::InfixOp { .. })
-    }
-
-    pub fn is_prefix(&self) -> bool {
-        matches!(self, Expression::PrefixOp { .. })
-    }
-
-    pub fn is_switch(&self) -> bool {
-        matches!(self, Expression::TernaryOp { .. })
-    }
-
-    pub fn is_variable(&self) -> bool {
-        matches!(self, Expression::Variable { .. })
-    }
-
-    pub fn is_number(&self) -> bool {
-        matches!(self, Expression::Number { .. })
-    }
-
-    pub fn is_call(&self) -> bool {
-        matches!(self, Expression::Call { .. })
-    }
 }
 
 impl FillMeta for Expression {

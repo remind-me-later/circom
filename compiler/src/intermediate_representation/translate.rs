@@ -477,11 +477,17 @@ fn translate_substitution(stmt: Statement, state: &mut State, context: &Context)
         let def = SymbolDef { meta: meta.clone(), symbol: var, acc: access };
         let str_info =
             StoreInfo { prc_symbol: ProcessedSymbol::new(def, state, context), src: rhe };
-        let store_instruction = if str_info.src.is_call() {
-            translate_call_case(str_info, state, context)
+
+        let store_instruction = if let Expression::Call { id, args, .. } = str_info.src {
+            // Translate call
+            let args_instr = translate_call_arguments(args, state, context);
+            str_info.prc_symbol.into_call_assign(id, args_instr, &state)
         } else {
-            translate_standard_case(str_info, state, context)
+            // Translate standard case
+            let src = translate_expression(str_info.src, state, context);
+            str_info.prc_symbol.into_store(src, state)
         };
+
         state.code.push(store_instruction);
     } else {
         unreachable!();
@@ -492,28 +498,6 @@ fn translate_substitution(stmt: Statement, state: &mut State, context: &Context)
 struct StoreInfo {
     prc_symbol: ProcessedSymbol,
     src: Expression,
-}
-fn translate_call_case(
-    info: StoreInfo,
-    state: &mut State,
-    context: &Context,
-) -> InstructionPointer {
-    use Expression::Call;
-    if let Call { id, args, .. } = info.src {
-        let args_instr = translate_call_arguments(args, state, context);
-        info.prc_symbol.into_call_assign(id, args_instr, &state)
-    } else {
-        unreachable!()
-    }
-}
-
-fn translate_standard_case(
-    info: StoreInfo,
-    state: &mut State,
-    context: &Context,
-) -> InstructionPointer {
-    let src = translate_expression(info.src, state, context);
-    info.prc_symbol.into_store(src, state)
 }
 
 // End of substitution utils
@@ -628,128 +612,64 @@ fn translate_expression(
     state: &mut State,
     context: &Context,
 ) -> InstructionPointer {
-    if expression.is_infix() {
-        translate_infix(expression, state, context)
-    } else if expression.is_prefix() {
-        translate_prefix(expression, state, context)
-    } else if expression.is_variable() {
-        translate_variable(expression, state, context)
-    } else if expression.is_number() {
-        translate_number(expression, state, context)
-    } else if expression.is_call() {
-        translate_call(expression, state, context)
-    } else if expression.is_array() {
-        unreachable!("This expression is syntactic sugar")
-    } else if expression.is_switch() {
-        unreachable!("This expression is syntactic sugar")
-    } else {
-        unreachable!("Unknown expression")
-    }
-}
-
-fn translate_call(
-    expression: Expression,
-    state: &mut State,
-    context: &Context,
-) -> InstructionPointer {
-    use Expression::Call;
-    use ReturnType::Intermediate;
-    if let Call { id, args, meta, .. } = expression {
-        let args_inst = translate_call_arguments(args, state, context);
-        CallBucket {
-            is_parallel: state.is_parallel,
-            line: context.files.get_line(meta.get_start(), meta.unwrap_file_id()).unwrap(),
-            message_id: state.message_id,
-            symbol: id,
-            argument_types: args_inst.argument_data,
-            arguments: args_inst.arguments,
-            arena_size: 200,
-            return_info: Intermediate { op_aux_no: 0 },
+    use Expression::*;
+    match expression {
+        InfixOp { meta, infix_op, rhe, lhe, .. } => {
+            let lhi = translate_expression(*lhe, state, context);
+            let rhi = translate_expression(*rhe, state, context);
+            ComputeBucket {
+                is_parallel: state.is_parallel,
+                line: context.files.get_line(meta.get_start(), meta.unwrap_file_id()).unwrap(),
+                message_id: state.message_id,
+                op: translate_infix_operator(infix_op),
+                op_aux_no: 0,
+                stack: vec![lhi, rhi],
+            }
+            .allocate()
         }
-        .allocate()
-    } else {
-        unreachable!()
-    }
-}
-
-fn translate_infix(
-    expression: Expression,
-    state: &mut State,
-    context: &Context,
-) -> InstructionPointer {
-    use Expression::InfixOp;
-    if let InfixOp { meta, infix_op, rhe, lhe, .. } = expression {
-        let lhi = translate_expression(*lhe, state, context);
-        let rhi = translate_expression(*rhe, state, context);
-        ComputeBucket {
-            is_parallel: state.is_parallel,
-            line: context.files.get_line(meta.get_start(), meta.unwrap_file_id()).unwrap(),
-            message_id: state.message_id,
-            op: translate_infix_operator(infix_op),
-            op_aux_no: 0,
-            stack: vec![lhi, rhi],
+        PrefixOp { meta, prefix_op, rhe, .. } => {
+            let rhi = translate_expression(*rhe, state, context);
+            ComputeBucket {
+                is_parallel: state.is_parallel,
+                line: context.files.get_line(meta.get_start(), meta.unwrap_file_id()).unwrap(),
+                message_id: state.message_id,
+                op_aux_no: 0,
+                op: translate_prefix_operator(prefix_op),
+                stack: vec![rhi],
+            }
+            .allocate()
         }
-        .allocate()
-    } else {
-        unreachable!()
-    }
-}
-
-fn translate_prefix(
-    expression: Expression,
-    state: &mut State,
-    context: &Context,
-) -> InstructionPointer {
-    use Expression::PrefixOp;
-    if let PrefixOp { meta, prefix_op, rhe, .. } = expression {
-        let rhi = translate_expression(*rhe, state, context);
-        ComputeBucket {
-            is_parallel: state.is_parallel,
-            line: context.files.get_line(meta.get_start(), meta.unwrap_file_id()).unwrap(),
-            message_id: state.message_id,
-            op_aux_no: 0,
-            op: translate_prefix_operator(prefix_op),
-            stack: vec![rhi],
+        Variable { meta, name, access, .. } => {
+            let def = SymbolDef { meta, symbol: name, acc: access };
+            ProcessedSymbol::new(def, state, context).into_load(state)
         }
-        .allocate()
-    } else {
-        unreachable!()
-    }
-}
-
-fn translate_variable(
-    expression: Expression,
-    state: &mut State,
-    context: &Context,
-) -> InstructionPointer {
-    use Expression::Variable;
-    if let Variable { meta, name, access, .. } = expression {
-        let def = SymbolDef { meta, symbol: name, acc: access };
-        ProcessedSymbol::new(def, state, context).into_load(state)
-    } else {
-        unreachable!()
-    }
-}
-
-fn translate_number(
-    expression: Expression,
-    state: &mut State,
-    context: &Context,
-) -> InstructionPointer {
-    use Expression::Number;
-    if let Number { meta, value } = expression {
-        let cid = bigint_to_cid(&mut state.field_tracker, &value);
-        ValueBucket {
-            line: context.files.get_line(meta.get_start(), meta.unwrap_file_id()).unwrap(),
-            message_id: state.message_id,
-            op_aux_no: 0,
-            parse_as: ValueType::BigInt,
-            value: cid,
-            is_parallel: state.is_parallel,
+        Number { meta, value } => {
+            let cid = bigint_to_cid(&mut state.field_tracker, &value);
+            ValueBucket {
+                line: context.files.get_line(meta.get_start(), meta.unwrap_file_id()).unwrap(),
+                message_id: state.message_id,
+                op_aux_no: 0,
+                parse_as: ValueType::BigInt,
+                value: cid,
+                is_parallel: state.is_parallel,
+            }
+            .allocate()
         }
-        .allocate()
-    } else {
-        unreachable!()
+        Call { id, args, meta, .. } => {
+            let args_inst = translate_call_arguments(args, state, context);
+            CallBucket {
+                is_parallel: state.is_parallel,
+                line: context.files.get_line(meta.get_start(), meta.unwrap_file_id()).unwrap(),
+                message_id: state.message_id,
+                symbol: id,
+                argument_types: args_inst.argument_data,
+                arguments: args_inst.arguments,
+                arena_size: 200,
+                return_info: ReturnType::Intermediate { op_aux_no: 0 },
+            }
+            .allocate()
+        }
+        _ => unreachable!("This expression is syntactic sugar"),
     }
 }
 

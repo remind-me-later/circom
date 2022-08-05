@@ -158,7 +158,7 @@ fn treat_conditional(
     use Statement::IfThenElse;
     if let IfThenElse { if_case, else_case, .. } = stmt {
         treat_statement(if_case, context, reports, flag_verbose, prime);
-        if let Option::Some(s) = else_case {
+        if let Some(s) = else_case {
             treat_statement(s, context, reports, flag_verbose, prime);
         }
     } else {
@@ -178,7 +178,7 @@ fn treat_declaration(
         let mut concrete_dimensions = vec![];
         for d in dimensions.iter_mut() {
             let execution_response = treat_dimension(d, context, reports, flag_verbose, prime);
-            if let Option::Some(v) = execution_response {
+            if let Some(v) = execution_response {
                 concrete_dimensions.push(v);
             } else {
                 report_invalid_dimension(meta, reports);
@@ -198,8 +198,8 @@ fn treat_dimension(
     prime: &String,
 ) -> Option<usize> {
     use crate::execute::execute_constant_expression;
-    if context.inside_template && !dim.is_number() {
-        Option::None
+    if context.inside_template && !matches!(dim, Expression::Number { .. }) {
+        None
     } else if let Expression::Number { value, .. } = dim {
         transform_big_int_to_usize(value.clone())
     } else {
@@ -210,7 +210,7 @@ fn treat_dimension(
         match execution_result {
             Result::Err(mut r) => {
                 reports.append(&mut r);
-                Option::None
+                None
             }
             Result::Ok(v) => transform_big_int_to_usize(v),
         }
@@ -221,12 +221,12 @@ fn transform_big_int_to_usize(v: BigInt) -> Option<usize> {
     use num_bigint::Sign;
     let (sign, bytes) = v.to_bytes_le();
     if sign == Sign::Minus || bytes.len() > 8 {
-        return Option::None;
+        return None;
     }
     let mut counter: [u8; 8] = [0; 8];
     counter[..bytes.len()].clone_from_slice(&bytes[..]);
     let usize_value = usize::from_le_bytes(counter);
-    Option::Some(usize_value)
+    Some(usize_value)
 }
 
 fn report_invalid_dimension(meta: &Meta, reports: &mut ReportCollection) {

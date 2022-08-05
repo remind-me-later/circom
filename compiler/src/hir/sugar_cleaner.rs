@@ -10,6 +10,7 @@ struct Context {}
 struct State {
     fresh_id: usize,
 }
+
 impl State {
     pub fn produce_id(&mut self) -> String {
         let fresh = self.fresh_id;
@@ -25,14 +26,15 @@ impl State {
         -Inline array removal
         -Initialization Block removal (no longer needed)
 */
-
 pub fn clean_sugar(vcp: &mut VCP) {
     let mut state = State { fresh_id: 0 };
+
     for template in &mut vcp.templates {
         let context = Context {};
         let trash = extend_statement(&mut template.code, &mut state, &context);
         assert!(trash.is_empty());
     }
+
     for vcf in &mut vcp.functions {
         let context = Context {};
         let trash = extend_statement(&mut vcf.body, &mut state, &context);
@@ -185,131 +187,82 @@ fn extend_expression(
     state: &mut State,
     context: &Context,
 ) -> ExtendedSyntax {
-    if expr.is_number() {
-        extend_number(expr, state, context)
-    } else if expr.is_variable() {
-        extend_variable(expr, state, context)
-    } else if expr.is_array() {
-        extend_array(expr, state, context)
-    } else if expr.is_call() {
-        extend_call(expr, state, context)
-    } else if expr.is_prefix() {
-        extend_prefix(expr, state, context)
-    } else if expr.is_infix() {
-        extend_infix(expr, state, context)
-    } else if expr.is_switch() {
-        extend_switch(expr, state, context)
-    } else {
-        unreachable!()
-    }
-}
-
-fn extend_number(_expr: &mut Expression, _state: &mut State, _context: &Context) -> ExtendedSyntax {
-    ExtendedSyntax { initializations: vec![] }
-}
-
-fn extend_variable(expr: &mut Expression, state: &mut State, context: &Context) -> ExtendedSyntax {
-    use Expression::Variable;
-    if let Variable { access, .. } = expr {
-        let mut inits = vec![];
-        for acc in access {
-            if let Access::ArrayAccess(e) = acc {
-                let mut expand = extend_expression(e, state, context);
-                inits.append(&mut expand.initializations);
-                let mut expr = vec![e.clone()];
-                sugar_filter(&mut expr, state, &mut inits);
-                *e = expr.pop().unwrap();
+    use Expression::*;
+    match expr {
+        Number { .. } => ExtendedSyntax { initializations: vec![] },
+        Variable { access, .. } => {
+            let mut initializations = vec![];
+            for acc in access {
+                if let Access::ArrayAccess(e) = acc {
+                    let mut expand = extend_expression(e, state, context);
+                    initializations.append(&mut expand.initializations);
+                    let mut expr = vec![e.clone()];
+                    sugar_filter(&mut expr, state, &mut initializations);
+                    *e = expr.pop().unwrap();
+                }
             }
+            ExtendedSyntax { initializations }
         }
-        ExtendedSyntax { initializations: inits }
-    } else {
-        unreachable!();
-    }
-}
-
-fn extend_prefix(expr: &mut Expression, state: &mut State, context: &Context) -> ExtendedSyntax {
-    use Expression::PrefixOp;
-    if let PrefixOp { rhe, .. } = expr {
-        let mut extended = extend_expression(rhe, state, context);
-        let mut expr = vec![*rhe.clone()];
-        sugar_filter(&mut expr, state, &mut extended.initializations);
-        *rhe = Box::new(expr.pop().unwrap());
-        extended
-    } else {
-        unreachable!()
-    }
-}
-
-fn extend_infix(expr: &mut Expression, state: &mut State, context: &Context) -> ExtendedSyntax {
-    use Expression::InfixOp;
-    if let InfixOp { lhe, rhe, .. } = expr {
-        let mut lh_expand = extend_expression(lhe, state, context);
-        let mut rh_expand = extend_expression(rhe, state, context);
-        lh_expand.initializations.append(&mut rh_expand.initializations);
-        let mut extended = lh_expand;
-        let mut expr = vec![*lhe.clone(), *rhe.clone()];
-        sugar_filter(&mut expr, state, &mut extended.initializations);
-        *rhe = Box::new(expr.pop().unwrap());
-        *lhe = Box::new(expr.pop().unwrap());
-        extended
-    } else {
-        unreachable!()
-    }
-}
-
-fn extend_switch(expr: &mut Expression, state: &mut State, context: &Context) -> ExtendedSyntax {
-    use Expression::TernaryOp;
-    if let TernaryOp { if_true, if_false, .. } = expr {
-        let mut true_expand = extend_expression(if_true, state, context);
-        let mut false_expand = extend_expression(if_false, state, context);
-        true_expand.initializations.append(&mut false_expand.initializations);
-        let mut extended = true_expand;
-        let mut expr = vec![*if_true.clone(), *if_false.clone()];
-        sugar_filter(&mut expr, state, &mut extended.initializations);
-        *if_false = Box::new(expr.pop().unwrap());
-        *if_true = Box::new(expr.pop().unwrap());
-        extended
-    } else {
-        unreachable!()
-    }
-}
-
-fn extend_array(expr: &mut Expression, state: &mut State, context: &Context) -> ExtendedSyntax {
-    use Expression::ArrayInLine;
-    if let ArrayInLine { values, .. } = expr {
-        let mut initializations = vec![];
-        for v in values.iter_mut() {
-            let mut extended = extend_expression(v, state, context);
-            initializations.append(&mut extended.initializations);
+        ArrayInLine { values, .. } => {
+            let mut initializations = vec![];
+            for v in values.iter_mut() {
+                let mut extended = extend_expression(v, state, context);
+                initializations.append(&mut extended.initializations);
+            }
+            sugar_filter(values, state, &mut initializations);
+            ExtendedSyntax { initializations }
         }
-        sugar_filter(values, state, &mut initializations);
-        ExtendedSyntax { initializations }
-    } else {
-        unreachable!();
-    }
-}
-
-fn extend_call(expr: &mut Expression, state: &mut State, context: &Context) -> ExtendedSyntax {
-    use Expression::Call;
-    if let Call { args, .. } = expr {
-        let mut inits = vec![];
-        for a in args.iter_mut() {
-            let mut extended = extend_expression(a, state, context);
-            inits.append(&mut extended.initializations);
+        Call { args, .. } => {
+            let mut inits = vec![];
+            for a in args.iter_mut() {
+                let mut extended = extend_expression(a, state, context);
+                inits.append(&mut extended.initializations);
+            }
+            sugar_filter(args, state, &mut inits);
+            ExtendedSyntax { initializations: inits }
         }
-        sugar_filter(args, state, &mut inits);
-        ExtendedSyntax { initializations: inits }
-    } else {
-        unreachable!()
+        PrefixOp { rhe, .. } => {
+            let mut extended = extend_expression(rhe, state, context);
+            let mut expr = vec![*rhe.clone()];
+            sugar_filter(&mut expr, state, &mut extended.initializations);
+            *rhe = Box::new(expr.pop().unwrap());
+            extended
+        }
+        InfixOp { lhe, rhe, .. } => {
+            let mut lh_expand = extend_expression(lhe, state, context);
+            let mut rh_expand = extend_expression(rhe, state, context);
+
+            lh_expand.initializations.append(&mut rh_expand.initializations);
+            let mut extended = lh_expand;
+            let mut expr = vec![*lhe.clone(), *rhe.clone()];
+            sugar_filter(&mut expr, state, &mut extended.initializations);
+            *rhe = Box::new(expr.pop().unwrap());
+            *lhe = Box::new(expr.pop().unwrap());
+            extended
+        }
+        TernaryOp { if_true, if_false, .. } => {
+            let mut true_expand = extend_expression(if_true, state, context);
+            let mut false_expand = extend_expression(if_false, state, context);
+
+            true_expand.initializations.append(&mut false_expand.initializations);
+            let mut extended = true_expand;
+            let mut expr = vec![*if_true.clone(), *if_false.clone()];
+            sugar_filter(&mut expr, state, &mut extended.initializations);
+            *if_false = Box::new(expr.pop().unwrap());
+            *if_true = Box::new(expr.pop().unwrap());
+            extended
+        }
     }
 }
 
 // Utils
-
 fn sugar_filter(elements: &mut Vec<Expression>, state: &mut State, inits: &mut Vec<Statement>) {
     let work = std::mem::replace(elements, Vec::with_capacity(elements.len()));
     for elem in work {
-        let should_be_extracted = elem.is_call() || elem.is_switch() || elem.is_array();
+        let should_be_extracted = matches!(
+            elem,
+            Expression::Call { .. } | Expression::TernaryOp { .. } | Expression::ArrayInLine { .. }
+        );
         if should_be_extracted {
             let id = state.produce_id();
             let expr = rmv_sugar(&id, elem, inits);
@@ -364,10 +317,9 @@ fn map_init_blocks(stmts: &mut Vec<Statement>) {
     use Statement::InitializationBlock;
     let work = std::mem::take(stmts);
     for w in work {
-        if let InitializationBlock { mut initializations, .. } = w {
-            stmts.append(&mut initializations);
-        } else {
-            stmts.push(w);
+        match w {
+            InitializationBlock { mut initializations, .. } => stmts.append(&mut initializations),
+            _ => stmts.push(w),
         }
     }
 }
@@ -375,10 +327,9 @@ fn map_init_blocks(stmts: &mut Vec<Statement>) {
 fn map_substitutions(stmts: &mut Vec<Statement>) {
     let work = std::mem::take(stmts);
     for w in work {
-        if w.is_substitution() {
-            into_single_substitution(w, stmts);
-        } else {
-            stmts.push(w);
+        match w {
+            Statement::Substitution { .. } => into_single_substitution(w, stmts),
+            _ => stmts.push(w),
         }
     }
 }
@@ -386,11 +337,15 @@ fn map_substitutions(stmts: &mut Vec<Statement>) {
 fn map_returns(stmts: &mut Vec<Statement>, mut fresh_id: usize) -> usize {
     use Statement::Return;
     let work = std::mem::take(stmts);
+
     for w in work {
-        let should_split = match &w {
-            Return { value, .. } => value.is_array() || value.is_switch() || value.is_call(),
-            _ => false,
-        };
+        let should_split = matches!(
+            w,
+            Return { value: Expression::ArrayInLine { .. }, .. }
+                | Return { value: Expression::TernaryOp { .. }, .. }
+                | Return { value: Expression::Call { .. }, .. }
+        );
+
         if should_split {
             let split = split_return(w, fresh_id);
             stmts.push(split.declaration);
@@ -401,6 +356,7 @@ fn map_returns(stmts: &mut Vec<Statement>, mut fresh_id: usize) -> usize {
             stmts.push(w);
         }
     }
+
     fresh_id
 }
 
@@ -409,6 +365,7 @@ struct ReturnSplit {
     substitution: Statement,
     final_return: Statement,
 }
+
 fn split_return(stmt: Statement, id: usize) -> ReturnSplit {
     use num_bigint_dig::BigInt;
     use Expression::{Number, Variable};
@@ -453,18 +410,12 @@ fn split_return(stmt: Statement, id: usize) -> ReturnSplit {
 
 fn into_single_substitution(stmt: Statement, stmts: &mut Vec<Statement>) {
     use Statement::Substitution;
-    match &stmt {
-        Substitution { rhe, .. } if rhe.is_switch() => rhe_switch_case(stmt, stmts),
-        Substitution { rhe, .. } if rhe.is_array() => rhe_array_case(stmt, stmts),
-        _ => stmts.push(stmt),
-    }
-}
+    use num_bigint_dig::BigInt;
+    use Expression::{ArrayInLine, Number, TernaryOp};
+    use Statement::{Block, IfThenElse};
 
-fn rhe_switch_case(stmt: Statement, stmts: &mut Vec<Statement>) {
-    use Expression::TernaryOp;
-    use Statement::{Block, IfThenElse, Substitution};
-    if let Substitution { var, access, op, rhe, meta } = stmt {
-        if let TernaryOp { cond, if_true, if_false, .. } = rhe {
+    match stmt {
+        Substitution { var, access, op, rhe: TernaryOp { cond, if_true, if_false, .. }, meta } => {
             let mut if_assigns = vec![];
             let sub_if = Substitution {
                 meta: meta.clone(),
@@ -474,9 +425,11 @@ fn rhe_switch_case(stmt: Statement, stmts: &mut Vec<Statement>) {
                 rhe: *if_true,
             };
             if_assigns.push(sub_if);
+
             let mut else_assigns = vec![];
             let sub_else = Substitution { op, var, access, meta: meta.clone(), rhe: *if_false };
             else_assigns.push(sub_else);
+
             let if_body = Block { stmts: if_assigns, meta: meta.clone() };
             let else_body = Block { stmts: else_assigns, meta: meta.clone() };
             let stmt = IfThenElse {
@@ -485,23 +438,11 @@ fn rhe_switch_case(stmt: Statement, stmts: &mut Vec<Statement>) {
                 if_case: Box::new(if_body),
                 else_case: Option::Some(Box::new(else_body)),
             };
-            stmts.push(stmt);
-        } else {
-            unreachable!()
-        }
-    } else {
-        unreachable!()
-    }
-}
 
-fn rhe_array_case(stmt: Statement, stmts: &mut Vec<Statement>) {
-    use num_bigint_dig::BigInt;
-    use Expression::{ArrayInLine, Number};
-    use Statement::Substitution;
-    if let Substitution { var, access, op, rhe, meta } = stmt {
-        if let ArrayInLine { values, .. } = rhe {
-            let mut index = 0;
-            for v in values {
+            stmts.push(stmt);
+        }
+        Substitution { var, access, op, rhe: ArrayInLine { values, .. }, meta } => {
+            for (index, v) in values.into_iter().enumerate() {
                 let mut index_meta = meta.clone();
                 index_meta.get_mut_memory_knowledge().set_concrete_dimensions(vec![]);
                 let expr_index = Number { meta: index_meta, value: BigInt::from(index) };
@@ -516,12 +457,8 @@ fn rhe_array_case(stmt: Statement, stmts: &mut Vec<Statement>) {
                     rhe: v,
                 };
                 stmts.push(sub);
-                index += 1;
             }
-        } else {
-            unreachable!()
         }
-    } else {
-        unreachable!()
+        _ => stmts.push(stmt),
     }
 }
