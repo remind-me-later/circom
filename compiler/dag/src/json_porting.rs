@@ -3,23 +3,23 @@ use circom_algebra::algebra::Constraint;
 use circom_algebra::num_bigint::BigInt;
 use constraint_writers::debug_writer::DebugWriter;
 use constraint_writers::json_writer::ConstraintJSON;
-use json::JsonValue;
+use serde_json::Value;
 use std::collections::HashMap;
 use std::io;
 
 type C = Constraint<usize>;
 
-fn transform_constraint_to_json(constraint: &C) -> JsonValue {
-    JsonValue::Array(vec![
+fn transform_constraint_to_json(constraint: &C) -> Value {
+    Value::Array(vec![
         hashmap_as_json(constraint.a()),
         hashmap_as_json(constraint.b()),
         hashmap_as_json(constraint.c()),
     ])
 }
-fn hashmap_as_json(values: &HashMap<usize, BigInt>) -> JsonValue {
+fn hashmap_as_json(values: &HashMap<usize, BigInt>) -> Value {
     let mut order: Vec<&usize> = values.keys().collect();
     order.sort();
-    let mut correspondence = json::object! {};
+    let mut correspondence = serde_json::Value::Object(serde_json::Map::new());
     for i in order {
         let (key, value) = values.get_key_value(i).unwrap();
         let value = value.to_str_radix(10);

@@ -5,7 +5,6 @@ authors = ["hermeGarcia <hermegarcianavarro@gmail.com>"]
 edition = "2021"
 
 [dependencies]
-json = "0.12"
 
 # Internal
 circom_algebra = { path = "../circom_algebra" }
