@@ -5,6 +5,7 @@ use constraint_writers::debug_writer::DebugWriter;
 use constraint_writers::json_writer::ConstraintJSON;
 use json::JsonValue;
 use std::collections::HashMap;
+use std::io;
 
 type C = Constraint<usize>;
 
@@ -27,7 +28,7 @@ fn hashmap_as_json(values: &HashMap<usize, BigInt>) -> JsonValue {
     correspondence
 }
 
-fn visit_tree(tree: &Tree, writer: &mut ConstraintJSON) -> Result<(), ()> {
+fn visit_tree(tree: &Tree, writer: &mut ConstraintJSON) -> io::Result<()> {
     for constraint in &tree.constraints {
         let json_value = transform_constraint_to_json(constraint);
         writer.write_constraint(&json_value.to_string())?;
@@ -39,7 +40,7 @@ fn visit_tree(tree: &Tree, writer: &mut ConstraintJSON) -> Result<(), ()> {
     Ok(())
 }
 
-pub fn port_constraints(dag: &DAG, debug: &DebugWriter) -> Result<(), ()> {
+pub fn port_constraints(dag: &DAG, debug: &DebugWriter) -> io::Result<()> {
     let mut writer = debug.build_constraints_file()?;
     visit_tree(&Tree::new(dag), &mut writer)?;
     writer.end()

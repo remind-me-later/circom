@@ -2,10 +2,10 @@ use circom_ast::{
     Access, AssignOp, Expression, ExpressionPrefixOpcode, Meta, SignalElementType, SignalType,
     Statement, VariableType,
 };
-use program_structure::environment::CircomEnvironment;
 use circom_error::error_code::ReportCode;
 use circom_error::error_definition::{Report, ReportCollection};
 use circom_error::file_definition::{generate_file_location, FileID};
+use program_structure::environment::CircomEnvironment;
 use program_structure::program_archive::ProgramArchive;
 use program_structure::template_data::TemplateData;
 use std::collections::HashMap;
@@ -21,12 +21,19 @@ pub fn tag_analysis(
     template_name: &str,
     program_archive: &ProgramArchive,
 ) -> Result<(), ReportCollection> {
-    let template_body = program_archive.get_template_data(template_name).get_body_as_vec();
-    let file_id = program_archive.get_template_data(template_name).get_file_id();
+    let template_body = program_archive
+        .get_template_data(template_name)
+        .get_body_as_vec();
+    let file_id = program_archive
+        .get_template_data(template_name)
+        .get_file_id();
     let template_info = program_archive.get_templates();
 
     let mut environment = Environment::new();
-    let args = program_archive.get_template_data(template_name).get_name_of_params().clone();
+    let args = program_archive
+        .get_template_data(template_name)
+        .get_name_of_params()
+        .clone();
     for arg in args.iter() {
         environment.add_variable(arg, SignalElementType::FieldElement);
     }
@@ -55,7 +62,9 @@ fn statement_inspection(
 ) {
     use Statement::*;
     match stmt {
-        IfThenElse { if_case, else_case, .. } => {
+        IfThenElse {
+            if_case, else_case, ..
+        } => {
             statement_inspection(if_case, file_id, template_info, reports, environment);
             if let Some(else_stmt) = else_case {
                 statement_inspection(else_stmt, file_id, template_info, reports, environment);
@@ -69,7 +78,9 @@ fn statement_inspection(
             treat_sequence_of_statements(stmts, file_id, template_info, reports, environment);
             environment.remove_variable_block();
         }
-        InitializationBlock { initializations, .. } => {
+        InitializationBlock {
+            initializations, ..
+        } => {
             treat_sequence_of_statements(
                 initializations,
                 file_id,
@@ -78,7 +89,9 @@ fn statement_inspection(
                 environment,
             );
         }
-        Declaration { xtype, name, meta, .. } => {
+        Declaration {
+            xtype, name, meta, ..
+        } => {
             use SignalType::*;
             use VariableType::*;
             match xtype {
@@ -91,7 +104,14 @@ fn statement_inspection(
                 },
             }
         }
-        Substitution { meta, var, access, rhe, op, .. } => {
+        Substitution {
+            meta,
+            var,
+            access,
+            rhe,
+            op,
+            ..
+        } => {
             use ExpressionResult::*;
             let var_info = variable_inspection(var, access, environment, template_info);
             let rhe_info = expression_inspection(rhe, template_info, reports, environment);
@@ -129,7 +149,9 @@ fn expression_inspection(
                 _ => ExpressionResult::ArithmeticExpression(SignalElementType::FieldElement),
             }
         }
-        TernaryOp { if_true, if_false, .. } => {
+        TernaryOp {
+            if_true, if_false, ..
+        } => {
             let if_true_info = expression_inspection(if_true, template_info, reports, environment);
             let if_false_info =
                 expression_inspection(if_false, template_info, reports, environment);
@@ -188,7 +210,11 @@ fn variable_inspection(
 ) -> ExpressionResult {
     use ExpressionResult::*;
     let mut result = if environment.has_component(symbol) {
-        Template(environment.get_component_or_break(symbol, file!(), line!()).clone())
+        Template(
+            environment
+                .get_component_or_break(symbol, file!(), line!())
+                .clone(),
+        )
     } else if environment.has_signal(symbol) {
         ArithmeticExpression(*environment.get_signal_or_break(symbol, file!(), line!()))
     } else {
@@ -197,10 +223,15 @@ fn variable_inspection(
 
     for access in accesses {
         if let Access::ComponentAccess(signal) = access {
-            let template =
-                environment.get_component_or_break(symbol, file!(), line!()).clone().unwrap();
+            let template = environment
+                .get_component_or_break(symbol, file!(), line!())
+                .clone()
+                .unwrap();
             let input = template_info.get(&template).unwrap().get_input_info(signal);
-            let output = template_info.get(&template).unwrap().get_output_info(signal);
+            let output = template_info
+                .get(&template)
+                .unwrap()
+                .get_output_info(signal);
             match (input, output) {
                 (Some((_, tag)), _) | (_, Some((_, tag))) => {
                     result = ArithmeticExpression(*tag);

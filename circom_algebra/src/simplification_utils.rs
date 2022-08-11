@@ -43,7 +43,13 @@ fn substitution_process(
 ) {
     let mut lconst = LinkedList::new();
     while let Some(actual_constraint) = LinkedList::pop_back(constraints) {
-        treat_constraint(signals, substitutions, &mut lconst, actual_constraint, field);
+        treat_constraint(
+            signals,
+            substitutions,
+            &mut lconst,
+            actual_constraint,
+            field,
+        );
     }
     *constraints = lconst;
 }
@@ -183,8 +189,10 @@ where
     T: AsRef<HashSet<usize>>,
 {
     let field = config.field;
-    let mut signals =
-        SignalDefinition { forbidden: config.forbidden.as_ref(), deleted_symbols: HashSet::new() };
+    let mut signals = SignalDefinition {
+        forbidden: config.forbidden.as_ref(),
+        deleted_symbols: HashSet::new(),
+    };
     let mut constraints = config.constraints;
     let mut holder = SH::new();
     substitution_process(&mut signals, &mut constraints, &mut holder, &field);
@@ -195,5 +203,9 @@ where
         LinkedList::push_back(&mut removed, s);
         LinkedList::push_back(&mut substitutions, v);
     }
-    Simplified { constraints, substitutions, removed }
+    Simplified {
+        constraints,
+        substitutions,
+        removed,
+    }
 }

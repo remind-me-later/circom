@@ -1,4 +1,4 @@
-use std::path::{PathBuf, Path};
+use std::path::{Path, PathBuf};
 
 pub struct Input {
     pub input_program: PathBuf,
@@ -78,7 +78,11 @@ impl Input {
             json_constraint_flag: input_processing::get_json_constraints(&matches),
             json_substitution_flag: input_processing::get_json_substitutions(&matches),
             print_ir_flag: input_processing::get_ir(&matches),
-            no_rounds: if let SimplificationStyle::O2(r) = o_style { r } else { 0 },
+            no_rounds: if let SimplificationStyle::O2(r) = o_style {
+                r
+            } else {
+                0
+            },
             fast_flag: o_style == SimplificationStyle::O0,
             reduced_simplification_flag: o_style == SimplificationStyle::O1,
             parallel_simplification_flag: input_processing::get_parallel_simplification(&matches),
@@ -189,10 +193,10 @@ impl Input {
     }
 }
 mod input_processing {
+    use crate::VERSION;
     use ansi_term::Colour;
     use clap::{App, Arg, ArgMatches};
     use std::path::{Path, PathBuf};
-    use crate::VERSION;
 
     pub fn get_input(matches: &ArgMatches) -> Result<PathBuf, ()> {
         let route = Path::new(matches.value_of("input").unwrap()).to_path_buf();
@@ -225,8 +229,11 @@ mod input_processing {
         let o_1 = matches.is_present("reduced_simplification");
         let o_2 = matches.is_present("full_simplification");
         let o_2_argument = matches.value_of("full_simplification").unwrap();
-        let no_rounds =
-            if o_2_argument == "full" { Ok(usize::MAX) } else { o_2_argument.parse::<usize>() };
+        let no_rounds = if o_2_argument == "full" {
+            Ok(usize::MAX)
+        } else {
+            o_2_argument.parse::<usize>()
+        };
         match (o_0, o_1, o_2, no_rounds) {
             (true, _, _, _) => Ok(SimplificationStyle::O0),
             (_, true, _, _) => Ok(SimplificationStyle::O1),

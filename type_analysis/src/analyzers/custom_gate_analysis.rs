@@ -14,7 +14,9 @@ pub fn custom_gate_analysis(
     ) {
         use Statement::*;
         match stmt {
-            IfThenElse { if_case, else_case, .. } => {
+            IfThenElse {
+                if_case, else_case, ..
+            } => {
                 custom_gate_analysis(custom_gate_name, if_case, warnings, errors);
                 if let Some(else_case_s) = else_case {
                     custom_gate_analysis(custom_gate_name, else_case_s, errors, warnings);
@@ -23,12 +25,16 @@ pub fn custom_gate_analysis(
             While { stmt, .. } => {
                 custom_gate_analysis(custom_gate_name, stmt, errors, warnings);
             }
-            InitializationBlock { initializations, .. } => {
+            InitializationBlock {
+                initializations, ..
+            } => {
                 for stmt in initializations {
                     custom_gate_analysis(custom_gate_name, stmt, errors, warnings);
                 }
             }
-            Declaration { meta, xtype, name, .. } => {
+            Declaration {
+                meta, xtype, name, ..
+            } => {
                 use VariableType::*;
                 match xtype {
                     Signal(SignalType::Intermediate, _) => {
@@ -103,7 +109,12 @@ pub fn custom_gate_analysis(
     let mut warnings = vec![];
     let mut errors = vec![];
 
-    custom_gate_analysis(custom_gate_name, custom_gate_body, &mut warnings, &mut errors);
+    custom_gate_analysis(
+        custom_gate_name,
+        custom_gate_body,
+        &mut warnings,
+        &mut errors,
+    );
 
     if errors.is_empty() {
         Ok(warnings)

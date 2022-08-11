@@ -1,6 +1,6 @@
 use circom_error::file_definition::LocationInFile;
 
-use crate::{Statement, Meta};
+use crate::{Meta, Statement};
 
 #[derive(Clone)]
 pub enum Definition {
@@ -32,7 +32,15 @@ impl Definition {
         parallel: bool,
         is_custom_gate: bool,
     ) -> Definition {
-        Definition::Template { meta, name, args, arg_location, body, parallel, is_custom_gate }
+        Definition::Template {
+            meta,
+            name,
+            args,
+            arg_location,
+            body,
+            parallel,
+            is_custom_gate,
+        }
     }
 
     pub fn build_function(
@@ -42,6 +50,12 @@ impl Definition {
         arg_location: LocationInFile,
         body: Statement,
     ) -> Definition {
-        Definition::Function { meta, name, args, arg_location, body }
+        Definition::Function {
+            meta,
+            name,
+            args,
+            arg_location,
+            body,
+        }
     }
 }

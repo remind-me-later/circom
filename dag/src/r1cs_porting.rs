@@ -1,10 +1,12 @@
+use std::io;
+
 use super::{Constraint, Tree, DAG};
 use constraint_writers::log_writer::Log;
 use constraint_writers::r1cs_writer::{
     ConstraintSection, CustomGatesAppliedData, HeaderData, R1CSWriter,
 };
 
-pub fn write(dag: &DAG, output: &str) -> Result<(), ()> {
+pub fn write(dag: &DAG, output: &str) -> io::Result<()> {
     let tree = Tree::new(dag);
     let field_size = (tree.field.bits() / 64 + 1) * 8;
     let mut log = Log::new();
@@ -108,7 +110,7 @@ fn write_constraint_section(
     constraint_section: &mut ConstraintSection,
     log: &mut Log,
     tree: &Tree,
-) -> Result<usize, ()> {
+) -> io::Result<usize> {
     let mut no_signals = tree.signals.len();
     for c in &tree.constraints {
         if Constraint::is_linear(c) {

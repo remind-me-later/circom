@@ -1,7 +1,7 @@
 use super::input_user::Input;
+use crate::VERSION;
 use circom_error::error_definition::Report;
 use program_structure::program_archive::ProgramArchive;
-use crate::VERSION;
 
 pub fn parse_project(input_info: &Input) -> Result<ProgramArchive, ()> {
     let initial_file = input_info.input_file().to_string();

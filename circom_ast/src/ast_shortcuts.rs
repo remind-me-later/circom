@@ -1,7 +1,4 @@
-use crate::{
-    expression::{ExpressionInfixOpcode},
-    Statement, Meta, AssignOp,
-};
+use crate::{expression::ExpressionInfixOpcode, AssignOp, Meta, Statement};
 use crate::{Access, Expression, VariableType};
 use num_bigint_dig::BigInt;
 

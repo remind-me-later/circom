@@ -2,7 +2,7 @@ use super::*;
 use num_bigint_dig::BigInt;
 use std::fs::File;
 use std::io::prelude::*;
-use std::path::{Path};
+use std::path::Path;
 
 pub fn wasm_hexa(nbytes: usize, num: &BigInt) -> String {
     let inbytes = num.to_str_radix(16);
@@ -586,7 +586,7 @@ pub fn generate_data_list(producer: &WASMProducer) -> Vec<WasmInstruction> {
         producer.get_io_signals_info_start(),
         generate_data_io_signals_info(producer, producer.get_io_map())
     ));
-    
+
     let m = producer.get_message_list_start();
 
     for (i, msg) in producer.get_message_list().iter().enumerate() {
@@ -663,7 +663,9 @@ pub fn reserve_stack_fr_function_generator() -> Vec<WasmInstruction> {
     instructions.push(set_constant("-1"));
     instructions.push(eq32());
     instructions.push(add_if());
-    instructions.push(set_constant(&exception_code_not_enough_memory().to_string()));
+    instructions.push(set_constant(
+        &exception_code_not_enough_memory().to_string(),
+    ));
     instructions.push(call("$exceptionHandler"));
     instructions.push(add_end());
     instructions.push(add_end());
@@ -673,7 +675,11 @@ pub fn reserve_stack_fr_function_generator() -> Vec<WasmInstruction> {
 }
 
 pub fn free_stack(producer: &WASMProducer) -> Vec<WasmInstruction> {
-    vec![set_constant("0"), get_local(producer.get_cstack_tag()), store32(None)]
+    vec![
+        set_constant("0"),
+        get_local(producer.get_cstack_tag()),
+        store32(None),
+    ]
 }
 
 // ---------------------- functions ------------------------
@@ -685,8 +691,11 @@ pub fn desp_io_subcomponent_generator(producer: &WASMProducer) -> Vec<WasmInstru
     instructions.push(" (param $comp i32)".to_string());
     instructions.push(" (param $ios i32)".to_string());
     instructions.push("(result i32)".to_string());
-    instructions
-        .push(set_constant(&producer.get_template_instance_to_io_signal_start().to_string()));
+    instructions.push(set_constant(
+        &producer
+            .get_template_instance_to_io_signal_start()
+            .to_string(),
+    ));
     instructions.push(get_local("$comp"));
     instructions.push(add32());
     instructions.push(load32(None));
@@ -704,7 +713,9 @@ pub fn get_shared_rw_memory_start_generator(producer: &WASMProducer) -> Vec<Wasm
     let header = "(func $getSharedRWMemoryStart (type $_t_ri32)".to_string();
     instructions.push(header);
     instructions.push("(result i32)".to_string());
-    instructions.push(set_constant(&producer.get_shared_rw_memory_start().to_string()));
+    instructions.push(set_constant(
+        &producer.get_shared_rw_memory_start().to_string(),
+    ));
     instructions.push(")".to_string());
     instructions
 }
@@ -715,7 +726,9 @@ pub fn read_shared_rw_memory_generator(producer: &WASMProducer) -> Vec<WasmInstr
     instructions.push(header);
     instructions.push(" (param $p i32)".to_string());
     instructions.push("(result i32)".to_string());
-    instructions.push(set_constant(&producer.get_shared_rw_memory_start().to_string()));
+    instructions.push(set_constant(
+        &producer.get_shared_rw_memory_start().to_string(),
+    ));
     instructions.push(get_local("$p"));
     instructions.push(set_constant("4"));
     instructions.push(mul32());
@@ -731,7 +744,9 @@ pub fn write_shared_rw_memory_generator(producer: &WASMProducer) -> Vec<WasmInst
     instructions.push(header);
     instructions.push(" (param $p i32)".to_string());
     instructions.push(" (param $v i32)".to_string());
-    instructions.push(set_constant(&producer.get_shared_rw_memory_start().to_string()));
+    instructions.push(set_constant(
+        &producer.get_shared_rw_memory_start().to_string(),
+    ));
     instructions.push(get_local("$p"));
     instructions.push(set_constant("4"));
     instructions.push(mul32());
@@ -758,12 +773,18 @@ pub fn init_generator(producer: &WASMProducer) -> Vec<WasmInstruction> {
     instructions.push(" (param $t i32)".to_string());
     instructions.push(" (local $i i32)".to_string());
     // initialize set counter
-    instructions.push(set_constant(&producer.get_remaining_input_signal_counter().to_string()));
+    instructions.push(set_constant(
+        &producer.get_remaining_input_signal_counter().to_string(),
+    ));
     instructions.push(";; Number of Main inputs".to_string());
-    instructions.push(set_constant(&producer.get_number_of_main_inputs().to_string()));
+    instructions.push(set_constant(
+        &producer.get_number_of_main_inputs().to_string(),
+    ));
     instructions.push(store32(None));
     // initialize set positions
-    instructions.push(set_constant(&producer.get_input_signal_set_map_start().to_string()));
+    instructions.push(set_constant(
+        &producer.get_input_signal_set_map_start().to_string(),
+    ));
     instructions.push(set_local("$i"));
     instructions.push(add_block()); //block 1
     instructions.push(add_loop()); //loop 2
@@ -785,7 +806,9 @@ pub fn init_generator(producer: &WASMProducer) -> Vec<WasmInstruction> {
     instructions.push(add_end()); //end block 1
                                   // initialize component_free_pos
     instructions.push(set_constant(&producer.get_component_free_pos().to_string()));
-    instructions.push(set_constant(&producer.get_component_tree_start().to_string()));
+    instructions.push(set_constant(
+        &producer.get_component_tree_start().to_string(),
+    ));
     instructions.push(store32(None));
     //signal offset of the main component
     let next_to_one = producer.get_signal_memory_start()
@@ -820,7 +843,9 @@ pub fn get_input_signal_map_position_generator(producer: &WASMProducer) -> Vec<W
     instructions.push(set_local("$i"));
     instructions.push(add_block()); // block 1
     instructions.push(add_loop()); // loop 2
-    instructions.push(set_constant(&producer.get_input_signals_hashmap_start().to_string()));
+    instructions.push(set_constant(
+        &producer.get_input_signals_hashmap_start().to_string(),
+    ));
     instructions.push(get_local("$i"));
     instructions.push(set_constant("16")); // 8(h)+4(p)+4(s)
     instructions.push(mul32());
@@ -868,7 +893,9 @@ pub fn check_if_input_signal_set_generator(producer: &WASMProducer) -> Vec<WasmI
     instructions.push(header);
     instructions.push(" (param $sip i32)".to_string());
     instructions.push("(result i32)".to_string());
-    instructions.push(set_constant(&producer.get_input_signal_set_map_start().to_string()));
+    instructions.push(set_constant(
+        &producer.get_input_signal_set_map_start().to_string(),
+    ));
     instructions.push(get_local("$sip"));
     instructions.push(add32());
     instructions.push(load32(None));
@@ -892,13 +919,17 @@ pub fn set_input_signal_generator(producer: &WASMProducer) -> Vec<WasmInstructio
     instructions.push(" (local $sip i32) ;; signal+position number".to_string());
     instructions.push(" (local $sipm i32) ;; position in the signal memory".to_string());
     instructions.push(" (local $vint i32)".to_string());
-    instructions.push(set_constant(&producer.get_remaining_input_signal_counter().to_string()));
+    instructions.push(set_constant(
+        &producer.get_remaining_input_signal_counter().to_string(),
+    ));
     instructions.push(load32(None));
     instructions.push(set_local("$ns"));
     instructions.push(get_local("$ns"));
     instructions.push(eqz32());
     instructions.push(add_if()); // if 1
-    instructions.push(set_constant(&exception_code_no_remaing_singals_to_set().to_string()));
+    instructions.push(set_constant(
+        &exception_code_no_remaing_singals_to_set().to_string(),
+    ));
     instructions.push(call("$exceptionHandler"));
     instructions.push(add_else()); // else if 1
     instructions.push(get_local("$hmsb"));
@@ -920,7 +951,9 @@ pub fn set_input_signal_generator(producer: &WASMProducer) -> Vec<WasmInstructio
     instructions.push(load32(Some("12"))); // load the second component (signal size)
     instructions.push(ge32_u());
     instructions.push(add_if()); // if 3
-    instructions.push(set_constant(&exception_code_input_array_access_exeeds_size().to_string()));
+    instructions.push(set_constant(
+        &exception_code_input_array_access_exeeds_size().to_string(),
+    ));
     instructions.push(call("$exceptionHandler"));
     instructions.push(add_else()); // else if 3
     instructions.push(get_local("$mp"));
@@ -933,14 +966,18 @@ pub fn set_input_signal_generator(producer: &WASMProducer) -> Vec<WasmInstructio
     instructions.push(sub32());
     instructions.push(call("$checkIfInputSignalSet"));
     instructions.push(add_if()); // if 4
-    instructions.push(set_constant(&exception_code_singals_already_set().to_string()));
+    instructions.push(set_constant(
+        &exception_code_singals_already_set().to_string(),
+    ));
     instructions.push(call("$exceptionHandler"));
     instructions.push(add_else()); // else if 4
     instructions.push(get_local("$sip"));
     let s = producer.get_size_32_bits_in_memory() * 4;
     instructions.push(set_constant(&s.to_string()));
     instructions.push(mul32());
-    instructions.push(set_constant(&producer.get_signal_memory_start().to_string()));
+    instructions.push(set_constant(
+        &producer.get_signal_memory_start().to_string(),
+    ));
     instructions.push(add32()); // address of the signal in memory
     instructions.push(set_local("$sipm"));
     instructions.push(get_local("$sipm"));
@@ -980,13 +1017,17 @@ pub fn set_input_signal_generator(producer: &WASMProducer) -> Vec<WasmInstructio
     instructions.push(set_constant("-1"));
     instructions.push(add32());
     instructions.push(set_local("$ns"));
-    instructions.push(set_constant(&producer.get_remaining_input_signal_counter().to_string()));
+    instructions.push(set_constant(
+        &producer.get_remaining_input_signal_counter().to_string(),
+    ));
     instructions.push(get_local("$ns"));
     instructions.push(store32(None));
     instructions.push(get_local("$ns"));
     instructions.push(eqz32());
     instructions.push(add_if()); // if 6
-    instructions.push(set_constant(&producer.get_component_tree_start().to_string()));
+    instructions.push(set_constant(
+        &producer.get_component_tree_start().to_string(),
+    ));
     let funcname = format!("${}_run", producer.get_main_header());
     instructions.push(call(&funcname));
     instructions.push(add_end()); // end if 6
@@ -1023,7 +1064,9 @@ pub fn get_raw_prime_generator(producer: &WASMProducer) -> Vec<WasmInstruction> 
     let header = "(func $getRawPrime (type $_t_void)".to_string();
     instructions.push(header);
     instructions.push(set_constant(&producer.get_raw_prime_start().to_string())); // address of the raw prime number
-    instructions.push(set_constant(&producer.get_shared_rw_memory_start().to_string())); // address of the shared memory
+    instructions.push(set_constant(
+        &producer.get_shared_rw_memory_start().to_string(),
+    )); // address of the shared memory
     instructions.push(call("$Fr_int_copy"));
     instructions.push(")".to_string());
     instructions
@@ -1044,7 +1087,9 @@ pub fn get_input_size_generator(producer: &WASMProducer) -> Vec<WasmInstruction>
     let header = "(func $getInputSize (type $_t_ri32)".to_string();
     instructions.push(header);
     instructions.push("(result i32)".to_string());
-    instructions.push(set_constant(&producer.get_number_of_main_inputs().to_string()));
+    instructions.push(set_constant(
+        &producer.get_number_of_main_inputs().to_string(),
+    ));
     instructions.push(")".to_string());
     instructions
 }
@@ -1064,15 +1109,21 @@ pub fn copy_32_in_shared_rw_memory_generator(producer: &WASMProducer) -> Vec<Was
     let header = "(func $copy32inSharedRWMemory (type $_t_i32)".to_string(); //receives i32 to be put in 0 of SharedRWMemory
     instructions.push(header);
     instructions.push(" (param $p i32)".to_string());
-    instructions.push(set_constant(&producer.get_shared_rw_memory_start().to_string()));
+    instructions.push(set_constant(
+        &producer.get_shared_rw_memory_start().to_string(),
+    ));
     instructions.push(get_local("$p"));
     instructions.push(store32(None));
-    instructions.push(set_constant(&producer.get_shared_rw_memory_start().to_string()));
+    instructions.push(set_constant(
+        &producer.get_shared_rw_memory_start().to_string(),
+    ));
     instructions.push(set_constant("0"));
     instructions.push(store32(Some("4")));
     for i in 1..producer.get_size_32_bit() / 2 {
         let pos = 8 * i;
-        instructions.push(set_constant(&producer.get_shared_rw_memory_start().to_string()));
+        instructions.push(set_constant(
+            &producer.get_shared_rw_memory_start().to_string(),
+        ));
         instructions.push(set_constant_64("0"));
         instructions.push(store64(Some(&pos.to_string())));
     }
@@ -1090,7 +1141,9 @@ pub fn copy_fr_in_shared_rw_memory_generator(producer: &WASMProducer) -> Vec<Was
     instructions.push(get_local("$p"));
     instructions.push(set_constant("8"));
     instructions.push(add32());
-    instructions.push(set_constant(&producer.get_shared_rw_memory_start().to_string()));
+    instructions.push(set_constant(
+        &producer.get_shared_rw_memory_start().to_string(),
+    ));
     instructions.push(call("$Fr_int_copy"));
     instructions.push(")".to_string());
     instructions
@@ -1102,15 +1155,22 @@ pub fn get_witness_generator(producer: &WASMProducer) -> Vec<WasmInstruction> {
     instructions.push(header);
     instructions.push(" (param $p i32)".to_string());
     instructions.push(" (local $c i32)".to_string());
-    instructions.push(set_constant(&producer.get_witness_signal_id_list_start().to_string()));
+    instructions.push(set_constant(
+        &producer.get_witness_signal_id_list_start().to_string(),
+    ));
     instructions.push(get_local("$p"));
     instructions.push(set_constant("2")); // 32 bytes per witness
     instructions.push(shl32());
     instructions.push(add32()); // address of the witness in the witness list
     instructions.push(load32(None)); // number of the signal in the signal Memory
-    instructions.push(set_constant(&format!("{}", producer.get_size_32_bit() * 4 + 8))); //40
+    instructions.push(set_constant(&format!(
+        "{}",
+        producer.get_size_32_bit() * 4 + 8
+    ))); //40
     instructions.push(mul32());
-    instructions.push(set_constant(&producer.get_signal_memory_start().to_string()));
+    instructions.push(set_constant(
+        &producer.get_signal_memory_start().to_string(),
+    ));
     instructions.push(add32()); // address of the signal in the signal Memory
     instructions.push(set_local("$c"));
     instructions.push(get_local("$c"));
@@ -1118,7 +1178,9 @@ pub fn get_witness_generator(producer: &WASMProducer) -> Vec<WasmInstruction> {
     instructions.push(get_local("$c"));
     instructions.push(set_constant("8"));
     instructions.push(add32());
-    instructions.push(set_constant(&producer.get_shared_rw_memory_start().to_string()));
+    instructions.push(set_constant(
+        &producer.get_shared_rw_memory_start().to_string(),
+    ));
     instructions.push(call("$Fr_int_copy"));
     instructions.push(")".to_string());
     instructions
@@ -1129,21 +1191,29 @@ pub fn get_message_char_generator(producer: &WASMProducer) -> Vec<WasmInstructio
     let header = "(func $getMessageChar (type $_t_ri32)".to_string();
     instructions.push(header);
     instructions.push(" (local $c i32)".to_string());
-    instructions.push(set_constant(&producer.get_message_buffer_counter_position().to_string()));
+    instructions.push(set_constant(
+        &producer.get_message_buffer_counter_position().to_string(),
+    ));
     instructions.push(load32(None)); // current position in buffer
     instructions.push(set_local("$c"));
     instructions.push(get_local("$c"));
-    instructions.push(set_constant(&producer.get_size_of_message_buffer_in_bytes().to_string()));
+    instructions.push(set_constant(
+        &producer.get_size_of_message_buffer_in_bytes().to_string(),
+    ));
     instructions.push(ge32_u());
     instructions.push(add_if());
     instructions.push(set_constant("0"));
     instructions.push(add_return());
     instructions.push(add_else());
-    instructions.push(set_constant(&producer.get_message_buffer_start().to_string()));
+    instructions.push(set_constant(
+        &producer.get_message_buffer_start().to_string(),
+    ));
     instructions.push(get_local("$c"));
     instructions.push(add32());
     instructions.push(load32_8u(None));
-    instructions.push(set_constant(&producer.get_message_buffer_counter_position().to_string()));
+    instructions.push(set_constant(
+        &producer.get_message_buffer_counter_position().to_string(),
+    ));
     instructions.push(get_local("$c"));
     instructions.push(set_constant("1"));
     instructions.push(add32());
@@ -1167,11 +1237,15 @@ pub fn build_buffer_message_generator(producer: &WASMProducer) -> Vec<WasmInstru
     instructions.push(" (local $p10 i32)".to_string()); //power of 10
     instructions.push(set_constant(&producer.get_message_list_start().to_string()));
     instructions.push(get_local("$m"));
-    instructions.push(set_constant(&producer.get_size_of_message_in_bytes().to_string()));
+    instructions.push(set_constant(
+        &producer.get_size_of_message_in_bytes().to_string(),
+    ));
     instructions.push(mul32());
     instructions.push(add32());
     instructions.push(set_local("$em"));
-    instructions.push(set_constant(&producer.get_message_buffer_start().to_string()));
+    instructions.push(set_constant(
+        &producer.get_message_buffer_start().to_string(),
+    ));
     instructions.push(set_local("$bm"));
     instructions.push(add_block());
     instructions.push(add_loop()); //move bytes until end of message or zero found
@@ -1322,7 +1396,9 @@ pub fn build_buffer_message_generator(producer: &WASMProducer) -> Vec<WasmInstru
     instructions.push(add_end());
     instructions.push(add_end());
     // initialize message buffer position to 0
-    instructions.push(set_constant(&producer.get_message_buffer_counter_position().to_string()));
+    instructions.push(set_constant(
+        &producer.get_message_buffer_counter_position().to_string(),
+    ));
     instructions.push(set_constant("0"));
     instructions.push(store32(None));
     instructions.push(")".to_string());
@@ -1336,7 +1412,10 @@ pub fn generate_table_of_template_runs(producer: &WASMProducer) -> Vec<WasmInstr
     instructions.push(format!("(table $runsmap {} {} funcref)", tlen, tlen));
     instructions.push("(elem $runsmap (i32.const 0)".to_string());
     for i in 0..tlen {
-        instructions.push(format!(" ${}_run", producer.get_template_instance_list()[i]));
+        instructions.push(format!(
+            " ${}_run",
+            producer.get_template_instance_list()[i]
+        ));
     }
     instructions.push(")".to_string());
     //    }

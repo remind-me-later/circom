@@ -69,8 +69,9 @@ impl WriteWasm for CreateCmpBucket {
         }
         //obtain address of the subcomponent inside the component
         instructions.push(get_local(producer.get_offset_tag()));
-        instructions
-            .push(set_constant(&producer.get_sub_component_start_in_component().to_string()));
+        instructions.push(set_constant(
+            &producer.get_sub_component_start_in_component().to_string(),
+        ));
         instructions.push(add32());
         let mut instructions_sci = self.sub_cmp_id.produce_wasm(producer);
         instructions.append(&mut instructions_sci);
@@ -176,8 +177,14 @@ impl WriteC for CreateCmpBucket {
         std::mem::drop(scmp_idx_instructions);
         instructions.push("{".to_string());
         instructions.push(format!("uint aux_create = {};", scmp_idx));
-        instructions.push(format!("int aux_cmp_num = {}+{}+1;", self.component_offset, CTX_INDEX));
-        instructions.push(format!("uint csoffset = {}+{};", MY_SIGNAL_START, self.signal_offset));
+        instructions.push(format!(
+            "int aux_cmp_num = {}+{}+1;",
+            self.component_offset, CTX_INDEX
+        ));
+        instructions.push(format!(
+            "uint csoffset = {}+{};",
+            MY_SIGNAL_START, self.signal_offset
+        ));
         if self.number_of_cmp > 1 {
             instructions.push(format!(
                 "uint aux_dimensions[{}] = {};",
@@ -187,7 +194,10 @@ impl WriteC for CreateCmpBucket {
         }
         // if the array is complete traverse all its positions
         if complete_array {
-            instructions.push(format!("for (uint i = 0; i < {}; i++) {{", self.number_of_cmp));
+            instructions.push(format!(
+                "for (uint i = 0; i < {}; i++) {{",
+                self.number_of_cmp
+            ));
         }
         // generate array with the positions that are actually created if there are empty components
         // if not only traverse the defined positions, but i gets the value of the indexed accesed position
@@ -216,8 +226,10 @@ impl WriteC for CreateCmpBucket {
                 )
             ));
         } else {
-            instructions
-                .push(format!("std::string new_cmp_name = \"{}\";", self.name_subcomponent));
+            instructions.push(format!(
+                "std::string new_cmp_name = \"{}\";",
+                self.name_subcomponent
+            ));
         }
         let create_args = vec![
             "csoffset".to_string(),

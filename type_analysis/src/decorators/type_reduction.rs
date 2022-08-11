@@ -25,20 +25,30 @@ pub fn reduce_template(template_data: &mut TemplateData) {
 fn reduce_types_in_statement(stmt: &mut Statement, environment: &mut Environment) {
     use Statement::*;
     match stmt {
-        Substitution { var, access, rhe, meta, .. } => {
-            reduce_types_in_substitution(var, access, environment, rhe, meta)
-        }
-        Declaration { name, xtype, dimensions, .. } => {
-            reduce_types_in_declaration(*xtype, name, dimensions, environment)
-        }
+        Substitution {
+            var,
+            access,
+            rhe,
+            meta,
+            ..
+        } => reduce_types_in_substitution(var, access, environment, rhe, meta),
+        Declaration {
+            name,
+            xtype,
+            dimensions,
+            ..
+        } => reduce_types_in_declaration(*xtype, name, dimensions, environment),
         While { cond, stmt, .. } => reduce_types_in_while(cond, stmt, environment),
         Block { stmts, .. } => reduce_types_in_vec_of_statements(stmts, environment),
-        InitializationBlock { initializations, .. } => {
-            reduce_types_in_vec_of_statements(initializations, environment)
-        }
-        IfThenElse { cond, if_case, else_case, .. } => {
-            reduce_types_in_conditional(cond, if_case, else_case, environment)
-        }
+        InitializationBlock {
+            initializations, ..
+        } => reduce_types_in_vec_of_statements(initializations, environment),
+        IfThenElse {
+            cond,
+            if_case,
+            else_case,
+            ..
+        } => reduce_types_in_conditional(cond, if_case, else_case, environment),
         LogCall { arg, .. } => reduce_types_in_expression(arg, environment),
         Assert { arg, .. } => reduce_types_in_expression(arg, environment),
         Return { value, .. } => reduce_types_in_expression(value, environment),
@@ -50,14 +60,17 @@ fn reduce_types_in_statement(stmt: &mut Statement, environment: &mut Environment
 fn reduce_types_in_expression(expression: &mut Expression, environment: &Environment) {
     use Expression::*;
     match expression {
-        Variable { name, access, meta, .. } => {
-            reduce_types_in_variable(name, environment, access, meta)
-        }
+        Variable {
+            name, access, meta, ..
+        } => reduce_types_in_variable(name, environment, access, meta),
         InfixOp { lhe, rhe, .. } => reduce_types_in_infix(lhe, rhe, environment),
         PrefixOp { rhe, .. } => reduce_types_in_expression(rhe, environment),
-        TernaryOp { cond, if_true, if_false, .. } => {
-            reduce_types_in_inline_switch(cond, if_true, if_false, environment)
-        }
+        TernaryOp {
+            cond,
+            if_true,
+            if_false,
+            ..
+        } => reduce_types_in_inline_switch(cond, if_true, if_false, environment),
         Call { args, .. } => reduce_types_in_vec_of_expressions(args, environment),
         ArrayInLine { values, .. } => reduce_types_in_vec_of_expressions(values, environment),
         Number { .. } => (),

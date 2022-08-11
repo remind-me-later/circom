@@ -10,10 +10,15 @@ struct SearchInfo {
 
 pub fn infer_function_result(id: &str, params: Vec<Param>, state: &State) -> VCT {
     let body = &state.generic_functions.get(id).unwrap().body;
-    let mut context = SearchInfo { environment: E::new(), open_calls: HashSet::new() };
+    let mut context = SearchInfo {
+        environment: E::new(),
+        open_calls: HashSet::new(),
+    };
     context.open_calls.insert(id.to_string());
 
-    params.into_iter().for_each(|p| context.environment.add_variable(&p.name, p.length));
+    params
+        .into_iter()
+        .for_each(|p| context.environment.add_variable(&p.name, p.length));
 
     infer_type_stmt(body, state, &mut context).unwrap()
 }
@@ -33,17 +38,24 @@ fn infer_type_stmt(stmt: &Statement, state: &State, context: &mut SearchInfo) ->
             context.environment.remove_variable_block();
             returns
         }
-        InitializationBlock { initializations, .. } => {
+        InitializationBlock {
+            initializations, ..
+        } => {
             for s in initializations {
                 if let Declaration { meta, name, .. } = s {
-                    let has_type = meta.get_memory_knowledge().get_concrete_dimensions().to_vec();
+                    let has_type = meta
+                        .get_memory_knowledge()
+                        .get_concrete_dimensions()
+                        .to_vec();
                     context.environment.add_variable(name, has_type);
                 };
             }
 
             None
         }
-        IfThenElse { if_case, else_case, .. } => {
+        IfThenElse {
+            if_case, else_case, ..
+        } => {
             let mut returns = infer_type_stmt(if_case, state, context);
             if let Some(s) = else_case {
                 if returns.is_none() {
@@ -54,7 +66,10 @@ fn infer_type_stmt(stmt: &Statement, state: &State, context: &mut SearchInfo) ->
         }
         While { stmt, .. } => infer_type_stmt(stmt, state, context),
         Declaration { meta, name, .. } => {
-            let has_type = meta.get_memory_knowledge().get_concrete_dimensions().to_vec();
+            let has_type = meta
+                .get_memory_knowledge()
+                .get_concrete_dimensions()
+                .to_vec();
             context.environment.add_variable(name, has_type);
             None
         }
@@ -102,7 +117,9 @@ fn infer_type_expresion(expr: &Expression, state: &State, context: &mut SearchIn
                 lengths
             })
         }
-        TernaryOp { if_true, if_false, .. } => infer_type_expresion(if_true, state, context)
+        TernaryOp {
+            if_true, if_false, ..
+        } => infer_type_expresion(if_true, state, context)
             .or_else(|| infer_type_expresion(if_false, state, context)),
         _ => Some(VCT::with_capacity(0)),
     }

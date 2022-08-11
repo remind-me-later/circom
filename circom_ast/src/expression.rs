@@ -1,6 +1,6 @@
 use num_bigint_dig::BigInt;
 
-use crate::{Meta, Access, FillMeta};
+use crate::{Access, FillMeta, Meta};
 
 #[derive(Clone)]
 pub enum Expression {
@@ -48,7 +48,12 @@ impl Expression {
         infix_op: ExpressionInfixOpcode,
         rhe: Expression,
     ) -> Expression {
-        Expression::InfixOp { meta, infix_op, lhe: Box::new(lhe), rhe: Box::new(rhe) }
+        Expression::InfixOp {
+            meta,
+            infix_op,
+            lhe: Box::new(lhe),
+            rhe: Box::new(rhe),
+        }
     }
 
     pub fn build_prefix(
@@ -56,7 +61,11 @@ impl Expression {
         prefix_op: ExpressionPrefixOpcode,
         rhe: Expression,
     ) -> Expression {
-        Expression::PrefixOp { meta, prefix_op, rhe: Box::new(rhe) }
+        Expression::PrefixOp {
+            meta,
+            prefix_op,
+            rhe: Box::new(rhe),
+        }
     }
 
     pub fn build_ternary_op(
@@ -141,7 +150,12 @@ impl FillMeta for Expression {
             PrefixOp { rhe, .. } => {
                 rhe.fill(file_id, elem_id);
             }
-            TernaryOp { cond, if_false, if_true, .. } => {
+            TernaryOp {
+                cond,
+                if_false,
+                if_true,
+                ..
+            } => {
                 cond.fill(file_id, elem_id);
                 if_true.fill(file_id, elem_id);
                 if_false.fill(file_id, elem_id);

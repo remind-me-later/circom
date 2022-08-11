@@ -1,10 +1,10 @@
 use super::analysis::Analysis;
 use super::executed_template::ExecutedTemplate;
 use super::type_definitions::*;
+use circom_error::error_definition::ReportCollection;
 use compiler::hir::very_concrete_program::{Stats, VCPConfig, VCP};
 use dag::DAG;
 use program_structure::program_archive::ProgramArchive;
-use circom_error::error_definition::ReportCollection;
 use std::collections::HashMap;
 
 pub type ExportResult = Result<(DAG, VCP, ReportCollection), ReportCollection>;
@@ -61,8 +61,13 @@ impl ExecutedProgram {
         if let Some(index) = possible_index {
             return index;
         }
-        self.template_to_nodes.entry(node.template_name().clone()).or_insert_with(Vec::new);
-        let nodes_for_template = self.template_to_nodes.get_mut(node.template_name()).unwrap();
+        self.template_to_nodes
+            .entry(node.template_name().clone())
+            .or_insert_with(Vec::new);
+        let nodes_for_template = self
+            .template_to_nodes
+            .get_mut(node.template_name())
+            .unwrap();
         let node_index = self.model.len();
         self.model.push(node);
         nodes_for_template.push(node_index);

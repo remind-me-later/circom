@@ -10,14 +10,14 @@ use super::environment_utils::{
     },
 };
 
-use std::fmt::Write;
 use program_structure::constants::UsefulConstants;
+use std::fmt::Write;
 
 use super::execution_data::analysis::Analysis;
 use super::execution_data::{ExecutedProgram, ExecutedTemplate, NodePointer};
 use super::{ArithmeticError, FileID, ProgramArchive, Report, ReportCode, ReportCollection};
-use circom_ast::*;
 use circom_algebra::num_bigint::BigInt;
+use circom_ast::*;
 use std::collections::BTreeMap;
 type AExpr = ArithmeticExpressionGen<String>;
 
@@ -109,8 +109,12 @@ pub fn execute_constant_expression(
     let mut runtime_information =
         RuntimeInformation::new(current_file, program_archive.id_max, prime);
     runtime_information.environment = environment;
-    let folded_value_result =
-        execute_expression(expression, program_archive, &mut runtime_information, flag_verbose);
+    let folded_value_result = execute_expression(
+        expression,
+        program_archive,
+        &mut runtime_information,
+        flag_verbose,
+    );
     match folded_value_result {
         Err(_) => Err(runtime_information.runtime_errors),
         Ok(folded_value) => {
@@ -136,7 +140,9 @@ fn execute_statement(
     let id = stmt.get_meta().elem_id();
     Analysis::reached(&mut runtime.analysis, id);
     let res = match stmt {
-        InitializationBlock { initializations, .. } => {
+        InitializationBlock {
+            initializations, ..
+        } => {
             let possible_fold = execute_sequence_of_statements(
                 initializations,
                 program_archive,
@@ -147,13 +153,21 @@ fn execute_statement(
             debug_assert!(possible_fold.is_none());
             possible_fold
         }
-        Declaration { meta, xtype, name, dimensions, .. } => {
+        Declaration {
+            meta,
+            xtype,
+            name,
+            dimensions,
+            ..
+        } => {
             let mut arithmetic_values = Vec::new();
             for dimension in dimensions.iter() {
                 let f_dimensions =
                     execute_expression(dimension, program_archive, runtime, flag_verbose)?;
-                arithmetic_values
-                    .push(safe_unwrap_to_single_arithmetic_expression(f_dimensions, line!()));
+                arithmetic_values.push(safe_unwrap_to_single_arithmetic_expression(
+                    f_dimensions,
+                    line!(),
+                ));
             }
             treat_result_with_memory_error(
                 valid_array_declaration(&arithmetic_values),
@@ -188,12 +202,25 @@ fn execute_statement(
             }
             None
         }
-        Substitution { meta, var, access, op, rhe, .. } => {
+        Substitution {
+            meta,
+            var,
+            access,
+            op,
+            rhe,
+            ..
+        } => {
             let access_information =
                 treat_accessing(meta, access, program_archive, runtime, flag_verbose)?;
             let r_folded = execute_expression(rhe, program_archive, runtime, flag_verbose)?;
-            let possible_constraint =
-                perform_assign(meta, var, &access_information, r_folded, actual_node, runtime)?;
+            let possible_constraint = perform_assign(
+                meta,
+                var,
+                &access_information,
+                r_folded,
+                actual_node,
+                runtime,
+            )?;
             if let (Some(node), AssignOp::AssignConstraintSignal) = (actual_node, op) {
                 debug_assert!(possible_constraint.is_some());
                 let constrained = possible_constraint.unwrap();
@@ -207,7 +234,9 @@ fn execute_statement(
                     )?;
                 } else {
                     let p = runtime.constants.get_p().clone();
-                    let symbol = AExpr::Signal { symbol: constrained.left };
+                    let symbol = AExpr::Signal {
+                        symbol: constrained.left,
+                    };
                     let expr = AExpr::sub(&symbol, &constrained.right, &p);
                     let ctr = AExpr::transform_expression_to_constraint_form(expr, &p).unwrap();
                     node.add_constraint(ctr);
@@ -252,7 +281,12 @@ fn execute_statement(
             debug_assert!(FoldedValue::valid_arithmetic_slice(&f_return));
             Some(f_return)
         }
-        IfThenElse { cond, if_case, else_case, .. } => {
+        IfThenElse {
+            cond,
+            if_case,
+            else_case,
+            ..
+        } => {
             let else_case = else_case.as_ref().map(|e| e.as_ref());
             let (possible_return, _) = execute_conditional_statement(
                 cond,
@@ -344,11 +378,18 @@ fn execute_expression(
     use Expression::*;
     let res = match expr {
         Number { value, .. } => {
-            let a_value = AExpr::Number { value: value.clone() };
+            let a_value = AExpr::Number {
+                value: value.clone(),
+            };
             let ae_slice = AExpressionSlice::new(&a_value);
-            FoldedValue { arithmetic_slice: Some(ae_slice), ..FoldedValue::default() }
+            FoldedValue {
+                arithmetic_slice: Some(ae_slice),
+                ..FoldedValue::default()
+            }
         }
-        Variable { meta, name, access, .. } => {
+        Variable {
+            meta, name, access, ..
+        } => {
             if ExecutionEnvironment::has_signal(&runtime.environment, name) {
                 execute_signal(meta, name, access, program_archive, runtime, flag_verbose)?
             } else if ExecutionEnvironment::has_component(&runtime.environment, name) {
@@ -388,16 +429,28 @@ fn execute_expression(
                 )?;
                 row += 1;
             }
-            FoldedValue { arithmetic_slice: Some(array_slice), ..FoldedValue::default() }
+            FoldedValue {
+                arithmetic_slice: Some(array_slice),
+                ..FoldedValue::default()
+            }
         }
-        InfixOp { meta, lhe, infix_op, rhe, .. } => {
+        InfixOp {
+            meta,
+            lhe,
+            infix_op,
+            rhe,
+            ..
+        } => {
             let l_fold = execute_expression(lhe, program_archive, runtime, flag_verbose)?;
             let r_fold = execute_expression(rhe, program_archive, runtime, flag_verbose)?;
             let l_value = safe_unwrap_to_single_arithmetic_expression(l_fold, line!());
             let r_value = safe_unwrap_to_single_arithmetic_expression(r_fold, line!());
             let r_value = execute_infix_op(meta, *infix_op, &l_value, &r_value, runtime)?;
             let r_slice = AExpressionSlice::new(&r_value);
-            FoldedValue { arithmetic_slice: Some(r_slice), ..FoldedValue::default() }
+            FoldedValue {
+                arithmetic_slice: Some(r_slice),
+                ..FoldedValue::default()
+            }
         }
         PrefixOp { prefix_op, rhe, .. } => {
             let folded_value = execute_expression(rhe, program_archive, runtime, flag_verbose)?;
@@ -405,9 +458,17 @@ fn execute_expression(
                 safe_unwrap_to_single_arithmetic_expression(folded_value, line!());
             let arithmetic_result = execute_prefix_op(*prefix_op, &arithmetic_value, runtime)?;
             let slice_result = AExpressionSlice::new(&arithmetic_result);
-            FoldedValue { arithmetic_slice: Some(slice_result), ..FoldedValue::default() }
+            FoldedValue {
+                arithmetic_slice: Some(slice_result),
+                ..FoldedValue::default()
+            }
         }
-        TernaryOp { cond, if_true, if_false, .. } => {
+        TernaryOp {
+            cond,
+            if_true,
+            if_false,
+            ..
+        } => {
             let f_cond = execute_expression(cond, program_archive, runtime, flag_verbose)?;
             let ae_cond = safe_unwrap_to_single_arithmetic_expression(f_cond, line!());
             let possible_bool_cond =
@@ -420,7 +481,10 @@ fn execute_expression(
                 }
             } else {
                 let arithmetic_slice = Some(AExpressionSlice::new(&AExpr::NonQuadratic));
-                FoldedValue { arithmetic_slice, ..FoldedValue::default() }
+                FoldedValue {
+                    arithmetic_slice,
+                    ..FoldedValue::default()
+                }
             }
         }
         Call { id, args, .. } => {
@@ -607,7 +671,10 @@ fn perform_assign(
             &mut runtime.runtime_errors,
             &runtime.call_trace,
         )?;
-        Some(safe_unwrap_to_single_arithmetic_expression(r_folded, line!()))
+        Some(safe_unwrap_to_single_arithmetic_expression(
+            r_folded,
+            line!(),
+        ))
     } else if ExecutionEnvironment::has_component(environment, symbol) {
         let environment_response = ExecutionEnvironment::get_mut_component_res(environment, symbol);
         let component_slice = treat_result_with_environment_error(
@@ -673,7 +740,10 @@ fn perform_assign(
         unreachable!();
     };
     if let Some(arithmetic_expression) = possible_arithmetic_expression {
-        let ret = Constrained { left: full_symbol, right: arithmetic_expression };
+        let ret = Constrained {
+            left: full_symbol,
+            right: arithmetic_expression,
+        };
         Ok(Some(ret))
     } else {
         Ok(None)
@@ -696,21 +766,41 @@ fn execute_conditional_statement(
         AExpr::get_boolean_equivalence(&ae_cond, runtime.constants.get_p());
     if let Some(cond_bool_value) = possible_cond_bool_value {
         let ret_value = match false_case {
-            Some(else_stmt) if !cond_bool_value => {
-                execute_statement(else_stmt, program_archive, runtime, actual_node, flag_verbose)?
-            }
+            Some(else_stmt) if !cond_bool_value => execute_statement(
+                else_stmt,
+                program_archive,
+                runtime,
+                actual_node,
+                flag_verbose,
+            )?,
             None if !cond_bool_value => None,
-            _ => execute_statement(true_case, program_archive, runtime, actual_node, flag_verbose)?,
+            _ => execute_statement(
+                true_case,
+                program_archive,
+                runtime,
+                actual_node,
+                flag_verbose,
+            )?,
         };
         Ok((ret_value, Some(cond_bool_value)))
     } else {
         let previous_block_type = runtime.block_type;
         runtime.block_type = BlockType::Unknown;
-        let mut ret_value =
-            execute_statement(true_case, program_archive, runtime, actual_node, flag_verbose)?;
+        let mut ret_value = execute_statement(
+            true_case,
+            program_archive,
+            runtime,
+            actual_node,
+            flag_verbose,
+        )?;
         if let Some(else_stmt) = false_case {
-            let else_ret =
-                execute_statement(else_stmt, program_archive, runtime, actual_node, flag_verbose)?;
+            let else_ret = execute_statement(
+                else_stmt,
+                program_archive,
+                runtime,
+                actual_node,
+                flag_verbose,
+            )?;
             if ret_value.is_none() {
                 ret_value = else_ret;
             }
@@ -771,7 +861,10 @@ fn execute_variable(
     let access_information = treat_accessing(meta, access, program_archive, runtime, flag_verbose)?;
     if access_information.undefined {
         let arithmetic_slice = Some(AExpressionSlice::new(&AExpr::NonQuadratic));
-        return Ok(FoldedValue { arithmetic_slice, ..FoldedValue::default() });
+        return Ok(FoldedValue {
+            arithmetic_slice,
+            ..FoldedValue::default()
+        });
     }
     debug_assert!(access_information.signal_access.is_none());
     debug_assert!(access_information.after_signal.is_empty());
@@ -790,7 +883,10 @@ fn execute_variable(
         &mut runtime.runtime_errors,
         &runtime.call_trace,
     )?;
-    Ok(FoldedValue { arithmetic_slice: Some(ae_slice), ..FoldedValue::default() })
+    Ok(FoldedValue {
+        arithmetic_slice: Some(ae_slice),
+        ..FoldedValue::default()
+    })
 }
 
 fn execute_signal(
@@ -804,7 +900,10 @@ fn execute_signal(
     let access_information = treat_accessing(meta, access, program_archive, runtime, flag_verbose)?;
     if access_information.undefined {
         let arithmetic_slice = Some(AExpressionSlice::new(&AExpr::NonQuadratic));
-        return Ok(FoldedValue { arithmetic_slice, ..FoldedValue::default() });
+        return Ok(FoldedValue {
+            arithmetic_slice,
+            ..FoldedValue::default()
+        });
     }
     debug_assert!(access_information.signal_access.is_none());
     debug_assert!(access_information.after_signal.is_empty());
@@ -839,7 +938,10 @@ fn execute_signal(
         &mut runtime.runtime_errors,
         &runtime.call_trace,
     )?;
-    Ok(FoldedValue { arithmetic_slice: Some(arith_slice), ..FoldedValue::default() })
+    Ok(FoldedValue {
+        arithmetic_slice: Some(arith_slice),
+        ..FoldedValue::default()
+    })
 }
 
 fn signal_to_arith(symbol: String, slice: SignalSlice) -> Result<AExpressionSlice, MemoryError> {
@@ -849,7 +951,9 @@ fn signal_to_arith(symbol: String, slice: SignalSlice) -> Result<AExpressionSlic
     unfold_signals(symbol, 0, &route, &mut symbols);
     let mut index = 0;
     while index < symbols.len() && values[index] {
-        expressions.push(AExpr::Signal { symbol: symbols[index].clone() });
+        expressions.push(AExpr::Signal {
+            symbol: symbols[index].clone(),
+        });
         index += 1;
     }
     if index == symbols.len() {
@@ -880,7 +984,10 @@ fn execute_component(
     let access_information = treat_accessing(meta, access, program_archive, runtime, flag_verbose)?;
     if access_information.undefined {
         let arithmetic_slice = Some(AExpressionSlice::new(&AExpr::NonQuadratic));
-        return Ok(FoldedValue { arithmetic_slice, ..FoldedValue::default() });
+        return Ok(FoldedValue {
+            arithmetic_slice,
+            ..FoldedValue::default()
+        });
     }
     let indexing = &access_information.before_signal;
     let environment_response =
@@ -926,8 +1033,10 @@ fn execute_component(
             &runtime.call_trace,
         )?;
         let symbol = create_symbol(symbol, &access_information);
-        let result = signal_to_arith(symbol, slice)
-            .map(|s| FoldedValue { arithmetic_slice: Some(s), ..FoldedValue::default() });
+        let result = signal_to_arith(symbol, slice).map(|s| FoldedValue {
+            arithmetic_slice: Some(s),
+            ..FoldedValue::default()
+        });
         treat_result_with_memory_error(
             result,
             meta,
@@ -935,7 +1044,10 @@ fn execute_component(
             &runtime.call_trace,
         )
     } else {
-        Ok(FoldedValue { node_pointer: checked_component.node_pointer, ..FoldedValue::default() })
+        Ok(FoldedValue {
+            node_pointer: checked_component.node_pointer,
+            ..FoldedValue::default()
+        })
     }
 }
 
@@ -1034,7 +1146,10 @@ fn execute_template_call(
 
         runtime.exec_program.add_node_to_scheme(new_node, analysis)
     };
-    Ok(FoldedValue { node_pointer: Some(node_pointer), ..FoldedValue::default() })
+    Ok(FoldedValue {
+        node_pointer: Some(node_pointer),
+        ..FoldedValue::default()
+    })
 }
 
 fn execute_infix_op(
@@ -1194,8 +1309,13 @@ fn treat_accessing(
 ) -> Result<AccessingInformation, ()> {
     let (ae_before_signal, signal_name, signal_index) =
         treat_indexing(0, access, program_archive, runtime, flag_verbose)?;
-    let (ae_after_signal, _, _) =
-        treat_indexing(signal_index + 1, access, program_archive, runtime, flag_verbose)?;
+    let (ae_after_signal, _, _) = treat_indexing(
+        signal_index + 1,
+        access,
+        program_archive,
+        runtime,
+        flag_verbose,
+    )?;
     treat_result_with_memory_error(
         valid_indexing(&ae_before_signal),
         meta,
@@ -1215,11 +1335,19 @@ fn treat_accessing(
     let undefined = possible_before_indexing.is_none() || possible_after_indexing.is_none();
     let signal_access = signal_name;
     let (before_signal, after_signal) = if !undefined {
-        (possible_before_indexing.unwrap(), possible_after_indexing.unwrap())
+        (
+            possible_before_indexing.unwrap(),
+            possible_after_indexing.unwrap(),
+        )
     } else {
         (Vec::new(), Vec::new())
     };
-    Ok(AccessingInformation { undefined, before_signal, after_signal, signal_access })
+    Ok(AccessingInformation {
+        undefined,
+        before_signal,
+        after_signal,
+        signal_access,
+    })
 }
 
 //************************************************* Safe transformations *************************************************
@@ -1229,11 +1357,19 @@ fn safe_unwrap_to_single_arithmetic_expression(folded_value: FoldedValue, line: 
     safe_unwrap_to_single(slice_result, line)
 }
 fn safe_unwrap_to_arithmetic_slice(folded_value: FoldedValue, line: u32) -> AExpressionSlice {
-    debug_assert!(FoldedValue::valid_arithmetic_slice(&folded_value), "Caused by call at {}", line);
+    debug_assert!(
+        FoldedValue::valid_arithmetic_slice(&folded_value),
+        "Caused by call at {}",
+        line
+    );
     folded_value.arithmetic_slice.unwrap()
 }
 fn safe_unwrap_to_valid_node_pointer(folded_value: FoldedValue, line: u32) -> NodePointer {
-    debug_assert!(FoldedValue::valid_node_pointer(&folded_value), "Caused by call at {}", line);
+    debug_assert!(
+        FoldedValue::valid_node_pointer(&folded_value),
+        "Caused by call at {}",
+        line
+    );
     folded_value.node_pointer.unwrap()
 }
 fn safe_unwrap_to_single<C: Clone>(slice: MemorySlice<C>, line: u32) -> C {
@@ -1278,9 +1414,10 @@ fn treat_result_with_memory_error<C>(
         Ok(c) => Ok(c),
         Err(memory_error) => {
             let report = match memory_error {
-                MemoryError::InvalidAccess => {
-                    Report::error("Exception caused by invalid access".to_string(), RuntimeError)
-                }
+                MemoryError::InvalidAccess => Report::error(
+                    "Exception caused by invalid access".to_string(),
+                    RuntimeError,
+                ),
                 MemoryError::AssignmentError => Report::error(
                     "Exception caused by invalid assignment".to_string(),
                     RuntimeError,
@@ -1288,9 +1425,10 @@ fn treat_result_with_memory_error<C>(
                 MemoryError::OutOfBoundsError => {
                     Report::error("Out of bounds exception".to_string(), RuntimeError)
                 }
-                MemoryError::UnknownSizeDimension => {
-                    Report::error("Array dimension with unknown size".to_string(), RuntimeError)
-                }
+                MemoryError::UnknownSizeDimension => Report::error(
+                    "Array dimension with unknown size".to_string(),
+                    RuntimeError,
+                ),
             };
             add_report_to_runtime(report, meta, runtime_errors, call_trace);
             Err(())
@@ -1351,7 +1489,11 @@ fn add_report_to_runtime(
     call_trace: &[String],
 ) {
     let mut report = report;
-    report.add_primary(meta.location().clone(), meta.unwrap_file_id(), "found here".to_string());
+    report.add_primary(
+        meta.location().clone(),
+        meta.unwrap_file_id(),
+        "found here".to_string(),
+    );
 
     let mut trace = "call trace:\n".to_string();
     let mut spacing = "".to_string();

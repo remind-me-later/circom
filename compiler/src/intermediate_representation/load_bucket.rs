@@ -93,7 +93,10 @@ impl WriteWasm for LoadBucket {
                     instructions.push(";; end of load bucket".to_string());
                 }
             }
-            LocationRule::Mapped { signal_code, indexes } => {
+            LocationRule::Mapped {
+                signal_code,
+                indexes,
+            } => {
                 match &self.address_type {
                     AddressType::SubcmpSignal { cmp_address, .. } => {
                         if producer.needs_comments() {
@@ -116,7 +119,9 @@ impl WriteWasm for LoadBucket {
                         instructions.push(set_constant("4")); //size in byte of i32
                         instructions.push(mul32());
                         instructions.push(load32(Some(
-                            &producer.get_template_instance_to_io_signal_start().to_string(),
+                            &producer
+                                .get_template_instance_to_io_signal_start()
+                                .to_string(),
                         ))); // get position in component io signal to info list
                         let signal_code_in_bytes = signal_code * 4; //position in the list of the signal code
                         instructions.push(load32(Some(&signal_code_in_bytes.to_string()))); // get where the info of this signal is
@@ -192,7 +197,11 @@ impl WriteC for LoadBucket {
             &self.src
         {
             location.produce_c(producer)
-        } else if let LocationRule::Mapped { signal_code, indexes } = &self.src {
+        } else if let LocationRule::Mapped {
+            signal_code,
+            indexes,
+        } = &self.src
+        {
             let mut map_prologue = vec![];
             let sub_component_pos_in_memory = format!("{}[{}]", MY_SUBCOMPONENTS, cmp_index_ref);
             let mut map_access = format!(
@@ -234,7 +243,11 @@ impl WriteC for LoadBucket {
             AddressType::Signal => {
                 format!("&{}", signal_values(src_index))
             }
-            AddressType::SubcmpSignal { is_parallel, is_output, .. } => {
+            AddressType::SubcmpSignal {
+                is_parallel,
+                is_output,
+                ..
+            } => {
                 if *is_parallel && *is_output {
                     prologue.push("{".to_string());
                     prologue.push(format!("int aux1 = {};", cmp_index_ref));
@@ -254,7 +267,10 @@ impl WriteC for LoadBucket {
                     CIRCOM_CALC_WIT, MY_SUBCOMPONENTS, cmp_index_ref
                 );
 
-                format!("&{}->signalValues[{} + {}]", CIRCOM_CALC_WIT, sub_cmp_start, src_index)
+                format!(
+                    "&{}->signalValues[{} + {}]",
+                    CIRCOM_CALC_WIT, sub_cmp_start, src_index
+                )
             }
         };
         //prologue.push(format!("// end of load line {} with access {}",self.line.to_string(),access));

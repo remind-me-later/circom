@@ -38,7 +38,10 @@ impl ToString for ReturnBucket {
         let line = self.line.to_string();
         let template_id = self.message_id.to_string();
         let value = self.value.to_string();
-        format!("RETURN(line: {},template_id: {},value: {})", line, template_id, value)
+        format!(
+            "RETURN(line: {},template_id: {},value: {})",
+            line, template_id, value
+        )
     }
 }
 
@@ -101,12 +104,21 @@ impl WriteC for ReturnBucket {
         let (mut instructions_value, src) = self.value.produce_c(producer);
         instructions.append(&mut instructions_value);
         if self.with_size > 1 {
-            let copy_arguments =
-                vec![FUNCTION_DESTINATION.to_string(), src, FUNCTION_DESTINATION_SIZE.to_string()];
-            instructions.push(format!("{};", build_call("Fr_copyn".to_string(), copy_arguments)));
+            let copy_arguments = vec![
+                FUNCTION_DESTINATION.to_string(),
+                src,
+                FUNCTION_DESTINATION_SIZE.to_string(),
+            ];
+            instructions.push(format!(
+                "{};",
+                build_call("Fr_copyn".to_string(), copy_arguments)
+            ));
         } else {
             let copy_arguments = vec![FUNCTION_DESTINATION.to_string(), src];
-            instructions.push(format!("{};", build_call("Fr_copy".to_string(), copy_arguments)));
+            instructions.push(format!(
+                "{};",
+                build_call("Fr_copy".to_string(), copy_arguments)
+            ));
         }
         instructions.push(add_return());
         (instructions, "".to_string())

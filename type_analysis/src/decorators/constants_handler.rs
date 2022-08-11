@@ -1,7 +1,7 @@
-use num_bigint::BigInt;
 use circom_ast::*;
 use circom_error::error_code::ReportCode;
 use circom_error::error_definition::{Report, ReportCollection};
+use num_bigint::BigInt;
 use program_structure::utils::environment::VarEnvironment;
 use program_structure::{function_data::FunctionData, template_data::TemplateData};
 use std::collections::HashSet;
@@ -41,13 +41,13 @@ pub fn _handle_template_constants(template: &mut TemplateData) -> ReportCollecti
 fn statement_constant_inference(stmt: &mut Statement, environment: &mut Constants) {
     use Statement::*;
     match stmt {
-        IfThenElse { if_case, else_case, .. } => {
-            if_then_else_constant_inference(if_case, else_case, environment)
-        }
+        IfThenElse {
+            if_case, else_case, ..
+        } => if_then_else_constant_inference(if_case, else_case, environment),
         Substitution { var, .. } => substitution_constant_inference(var, environment),
-        InitializationBlock { initializations, .. } => {
-            initialization_block_constant_inference(initializations, environment)
-        }
+        InitializationBlock {
+            initializations, ..
+        } => initialization_block_constant_inference(initializations, environment),
         While { stmt, .. } => while_stmt_constant_inference(stmt, environment),
         Block { stmts, .. } => block_constant_inference(stmts, environment),
         _ => {}
@@ -74,7 +74,13 @@ fn initialization_block_constant_inference(
         }
     }
     for s in initializations {
-        if let Declaration { name, xtype, dimensions, .. } = s {
+        if let Declaration {
+            name,
+            xtype,
+            dimensions,
+            ..
+        } = s
+        {
             let constant_tag = dimensions.is_empty()
                 && initialized_signals.contains(name)
                 && (*xtype == VariableType::Var);
@@ -109,7 +115,10 @@ fn apply_inference(stmts: &mut [Statement], environment: &mut Constants) {
         }
     }
     for s in stmts.iter_mut() {
-        if let Declaration { name, is_constant, .. } = s {
+        if let Declaration {
+            name, is_constant, ..
+        } = s
+        {
             let constant_indeed = *environment.get_variable_or_break(name, file!(), line!());
             *is_constant = constant_indeed;
         }
@@ -123,7 +132,10 @@ fn block_constant_inference(stmts: &mut [Statement], environment: &mut Constants
         statement_constant_inference(stmt, environment);
     }
     for stmt in stmts.iter_mut() {
-        if let InitializationBlock { initializations, .. } = stmt {
+        if let InitializationBlock {
+            initializations, ..
+        } = stmt
+        {
             apply_inference(initializations, environment);
         }
     }
@@ -134,12 +146,12 @@ fn block_constant_inference(stmts: &mut [Statement], environment: &mut Constants
 fn statement_invariant_check(stmt: &Statement, environment: &mut Constants) -> ReportCollection {
     use Statement::*;
     match stmt {
-        InitializationBlock { initializations, .. } => {
-            initialization_invariant_check(initializations, environment)
-        }
-        IfThenElse { if_case, else_case, .. } => {
-            if_then_else_invariant_check(if_case, else_case, environment)
-        }
+        InitializationBlock {
+            initializations, ..
+        } => initialization_invariant_check(initializations, environment),
+        IfThenElse {
+            if_case, else_case, ..
+        } => if_then_else_invariant_check(if_case, else_case, environment),
         While { stmt, .. } => while_invariant_check(stmt, environment),
         Block { stmts, .. } => block_invariant_check(stmts, environment),
         _ => ReportCollection::new(),
@@ -172,7 +184,10 @@ fn initialization_invariant_check(
         }
     }
     for init in initializations {
-        if let Declaration { name, is_constant, .. } = init {
+        if let Declaration {
+            name, is_constant, ..
+        } = init
+        {
             environment.add_variable(name, *is_constant);
         }
     }
@@ -215,9 +230,12 @@ fn has_constant_value(expr: &Expression, environment: &Constants) -> bool {
         Call { args, .. } => call(args, environment),
         InfixOp { lhe, rhe, .. } => infix_op(lhe, rhe, environment),
         PrefixOp { rhe, .. } => prefix_op(rhe, environment),
-        TernaryOp { cond, if_false, if_true, .. } => {
-            inline_switch(cond, if_true, if_false, environment)
-        }
+        TernaryOp {
+            cond,
+            if_false,
+            if_true,
+            ..
+        } => inline_switch(cond, if_true, if_false, environment),
         Variable { name, .. } => variable(name, environment),
         ArrayInLine { .. } => array_inline(),
     }
@@ -265,14 +283,17 @@ fn prefix_op(rhe: &Expression, environment: &Constants) -> bool {
 fn expand_statement(stmt: &mut Statement, environment: &mut ExpressionHolder) {
     use Statement::*;
     match stmt {
-        IfThenElse { cond, if_case, else_case, .. } => {
-            expand_if_then_else(cond, if_case, else_case, environment)
-        }
+        IfThenElse {
+            cond,
+            if_case,
+            else_case,
+            ..
+        } => expand_if_then_else(cond, if_case, else_case, environment),
         While { cond, stmt, .. } => expand_while(cond, stmt, environment),
         Return { value, .. } => expand_return(value, environment),
-        InitializationBlock { initializations, .. } => {
-            expand_initialization_block(initializations, environment)
-        }
+        InitializationBlock {
+            initializations, ..
+        } => expand_initialization_block(initializations, environment),
         Declaration { dimensions, .. } => expand_declaration(dimensions, environment),
         Substitution { access, rhe, .. } => expand_substitution(access, rhe, environment),
         ConstraintEquality { lhe, rhe, .. } => expand_constraint_equality(lhe, rhe, environment),
@@ -314,7 +335,10 @@ fn expand_initialization_block(
         expand_statement(s, environment);
     }
     for s in initializations.iter_mut() {
-        if let Declaration { name, is_constant, .. } = s {
+        if let Declaration {
+            name, is_constant, ..
+        } = s
+        {
             if *is_constant {
                 constants.insert(name.clone());
             }
@@ -380,13 +404,23 @@ fn expand_expression(expr: Expression, environment: &ExpressionHolder) -> Expres
         Number { meta, value } => expand_number(meta, value),
         ArrayInLine { meta, values } => expand_array(meta, values, environment),
         Call { id, meta, args } => expand_call(id, meta, args, environment),
-        InfixOp { meta, lhe, rhe, infix_op } => {
-            expand_infix(meta, *lhe, infix_op, *rhe, environment)
-        }
-        PrefixOp { meta, prefix_op, rhe } => expand_prefix(meta, prefix_op, *rhe, environment),
-        TernaryOp { meta, cond, if_true, if_false } => {
-            expand_inline_switch_op(meta, *cond, *if_true, *if_false, environment)
-        }
+        InfixOp {
+            meta,
+            lhe,
+            rhe,
+            infix_op,
+        } => expand_infix(meta, *lhe, infix_op, *rhe, environment),
+        PrefixOp {
+            meta,
+            prefix_op,
+            rhe,
+        } => expand_prefix(meta, prefix_op, *rhe, environment),
+        TernaryOp {
+            meta,
+            cond,
+            if_true,
+            if_false,
+        } => expand_inline_switch_op(meta, *cond, *if_true, *if_false, environment),
         Variable { meta, name, access } => expand_variable(meta, name, access, environment),
     }
 }
@@ -466,8 +500,11 @@ fn expand_variable(
     use Access::*;
     let is_constant = environment.get_variable_res(&name).is_ok();
     if is_constant && old_access.is_empty() {
-        let mut expr = environment.get_variable_or_break(&name, file!(), line!()).clone();
-        expr.get_mut_meta().change_location(meta.location().clone(), meta.file_id());
+        let mut expr = environment
+            .get_variable_or_break(&name, file!(), line!())
+            .clone();
+        expr.get_mut_meta()
+            .change_location(meta.location().clone(), meta.file_id());
         expr
     } else {
         let mut access = Vec::new();

@@ -74,7 +74,10 @@ pub fn preprocess(expr: &str, file_id: FileID) -> Result<String, Report> {
         }
     }
     if state == 2 {
-        let error = UnclosedCommentError { location: block_start..block_start, file_id };
+        let error = UnclosedCommentError {
+            location: block_start..block_start,
+            file_id,
+        };
         Err(UnclosedCommentError::produce_report(error))
     } else {
         Ok(pp)
@@ -101,7 +104,11 @@ pub fn parse_file(src: &str, file_id: FileID) -> Result<AST, Report> {
                 msg: format!("{:?}", parse_error),
                 location: token.0..token.2,
             },
-            _ => ParsingError { file_id, msg: format!("{:?}", parse_error), location: 0..0 },
+            _ => ParsingError {
+                file_id,
+                msg: format!("{:?}", parse_error),
+                location: 0..0,
+            },
         })
         .map_err(ParsingError::produce_report)
 }

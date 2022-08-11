@@ -13,7 +13,12 @@ pub fn type_given_function(
     params_types: &[Type],
 ) -> Option<Type> {
     let mut explored_functions = NodeRegister::new();
-    start(function_name, &mut explored_functions, function_info, params_types)
+    start(
+        function_name,
+        &mut explored_functions,
+        function_info,
+        params_types,
+    )
 }
 
 fn add_variable_to_environment(
@@ -53,7 +58,11 @@ fn start(
     let mut environment = Environment::new();
     let mut initial_block = Block::new();
     explored_functions.insert(function_name.to_string());
-    for (name, t) in function_data.get_name_of_params().iter().zip(params_types.iter()) {
+    for (name, t) in function_data
+        .get_name_of_params()
+        .iter()
+        .zip(params_types.iter())
+    {
         initial_block.insert(name.clone(), *t);
     }
     environment.push(initial_block);
@@ -98,7 +107,9 @@ fn look_for_return_in_statement(
     stmt: &Statement,
 ) -> Option<Type> {
     match stmt {
-        Statement::IfThenElse { if_case, else_case, .. } => {
+        Statement::IfThenElse {
+            if_case, else_case, ..
+        } => {
             let ret1 = look_for_return_in_statement(
                 function_name,
                 environment,
@@ -139,7 +150,9 @@ fn look_for_return_in_statement(
             function_info,
             value,
         ),
-        Statement::InitializationBlock { initializations, .. } => {
+        Statement::InitializationBlock {
+            initializations, ..
+        } => {
             for initialization in initializations {
                 look_for_return_in_statement(
                     function_name,
@@ -152,7 +165,9 @@ fn look_for_return_in_statement(
             }
             None
         }
-        Statement::Declaration { name, dimensions, .. } => {
+        Statement::Declaration {
+            name, dimensions, ..
+        } => {
             add_variable_to_environment(function_name, environment, name, &dimensions.len());
             None
         }
@@ -234,7 +249,9 @@ fn look_for_type_in_expression(
             function_info,
             rhe,
         ),
-        Expression::TernaryOp { if_true, if_false, .. } => {
+        Expression::TernaryOp {
+            if_true, if_false, ..
+        } => {
             let if_true_type = look_for_type_in_expression(
                 function_name,
                 environment,

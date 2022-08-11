@@ -1,5 +1,5 @@
-use circom_algebra::num_bigint::BigInt;
 use circom_algebra::constraint_storage::ConstraintStorage;
+use circom_algebra::num_bigint::BigInt;
 use std::collections::{HashSet, LinkedList};
 
 pub fn simplify(

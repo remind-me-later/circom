@@ -63,9 +63,16 @@ fn add_instance(name: &str, args: Vec<Param>, state: &mut State) {
             return_type: inferred,
             body,
         };
-        state.quick_knowledge.insert(new_vcf.header.clone(), new_vcf.return_type.clone());
+        state
+            .quick_knowledge
+            .insert(new_vcf.header.clone(), new_vcf.return_type.clone());
         state.vcf_collector.push(new_vcf);
-        state.generic_functions.get_mut(name).unwrap().concrete_instances.push(id);
+        state
+            .generic_functions
+            .get_mut(name)
+            .unwrap()
+            .concrete_instances
+            .push(id);
     }
 }
 
@@ -104,11 +111,19 @@ fn produce_vcf_stmt(stmt: &Statement, state: &mut State, environment: &mut E) {
                 }
             }
         }
-        Declaration { name, dimensions, meta, .. } => {
+        Declaration {
+            name,
+            dimensions,
+            meta,
+            ..
+        } => {
             for d in dimensions {
                 produce_vcf_expr(d, state, environment);
             }
-            let with_type = meta.get_memory_knowledge().get_concrete_dimensions().to_vec();
+            let with_type = meta
+                .get_memory_knowledge()
+                .get_concrete_dimensions()
+                .to_vec();
             environment.add_variable(name, with_type);
         }
         Block { stmts, .. } => {
@@ -118,7 +133,9 @@ fn produce_vcf_stmt(stmt: &Statement, state: &mut State, environment: &mut E) {
             }
             environment.remove_variable_block();
         }
-        InitializationBlock { initializations, .. } => {
+        InitializationBlock {
+            initializations, ..
+        } => {
             for s in initializations {
                 produce_vcf_stmt(s, state, environment);
             }
@@ -127,7 +144,12 @@ fn produce_vcf_stmt(stmt: &Statement, state: &mut State, environment: &mut E) {
             produce_vcf_expr(cond, state, environment);
             produce_vcf_stmt(stmt, state, environment);
         }
-        IfThenElse { cond, if_case, else_case, .. } => {
+        IfThenElse {
+            cond,
+            if_case,
+            else_case,
+            ..
+        } => {
             produce_vcf_expr(cond, state, environment);
             produce_vcf_stmt(if_case, state, environment);
             if let Some(s) = else_case {
@@ -148,7 +170,9 @@ fn produce_vcf_expr(expr: &Expression, state: &mut State, environment: &E) {
         PrefixOp { rhe, .. } => {
             produce_vcf_expr(rhe, state, environment);
         }
-        TernaryOp { if_true, if_false, .. } => {
+        TernaryOp {
+            if_true, if_false, ..
+        } => {
             produce_vcf_expr(if_true, state, environment);
             produce_vcf_expr(if_false, state, environment);
         }
@@ -190,10 +214,19 @@ fn link_stmt(stmt: &mut Statement, state: &State, env: &mut E) {
             stmts.iter_mut().for_each(|s| link_stmt(s, state, env));
             env.remove_variable_block();
         }
-        InitializationBlock { initializations, .. } => {
-            initializations.iter_mut().for_each(|i| link_stmt(i, state, env));
+        InitializationBlock {
+            initializations, ..
+        } => {
+            initializations
+                .iter_mut()
+                .for_each(|i| link_stmt(i, state, env));
         }
-        IfThenElse { cond, if_case, else_case, .. } => {
+        IfThenElse {
+            cond,
+            if_case,
+            else_case,
+            ..
+        } => {
             link_expression(cond, state, env);
             link_stmt(if_case, state, env);
             if let Some(s) = else_case {
@@ -211,9 +244,19 @@ fn link_stmt(stmt: &mut Statement, state: &State, env: &mut E) {
             link_expression(lhe, state, env);
             link_expression(rhe, state, env);
         }
-        Declaration { name, dimensions, meta, .. } => {
-            dimensions.iter_mut().for_each(|d| link_expression(d, state, env));
-            let has_type = meta.get_memory_knowledge().get_concrete_dimensions().to_vec();
+        Declaration {
+            name,
+            dimensions,
+            meta,
+            ..
+        } => {
+            dimensions
+                .iter_mut()
+                .for_each(|d| link_expression(d, state, env));
+            let has_type = meta
+                .get_memory_knowledge()
+                .get_concrete_dimensions()
+                .to_vec();
             env.add_variable(name, has_type);
         }
         Substitution { access, rhe, .. } => {
@@ -241,9 +284,9 @@ fn link_expression(expr: &mut Expression, state: &State, env: &E) {
                 *id = state.vcf_collector[index].header.clone();
             }
         }
-        ArrayInLine { values, .. } => {
-            values.iter_mut().for_each(|v| link_expression(v, state, env))
-        }
+        ArrayInLine { values, .. } => values
+            .iter_mut()
+            .for_each(|v| link_expression(v, state, env)),
         Variable { access, .. } => {
             for acc in access {
                 if let Access::ArrayAccess(e) = acc {
@@ -251,7 +294,9 @@ fn link_expression(expr: &mut Expression, state: &State, env: &E) {
                 }
             }
         }
-        TernaryOp { if_true, if_false, .. } => {
+        TernaryOp {
+            if_true, if_false, ..
+        } => {
             link_expression(if_true, state, env);
             link_expression(if_false, state, env);
         }
@@ -263,7 +308,9 @@ fn link_expression(expr: &mut Expression, state: &State, env: &E) {
     }
 
     let has_type = cast_type_expression(expr, state, env);
-    expr.get_mut_meta().get_mut_memory_knowledge().set_concrete_dimensions(has_type);
+    expr.get_mut_meta()
+        .get_mut_memory_knowledge()
+        .set_concrete_dimensions(has_type);
 }
 
 // When the vcf of a branch in the AST had been produced, this algorithm
@@ -280,8 +327,13 @@ fn cast_type_expression(expr: &Expression, state: &State, environment: &E) -> VC
                         xtype.pop();
                     }
                     Access::ComponentAccess(signal) => {
-                        xtype =
-                            state.external_signals.get(name).unwrap().get(signal).unwrap().clone();
+                        xtype = state
+                            .external_signals
+                            .get(name)
+                            .unwrap()
+                            .get(signal)
+                            .unwrap()
+                            .clone();
                         xtype.reverse();
                     }
                 }
@@ -312,7 +364,11 @@ fn cast_type_expression(expr: &Expression, state: &State, environment: &E) -> VC
 
 fn map_to_params(function_id: &str, args: &[Expression], state: &State, env: &E) -> Vec<Param> {
     let mut params = vec![];
-    let names = &state.generic_functions.get(function_id).unwrap().params_names;
+    let names = &state
+        .generic_functions
+        .get(function_id)
+        .unwrap()
+        .params_names;
     let mut index = 0;
     while index < args.len() {
         let param = Param {

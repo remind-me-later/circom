@@ -1,6 +1,6 @@
 use circom_error::file_definition::LocationInFile;
 
-use crate::{TypeKnowledge, MemoryKnowledge};
+use crate::{MemoryKnowledge, TypeKnowledge};
 
 pub trait FillMeta {
     fn fill(&mut self, file_id: usize, elem_id: &mut usize);

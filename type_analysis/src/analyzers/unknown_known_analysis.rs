@@ -1,11 +1,11 @@
 use circom_ast::*;
-use program_structure::environment::CircomEnvironment;
 use circom_error::error_code::ReportCode;
 use circom_error::error_definition::{Report, ReportCollection};
 use circom_error::file_definition::{generate_file_location, FileID};
+use program_structure::environment::CircomEnvironment;
 use program_structure::program_archive::ProgramArchive;
-use std::collections::HashSet;
 use std::cmp::max;
+use std::collections::HashSet;
 
 struct EntryInformation {
     file_id: FileID,
@@ -38,7 +38,10 @@ pub fn unknown_known_analysis(
         environment.add_variable(arg, Tag::Known);
     }
 
-    let entry = EntryInformation { file_id, environment };
+    let entry = EntryInformation {
+        file_id,
+        environment,
+    };
     let result = analyze(template_body, entry);
     if result.reports.is_empty() {
         Ok(())
@@ -61,7 +64,10 @@ fn analyze(stmt: &Statement, entry_information: EntryInformation) -> ExitInforma
         let mut constraints_declared = false;
         let mut modified_variables: HashSet<String> = HashSet::new();
         for stmt in stmts {
-            let entry = EntryInformation { file_id, environment };
+            let entry = EntryInformation {
+                file_id,
+                environment,
+            };
             let exit = analyze(stmt, entry);
             constraints_declared = constraints_declared || exit.constraints_declared;
             modified_variables.extend(exit.modified_variables);
@@ -70,7 +76,12 @@ fn analyze(stmt: &Statement, entry_information: EntryInformation) -> ExitInforma
             }
             environment = exit.environment;
         }
-        (constraints_declared, reports, environment, modified_variables)
+        (
+            constraints_declared,
+            reports,
+            environment,
+            modified_variables,
+        )
     }
     let file_id = entry_information.file_id;
     let mut reports = ReportCollection::new();
@@ -78,7 +89,12 @@ fn analyze(stmt: &Statement, entry_information: EntryInformation) -> ExitInforma
     let mut modified_variables = HashSet::new();
     let mut constraints_declared = false;
     match stmt {
-        Declaration { xtype, name, dimensions, .. } => {
+        Declaration {
+            xtype,
+            name,
+            dimensions,
+            ..
+        } => {
             if let VariableType::Signal(..) = xtype {
                 environment.add_intermediate(name, Unknown);
             } else if let VariableType::Component = xtype {
@@ -99,7 +115,14 @@ fn analyze(stmt: &Statement, entry_information: EntryInformation) -> ExitInforma
                 }
             }
         }
-        Substitution { meta, var, access, op, rhe, .. } => {
+        Substitution {
+            meta,
+            var,
+            access,
+            op,
+            rhe,
+            ..
+        } => {
             let simplified_elem = simplify_symbol(&environment, var, access);
             let expression_tag = tag(rhe, &environment);
             let mut access_tag = Known;
@@ -118,7 +141,12 @@ fn analyze(stmt: &Statement, entry_information: EntryInformation) -> ExitInforma
             } else if simplified_elem == Component {
                 constraints_declared = true;
                 if expression_tag == Unknown {
-                    add_report(ReportCode::UnknownTemplate, rhe.get_meta(), file_id, &mut reports);
+                    add_report(
+                        ReportCode::UnknownTemplate,
+                        rhe.get_meta(),
+                        file_id,
+                        &mut reports,
+                    );
                 }
                 if access_tag == Unknown {
                     add_report(ReportCode::UnknownTemplate, meta, file_id, &mut reports);
@@ -126,7 +154,12 @@ fn analyze(stmt: &Statement, entry_information: EntryInformation) -> ExitInforma
             } else if *op == AssignOp::AssignConstraintSignal {
                 constraints_declared = true;
                 if is_non_quadratic(rhe, &environment) {
-                    add_report(ReportCode::NonQuadratic, rhe.get_meta(), file_id, &mut reports);
+                    add_report(
+                        ReportCode::NonQuadratic,
+                        rhe.get_meta(),
+                        file_id,
+                        &mut reports,
+                    );
                 }
                 if access_tag == Unknown {
                     add_report(ReportCode::NonQuadratic, meta, file_id, &mut reports);
@@ -136,17 +169,37 @@ fn analyze(stmt: &Statement, entry_information: EntryInformation) -> ExitInforma
         ConstraintEquality { lhe, rhe, .. } => {
             constraints_declared = true;
             if is_non_quadratic(lhe, &environment) {
-                add_report(ReportCode::NonQuadratic, lhe.get_meta(), file_id, &mut reports);
+                add_report(
+                    ReportCode::NonQuadratic,
+                    lhe.get_meta(),
+                    file_id,
+                    &mut reports,
+                );
             }
             if is_non_quadratic(rhe, &environment) {
-                add_report(ReportCode::NonQuadratic, rhe.get_meta(), file_id, &mut reports);
+                add_report(
+                    ReportCode::NonQuadratic,
+                    rhe.get_meta(),
+                    file_id,
+                    &mut reports,
+                );
             }
         }
-        IfThenElse { cond, if_case, else_case, .. } => {
+        IfThenElse {
+            cond,
+            if_case,
+            else_case,
+            ..
+        } => {
             let tag_cond = tag(cond, &environment);
-            let new_entry_else_case =
-                EntryInformation { environment: environment.clone(), file_id };
-            let new_entry_if_case = EntryInformation { environment, file_id };
+            let new_entry_else_case = EntryInformation {
+                environment: environment.clone(),
+                file_id,
+            };
+            let new_entry_if_case = EntryInformation {
+                environment,
+                file_id,
+            };
             let if_case_info = analyze(if_case, new_entry_if_case);
             let else_case_info = if let Some(else_stmt) = else_case {
                 analyze(else_stmt, new_entry_else_case)
@@ -169,9 +222,7 @@ fn analyze(stmt: &Statement, entry_information: EntryInformation) -> ExitInforma
                 reports.push(report);
             }
             environment =
-                Environment::merge(if_case_info.environment, else_case_info.environment, |a, b| {
-                    max(a, b)
-                });
+                Environment::merge(if_case_info.environment, else_case_info.environment, max);
             if tag_cond == Unknown {
                 for var in &modified_variables {
                     if environment.has_variable(var) {
@@ -191,14 +242,20 @@ fn analyze(stmt: &Statement, entry_information: EntryInformation) -> ExitInforma
         }
         While { cond, stmt, .. } => {
             let mut entry_info = environment.clone();
-            let mut entry = EntryInformation { file_id, environment };
+            let mut entry = EntryInformation {
+                file_id,
+                environment,
+            };
             let mut exit = analyze(stmt, entry);
             let mut modified =
                 check_modified(entry_info, &mut exit.environment, &exit.modified_variables);
             environment = exit.environment;
             while modified {
                 entry_info = environment.clone();
-                entry = EntryInformation { file_id, environment };
+                entry = EntryInformation {
+                    file_id,
+                    environment,
+                };
                 exit = analyze(stmt, entry);
                 modified =
                     check_modified(entry_info, &mut exit.environment, &exit.modified_variables);
@@ -236,7 +293,9 @@ fn analyze(stmt: &Statement, entry_information: EntryInformation) -> ExitInforma
             modified_variables = nm;
             environment.remove_variable_block();
         }
-        InitializationBlock { initializations, .. } => {
+        InitializationBlock {
+            initializations, ..
+        } => {
             let (nc, nr, ne, nm) =
                 iterate_statements(initializations, reports, environment, file_id);
             constraints_declared = nc;
@@ -246,7 +305,12 @@ fn analyze(stmt: &Statement, entry_information: EntryInformation) -> ExitInforma
         }
         _ => {}
     }
-    ExitInformation { reports, environment, constraints_declared, modified_variables }
+    ExitInformation {
+        reports,
+        environment,
+        constraints_declared,
+        modified_variables,
+    }
 }
 
 fn tag(expression: &Expression, environment: &Environment) -> Tag {
@@ -281,7 +345,12 @@ fn tag(expression: &Expression, environment: &Environment) -> Tag {
         ArrayInLine { values, .. } | Call { args: values, .. } => {
             expression_iterator(values, Known, Unknown, environment)
         }
-        TernaryOp { cond, if_true, if_false, .. } => {
+        TernaryOp {
+            cond,
+            if_true,
+            if_false,
+            ..
+        } => {
             let tag_cond = tag(cond, environment);
             let tag_true = tag(if_true, environment);
             let tag_false = tag(if_false, environment);
@@ -389,9 +458,15 @@ fn unknown_index(exp: &Expression, environment: &Environment) -> bool {
         }
         InfixOp { lhe, rhe, .. } => (false, vec![lhe.as_ref(), rhe.as_ref()]),
         PrefixOp { rhe, .. } => (false, vec![rhe.as_ref()]),
-        TernaryOp { cond, if_true, if_false, .. } => {
-            (false, vec![cond.as_ref(), if_true.as_ref(), if_false.as_ref()])
-        }
+        TernaryOp {
+            cond,
+            if_true,
+            if_false,
+            ..
+        } => (
+            false,
+            vec![cond.as_ref(), if_true.as_ref(), if_false.as_ref()],
+        ),
         Call { args: exprs, .. } | ArrayInLine { values: exprs, .. } => {
             let mut bucket = Vec::new();
             for exp in exprs {

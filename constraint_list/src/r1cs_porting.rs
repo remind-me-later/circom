@@ -1,9 +1,10 @@
-use super::{ConstraintList, C, EncodingIterator, SignalMap};
+use super::{ConstraintList, EncodingIterator, SignalMap, C};
 use constraint_writers::r1cs_writer::{
     ConstraintSection, CustomGatesAppliedData, HeaderData, R1CSWriter, SignalSection,
 };
+use std::io;
 
-pub fn port_r1cs(list: &ConstraintList, output: &str) -> Result<(), ()> {
+pub fn port_r1cs(list: &ConstraintList, output: &str) -> io::Result<()> {
     use constraint_writers::log_writer::Log;
     let field_size = (list.field.bits() / 64 + 1) * 8;
     let mut log = Log::new();

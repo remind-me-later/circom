@@ -9,10 +9,10 @@ mod errors;
 mod include_logic;
 mod parser_logic;
 use circom_ast::Version;
-use include_logic::{FileStack, IncludesGraph};
 use circom_error::error_code::ReportCode;
 use circom_error::error_definition::{Report, ReportCollection};
-use circom_error::file_definition::{FileLibrary};
+use circom_error::file_definition::FileLibrary;
+use include_logic::{FileStack, IncludesGraph};
 use program_structure::program_archive::ProgramArchive;
 use std::path::PathBuf;
 use std::str::FromStr;
@@ -37,13 +37,19 @@ pub fn run_parser(
         if let Some(main) = program.main_component {
             main_components.push((file_id, main));
         }
-        includes_graph.add_node(crr_file, program.custom_gates, program.custom_gates_declared);
+        includes_graph.add_node(
+            crr_file,
+            program.custom_gates,
+            program.custom_gates_declared,
+        );
         let includes = program.includes;
         definitions.push((file_id, program.definitions));
         for include in includes {
             FileStack::add_include(&mut file_stack, include.clone())
                 .map_err(|e| (file_library.clone(), vec![e]))?;
-            includes_graph.add_edge(include).map_err(|e| (file_library.clone(), vec![e]))?;
+            includes_graph
+                .add_edge(include)
+                .map_err(|e| (file_library.clone(), vec![e]))?;
         }
         warnings.append(
             &mut check_number_version(
@@ -95,7 +101,9 @@ fn open_file(path: PathBuf) -> Result<(String, String), Report> /* path, src */ 
     let path_str = format!("{:?}", path);
     read_to_string(path)
         .map(|contents| (path_str.clone(), contents))
-        .map_err(|_| FileOsError { path: path_str.clone() })
+        .map_err(|_| FileOsError {
+            path: path_str.clone(),
+        })
         .map_err(FileOsError::produce_report)
 }
 

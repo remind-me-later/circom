@@ -1,7 +1,7 @@
+mod build_inputs_info;
 mod build_stack;
 mod reduce_stack;
 mod set_arena_size;
-mod build_inputs_info;
 use crate::intermediate_representation::ir_interface::InstructionList;
 use std::collections::{HashMap, HashSet};
 

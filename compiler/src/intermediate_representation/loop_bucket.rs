@@ -42,7 +42,10 @@ impl ToString for LoopBucket {
         for i in &self.body {
             body = format!("{}{};", body, i.to_string());
         }
-        format!("LOOP(line:{},template_id:{},cond:{},body:{})", line, template_id, cond, body)
+        format!(
+            "LOOP(line:{},template_id:{},cond:{},body:{})",
+            line, template_id, cond, body
+        )
     }
 }
 

@@ -51,13 +51,17 @@ impl WriteWasm for TemplateCodeInfo {
         //set component signal start
         instructions.push(get_local(producer.get_offset_tag()));
         instructions.push(get_local(producer.get_signal_offset_tag()));
-        instructions
-            .push(store32(Some(&producer.get_signal_start_address_in_component().to_string())));
+        instructions.push(store32(Some(
+            &producer.get_signal_start_address_in_component().to_string(),
+        )));
         //set component inputs_to_be_set
         instructions.push(get_local(producer.get_offset_tag()));
         instructions.push(set_constant(&self.number_of_inputs.to_string()));
-        instructions
-            .push(store32(Some(&producer.get_input_counter_address_in_component().to_string())));
+        instructions.push(store32(Some(
+            &producer
+                .get_input_counter_address_in_component()
+                .to_string(),
+        )));
         //reserve memory for component
         instructions.push(set_constant(&producer.get_component_free_pos().to_string()));
         instructions.push(get_local(producer.get_offset_tag()));
@@ -92,9 +96,18 @@ impl WriteWasm for TemplateCodeInfo {
         instructions.push(format!(" (local {} i32)", producer.get_store_aux_2_tag()));
         instructions.push(format!(" (local {} i32)", producer.get_copy_counter_tag()));
         instructions.push(format!(" (local {} i32)", producer.get_call_lvar_tag()));
-        instructions.push(format!(" (local {} i32)", producer.get_create_loop_sub_cmp_tag()));
-        instructions.push(format!(" (local {} i32)", producer.get_create_loop_offset_tag()));
-        instructions.push(format!(" (local {} i32)", producer.get_create_loop_counter_tag()));
+        instructions.push(format!(
+            " (local {} i32)",
+            producer.get_create_loop_sub_cmp_tag()
+        ));
+        instructions.push(format!(
+            " (local {} i32)",
+            producer.get_create_loop_offset_tag()
+        ));
+        instructions.push(format!(
+            " (local {} i32)",
+            producer.get_create_loop_counter_tag()
+        ));
         let local_info_size_u32 = producer.get_local_info_size_u32(); // in the future we can add some info like pointer to run father or text father
                                                                       //set lvar (start of auxiliar memory for vars)
         instructions.push(set_constant("0"));
@@ -122,8 +135,9 @@ impl WriteWasm for TemplateCodeInfo {
         }
         //set signalstart local
         instructions.push(get_local(producer.get_offset_tag()));
-        instructions
-            .push(set_constant(&producer.get_signal_start_address_in_component().to_string()));
+        instructions.push(set_constant(
+            &producer.get_signal_start_address_in_component().to_string(),
+        ));
         instructions.push(add32());
         instructions.push(load32(None));
         instructions.push(set_local(producer.get_signal_start_tag()));
@@ -230,7 +244,10 @@ impl WriteC for TemplateCodeInfo {
         if self.number_of_inputs == 0 {
             let cmp_call_name = format!("{}_run", self.header);
             let cmp_call_arguments = vec![component_offset(), CIRCOM_CALC_WIT.to_string()];
-            create_body.push(format!("{};", build_call(cmp_call_name, cmp_call_arguments)));
+            create_body.push(format!(
+                "{};",
+                build_call(cmp_call_name, cmp_call_arguments)
+            ));
         }
         let create_fun = build_callable(create_header, create_params, create_body);
 

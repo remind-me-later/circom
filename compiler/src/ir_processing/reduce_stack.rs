@@ -130,9 +130,19 @@ pub fn reduce_address_type(at: AddressType) -> AddressType {
     match at {
         Variable => Variable,
         Signal => Signal,
-        SubcmpSignal { cmp_address, is_parallel, is_output, input_information } => {
+        SubcmpSignal {
+            cmp_address,
+            is_parallel,
+            is_output,
+            input_information,
+        } => {
             let cmp_address = Allocate::allocate(reduce_instruction(*cmp_address));
-            SubcmpSignal { cmp_address, is_parallel, is_output, input_information }
+            SubcmpSignal {
+                cmp_address,
+                is_parallel,
+                is_output,
+                input_information,
+            }
         }
     }
 }
@@ -140,11 +150,20 @@ pub fn reduce_address_type(at: AddressType) -> AddressType {
 pub fn reduce_location_rule(lc: LocationRule) -> LocationRule {
     use LocationRule::*;
     match lc {
-        Indexed { location, template_header } => {
+        Indexed {
+            location,
+            template_header,
+        } => {
             let location = Allocate::allocate(reduce_instruction(*location));
-            Indexed { location, template_header }
+            Indexed {
+                location,
+                template_header,
+            }
         }
-        Mapped { signal_code, indexes } => {
+        Mapped {
+            signal_code,
+            indexes,
+        } => {
             let no_indexes = InstructionList::len(&indexes);
             let work = indexes;
             let mut indexes = InstructionList::with_capacity(no_indexes);
@@ -152,7 +171,10 @@ pub fn reduce_location_rule(lc: LocationRule) -> LocationRule {
                 let index = Allocate::allocate(reduce_instruction(*index));
                 InstructionList::push(&mut indexes, index);
             }
-            Mapped { signal_code, indexes }
+            Mapped {
+                signal_code,
+                indexes,
+            }
         }
     }
 }

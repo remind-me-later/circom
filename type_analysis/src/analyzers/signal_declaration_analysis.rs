@@ -26,7 +26,9 @@ fn treat_statement(
 ) {
     use Statement::*;
     match stmt {
-        IfThenElse { if_case, else_case, .. } => {
+        IfThenElse {
+            if_case, else_case, ..
+        } => {
             treat_statement(if_case, false, template_id, reports);
             if let Some(else_block) = else_case {
                 treat_statement(else_block, false, template_id, reports);

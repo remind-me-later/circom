@@ -1,5 +1,5 @@
 use std::fs::File;
-use std::io::{BufWriter, Write};
+use std::io::{self, BufWriter, Write};
 
 pub struct SymElem {
     pub original: i64,
@@ -9,7 +9,10 @@ pub struct SymElem {
 }
 impl ToString for SymElem {
     fn to_string(&self) -> String {
-        format!("{},{},{},{}", self.original, self.witness, self.node_id, self.symbol)
+        format!(
+            "{},{},{},{}",
+            self.original, self.witness, self.node_id, self.symbol
+        )
     }
 }
 
@@ -18,16 +21,16 @@ pub struct SymFile {
 }
 
 impl SymFile {
-    pub fn new(file: &str) -> Result<SymFile, ()> {
-        let file = File::create(file).map_err(|_err| {})?;
+    pub fn new(file: &str) -> io::Result<SymFile> {
+        let file = File::create(file)?;
         let writer = BufWriter::new(file);
         Ok(SymFile { writer })
     }
 
-    pub fn write_sym_elem(sym: &mut SymFile, elem: SymElem) -> Result<(), ()> {
-        sym.writer.write_all(elem.to_string().as_bytes()).map_err(|_err| {})?;
-        sym.writer.write_all(b"\n").map_err(|_err| {})?;
-        sym.writer.flush().map_err(|_err| {})
+    pub fn write_sym_elem(sym: &mut SymFile, elem: SymElem) -> io::Result<()> {
+        sym.writer.write_all(elem.to_string().as_bytes())?;
+        sym.writer.write_all(b"\n")?;
+        sym.writer.flush()
     }
 
     pub fn close(_sym: SymFile) {}

@@ -2,7 +2,9 @@ use crate::hir::very_concrete_program::VCP;
 use circom_ast::*;
 
 pub fn rm_component_ci(vcp: &mut VCP) {
-    vcp.templates.iter_mut().for_each(|t| rm_statement(&mut t.code));
+    vcp.templates
+        .iter_mut()
+        .for_each(|t| rm_statement(&mut t.code));
 }
 
 fn should_be_removed(stmt: &Statement) -> bool {
@@ -23,7 +25,9 @@ fn rm_statement(stmt: &mut Statement) {
         While { stmt, .. } => {
             rm_statement(stmt);
         }
-        IfThenElse { if_case, else_case, .. } => {
+        IfThenElse {
+            if_case, else_case, ..
+        } => {
             rm_statement(if_case);
             if let Some(s) = else_case {
                 rm_statement(s);
@@ -38,7 +42,11 @@ fn rm_statement(stmt: &mut Statement) {
                 }
             }
         }
-        InitializationBlock { initializations, xtype: VariableType::Signal(..), .. } => {
+        InitializationBlock {
+            initializations,
+            xtype: VariableType::Signal(..),
+            ..
+        } => {
             let work = std::mem::take(initializations);
             for i in work {
                 if matches!(i, Substitution { .. }) {
@@ -49,7 +57,10 @@ fn rm_statement(stmt: &mut Statement) {
         Substitution { .. } => {
             if should_be_removed(stmt) {
                 if let Substitution { meta, .. } = stmt {
-                    *stmt = Block { meta: meta.clone(), stmts: Vec::new() };
+                    *stmt = Block {
+                        meta: meta.clone(),
+                        stmts: Vec::new(),
+                    };
                 }
             }
         }

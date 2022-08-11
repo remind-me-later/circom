@@ -1,7 +1,7 @@
+use circom_ast::Version;
 use circom_error::error_code::ReportCode;
 use circom_error::error_definition::Report;
 use circom_error::file_definition::{FileID, LocationInFile};
-use circom_ast::Version;
 
 pub struct UnclosedCommentError {
     pub location: LocationInFile,
@@ -11,7 +11,11 @@ pub struct UnclosedCommentError {
 impl UnclosedCommentError {
     pub fn produce_report(error: Self) -> Report {
         let mut report = Report::error("unterminated /* */".to_string(), ReportCode::ParseFail);
-        report.add_primary(error.location, error.file_id, "Comment starts here".to_string());
+        report.add_primary(
+            error.location,
+            error.file_id,
+            "Comment starts here".to_string(),
+        );
         report
     }
 }
@@ -35,7 +39,10 @@ pub struct FileOsError {
 }
 impl FileOsError {
     pub fn produce_report(error: Self) -> Report {
-        Report::error(format!("Could not open file {}", error.path), ReportCode::ParseFail)
+        Report::error(
+            format!("Could not open file {}", error.path),
+            ReportCode::ParseFail,
+        )
     }
 }
 

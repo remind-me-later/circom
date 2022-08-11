@@ -59,7 +59,10 @@ impl ToString for CallBucket {
         for i in &self.arguments {
             args = format!("{}{},", args, i.to_string());
         }
-        format!("CALL(line:{},template_id:{},id:{},args:{})", line, template_id, self.symbol, args)
+        format!(
+            "CALL(line:{},template_id:{},id:{},args:{})",
+            line, template_id, self.symbol, args
+        )
     }
 }
 
@@ -141,7 +144,10 @@ impl WriteWasm for CallBucket {
             ReturnType::Final(data) => {
                 let mut my_template_header = None;
                 match &data.dest {
-                    LocationRule::Indexed { location, template_header } => {
+                    LocationRule::Indexed {
+                        location,
+                        template_header,
+                    } => {
                         if producer.needs_comments() {
                             instructions.push(";; getting result address".to_string());
                         }
@@ -181,7 +187,10 @@ impl WriteWasm for CallBucket {
                         }
                         instructions.push(add32());
                     }
-                    LocationRule::Mapped { signal_code, indexes } => {
+                    LocationRule::Mapped {
+                        signal_code,
+                        indexes,
+                    } => {
                         match &data.dest_address_type {
                             AddressType::SubcmpSignal { cmp_address, .. } => {
                                 if producer.needs_comments() {
@@ -271,19 +280,25 @@ impl WriteWasm for CallBucket {
                     instructions.push(get_local(producer.get_sub_cmp_tag()));
                     instructions.push(get_local(producer.get_sub_cmp_tag()));
                     instructions.push(load32(Some(
-                        &producer.get_input_counter_address_in_component().to_string(),
+                        &producer
+                            .get_input_counter_address_in_component()
+                            .to_string(),
                     ))); //remaining inputs to be set
                     instructions.push(set_constant(&data.context.size.to_string()));
                     instructions.push(sub32());
                     instructions.push(store32(Some(
-                        &producer.get_input_counter_address_in_component().to_string(),
+                        &producer
+                            .get_input_counter_address_in_component()
+                            .to_string(),
                     ))); // update remaining inputs to be set
                     if producer.needs_comments() {
                         instructions.push(";; check if run is needed".to_string());
                     }
                     instructions.push(get_local(producer.get_sub_cmp_tag()));
                     instructions.push(load32(Some(
-                        &producer.get_input_counter_address_in_component().to_string(),
+                        &producer
+                            .get_input_counter_address_in_component()
+                            .to_string(),
                     )));
                     instructions.push(eqz32());
                     instructions.push(add_if());
@@ -338,17 +353,26 @@ impl WriteC for CallBucket {
             if self.argument_types[i].size > 1 {
                 let copy_arguments =
                     vec![arena_position, src, self.argument_types[i].size.to_string()];
-                prologue.push(format!("{};", build_call("Fr_copyn".to_string(), copy_arguments)));
+                prologue.push(format!(
+                    "{};",
+                    build_call("Fr_copyn".to_string(), copy_arguments)
+                ));
             } else {
                 let copy_arguments = vec![arena_position, src];
-                prologue.push(format!("{};", build_call("Fr_copy".to_string(), copy_arguments)));
+                prologue.push(format!(
+                    "{};",
+                    build_call("Fr_copy".to_string(), copy_arguments)
+                ));
             }
             prologue.push(format!("// end copying argument {}", i));
             count += self.argument_types[i].size;
         }
         let result;
-        let mut call_arguments =
-            vec![CIRCOM_CALC_WIT.to_string(), L_VAR_FUNC_CALL_STORAGE.to_string(), my_id()];
+        let mut call_arguments = vec![
+            CIRCOM_CALC_WIT.to_string(),
+            L_VAR_FUNC_CALL_STORAGE.to_string(),
+            my_id(),
+        ];
 
         match &self.return_info {
             ReturnType::Intermediate { op_aux_no } => {
@@ -356,7 +380,10 @@ impl WriteC for CallBucket {
                 let result_ref = format!("&{}", expaux(exp_aux_index));
                 call_arguments.push(result_ref.clone());
                 call_arguments.push("1".to_string());
-                prologue.push(format!("{};", build_call(self.symbol.clone(), call_arguments)));
+                prologue.push(format!(
+                    "{};",
+                    build_call(self.symbol.clone(), call_arguments)
+                ));
                 result = result_ref;
             }
             ReturnType::Final(data) => {
@@ -369,9 +396,17 @@ impl WriteC for CallBucket {
                 }
 
                 let ((mut dest_prologue, dest_index), my_template_header) =
-                    if let LocationRule::Indexed { location, template_header } = &data.dest {
+                    if let LocationRule::Indexed {
+                        location,
+                        template_header,
+                    } = &data.dest
+                    {
                         (location.produce_c(producer), template_header.clone())
-                    } else if let LocationRule::Mapped { signal_code, indexes } = &data.dest {
+                    } else if let LocationRule::Mapped {
+                        signal_code,
+                        indexes,
+                    } = &data.dest
+                    {
                         let mut map_prologue = vec![];
                         let sub_component_pos_in_memory =
                             format!("{}[{}]", MY_SUBCOMPONENTS, cmp_index_ref);
@@ -437,7 +472,10 @@ impl WriteC for CallBucket {
                 };
                 call_arguments.push(result_ref);
                 call_arguments.push(data.context.size.to_string());
-                prologue.push(format!("{};", build_call(self.symbol.clone(), call_arguments)));
+                prologue.push(format!(
+                    "{};",
+                    build_call(self.symbol.clone(), call_arguments)
+                ));
                 if let LocationRule::Mapped { indexes, .. } = &data.dest {
                     if !indexes.is_empty() {
                         prologue.push("}".to_string());
@@ -491,8 +529,11 @@ impl WriteC for CallBucket {
                     }
                 }
                 // like store update counters and check if Subcomponent needs to be run
-                if let AddressType::SubcmpSignal { is_parallel, input_information, .. } =
-                    &data.dest_address_type
+                if let AddressType::SubcmpSignal {
+                    is_parallel,
+                    input_information,
+                    ..
+                } = &data.dest_address_type
                 {
                     // if subcomponent input check if run needed
                     let sub_cmp_counter_decrease = format!(

@@ -1,9 +1,9 @@
 use ansi_term::Colour;
+use circom_error::error_code::ReportCode;
+use circom_error::error_definition::Report;
+use circom_error::file_definition::FileLibrary;
 use compiler::compiler_interface;
 use compiler::compiler_interface::{Config, VCP};
-use circom_error::error_definition::Report;
-use circom_error::error_code::ReportCode;
-use circom_error::file_definition::FileLibrary;
 
 pub struct CompilerConfig {
     pub js_folder: String,
@@ -61,7 +61,11 @@ pub fn compile(config: CompilerConfig) -> Result<(), ()> {
                 &config.wasm_name,
                 &config.wat_file,
             )?;
-            println!("{} {}", Colour::Green.paint("Written successfully:"), config.wat_file);
+            println!(
+                "{} {}",
+                Colour::Green.paint("Written successfully:"),
+                config.wat_file
+            );
             let result = wat_to_wasm(&config.wat_file, &config.wasm_file);
             match result {
                 Err(report) => {
@@ -107,7 +111,11 @@ pub fn compile(config: CompilerConfig) -> Result<(), ()> {
                 &config.wasm_name,
                 &config.wat_file,
             )?;
-            println!("{} {}", Colour::Green.paint("Written successfully:"), config.wat_file);
+            println!(
+                "{} {}",
+                Colour::Green.paint("Written successfully:"),
+                config.wat_file
+            );
         }
         (false, false) => {}
     }
@@ -120,8 +128,8 @@ fn wat_to_wasm(wat_file: &str, wasm_file: &str) -> Result<(), Report> {
     use std::fs::File;
     use std::io::BufWriter;
     use std::io::Write;
-    use wast::Wat;
     use wast::parser::{self, ParseBuffer};
+    use wast::Wat;
 
     let wat_contents = read_to_string(wat_file).unwrap();
     let buf = ParseBuffer::new(&wat_contents).unwrap();

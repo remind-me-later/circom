@@ -1,5 +1,5 @@
 use crate::intermediate_representation::ir_interface::*;
-use std::collections::{HashSet};
+use std::collections::HashSet;
 
 type ComponentsSet = HashSet<String>;
 
@@ -140,23 +140,37 @@ pub fn visit_branch(
         inside_loop,
     );
 
-    let known_component_both_branches: ComponentsSet =
-        known_last_component_if.intersection(&known_last_component_else).cloned().collect();
-    let known_component_one_branch: ComponentsSet =
-        known_last_component_if.symmetric_difference(&known_last_component_else).cloned().collect();
+    let known_component_both_branches: ComponentsSet = known_last_component_if
+        .intersection(&known_last_component_else)
+        .cloned()
+        .collect();
+    let known_component_one_branch: ComponentsSet = known_last_component_if
+        .symmetric_difference(&known_last_component_else)
+        .cloned()
+        .collect();
 
-    let mut new_unknown_component: ComponentsSet =
-        unknown_last_component_if.union(&unknown_last_component_else).cloned().collect();
-    new_unknown_component =
-        new_unknown_component.union(&known_component_one_branch).cloned().collect();
+    let mut new_unknown_component: ComponentsSet = unknown_last_component_if
+        .union(&unknown_last_component_else)
+        .cloned()
+        .collect();
+    new_unknown_component = new_unknown_component
+        .union(&known_component_one_branch)
+        .cloned()
+        .collect();
 
-    let joined_unknown_component: ComponentsSet =
-        unknown_last_component.union(&new_unknown_component).cloned().collect();
+    let joined_unknown_component: ComponentsSet = unknown_last_component
+        .union(&new_unknown_component)
+        .cloned()
+        .collect();
 
-    *known_last_component =
-        known_last_component.union(&known_component_both_branches).cloned().collect();
-    *unknown_last_component =
-        joined_unknown_component.difference(&known_component_both_branches).cloned().collect();
+    *known_last_component = known_last_component
+        .union(&known_component_both_branches)
+        .cloned()
+        .collect();
+    *unknown_last_component = joined_unknown_component
+        .difference(&known_component_both_branches)
+        .cloned()
+        .collect();
     found_unknown_if || found_unknown_else
 }
 
@@ -219,13 +233,19 @@ pub fn visit_loop(
         true,
     );
 
-    let new_unknown_component: ComponentsSet =
-        known_last_component_loop.union(&unknown_last_component_loop).cloned().collect();
+    let new_unknown_component: ComponentsSet = known_last_component_loop
+        .union(&unknown_last_component_loop)
+        .cloned()
+        .collect();
 
-    *known_last_component =
-        known_last_component.difference(&new_unknown_component).cloned().collect();
-    *unknown_last_component =
-        unknown_last_component.union(&new_unknown_component).cloned().collect();
+    *known_last_component = known_last_component
+        .difference(&new_unknown_component)
+        .cloned()
+        .collect();
+    *unknown_last_component = unknown_last_component
+        .union(&new_unknown_component)
+        .cloned()
+        .collect();
     found_unknown_address_new
 }
 
@@ -304,10 +324,15 @@ pub fn visit_address_type(
 ) -> bool {
     use AddressType::*;
     use InputInformation::*;
-    use StatusInput::*;
     use Instruction::*;
+    use StatusInput::*;
 
-    if let SubcmpSignal { cmp_address, input_information, .. } = xtype {
+    if let SubcmpSignal {
+        cmp_address,
+        input_information,
+        ..
+    } = xtype
+    {
         if let Input { .. } = input_information {
             if known_last_component.contains(&cmp_address.to_string()) {
                 *input_information = Input { status: NoLast };

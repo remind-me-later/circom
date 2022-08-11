@@ -1,11 +1,11 @@
-use circom_ast::{Definition, Expression, MainComponent};
-use circom_error::file_definition::{FileID, FileLibrary};
 use super::function_data::{FunctionData, FunctionInfo};
 use super::program_merger::Merger;
 use super::template_data::{TemplateData, TemplateInfo};
 use circom_ast::FillMeta;
-use std::collections::HashSet;
+use circom_ast::{Definition, Expression, MainComponent};
 use circom_error::error_definition::Report;
+use circom_error::file_definition::{FileID, FileLibrary};
+use std::collections::HashSet;
 
 type Contents = Vec<(FileID, Vec<Definition>)>;
 
@@ -44,7 +44,9 @@ impl ProgramArchive {
         for key in templates.keys() {
             template_keys.insert(key.clone());
         }
-        main_component.initial_template_call.fill(file_id_main, &mut fresh_id);
+        main_component
+            .initial_template_call
+            .fill(file_id_main, &mut fresh_id);
         if reports.is_empty() {
             Ok(ProgramArchive {
                 id_max: fresh_id,

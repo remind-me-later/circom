@@ -1,10 +1,10 @@
 use super::type_given_function::type_given_function;
 use super::type_register::TypeRegister;
 use circom_ast::*;
-use program_structure::environment::CircomEnvironment;
 use circom_error::error_code::ReportCode;
 use circom_error::error_definition::{Report, ReportCollection};
 use circom_error::file_definition::{generate_file_location, FileID};
+use program_structure::environment::CircomEnvironment;
 use program_structure::program_archive::ProgramArchive;
 use std::collections::HashSet;
 
@@ -28,10 +28,16 @@ struct FoldedType {
 }
 impl FoldedType {
     pub fn arithmetic_type(dimensions: ArithmeticType) -> FoldedType {
-        FoldedType { arithmetic: Some(dimensions), template: None }
+        FoldedType {
+            arithmetic: Some(dimensions),
+            template: None,
+        }
     }
     pub fn template(name: &str) -> FoldedType {
-        FoldedType { template: Some(name.to_string()), arithmetic: None }
+        FoldedType {
+            template: Some(name.to_string()),
+            arithmetic: None,
+        }
     }
     pub fn is_template(&self) -> bool {
         self.template.is_some() && self.arithmetic.is_none()
@@ -69,8 +75,11 @@ pub fn type_check(program_archive: &ProgramArchive) -> Result<OutInfo, ReportCol
         return_type: None,
     };
     let initial_expression = program_archive.get_main_expression();
-    let type_analysis_response =
-        type_expression(initial_expression, program_archive, &mut analysis_information);
+    let type_analysis_response = type_expression(
+        initial_expression,
+        program_archive,
+        &mut analysis_information,
+    );
     let first_type = if let Ok(t) = type_analysis_response {
         t
     } else {
@@ -84,7 +93,9 @@ pub fn type_check(program_archive: &ProgramArchive) -> Result<OutInfo, ReportCol
         );
     }
     if analysis_information.reports.is_empty() {
-        Ok(OutInfo { reached: analysis_information.reached })
+        Ok(OutInfo {
+            reached: analysis_information.reached,
+        })
     } else {
         Err(analysis_information.reports)
     }
@@ -97,10 +108,16 @@ fn type_statement(
 ) {
     use Statement::*;
     match statement {
-        InitializationBlock { initializations, .. } => {
-            treat_sequence_of_statements(initializations, program_archive, analysis_information)
-        }
-        Declaration { xtype, name, dimensions, meta, .. } => {
+        InitializationBlock {
+            initializations, ..
+        } => treat_sequence_of_statements(initializations, program_archive, analysis_information),
+        Declaration {
+            xtype,
+            name,
+            dimensions,
+            meta,
+            ..
+        } => {
             let typing_response =
                 type_array_of_expressions(dimensions, program_archive, analysis_information);
             let dimensions_type = typing_response.unwrap_or_default();
@@ -116,22 +133,35 @@ fn type_statement(
             match xtype {
                 VariableType::Signal(s_type, _) => {
                     if let SignalType::Input = s_type {
-                        analysis_information.environment.add_input(name, dimensions.len());
+                        analysis_information
+                            .environment
+                            .add_input(name, dimensions.len());
                     } else if let SignalType::Output = s_type {
-                        analysis_information.environment.add_output(name, dimensions.len());
+                        analysis_information
+                            .environment
+                            .add_output(name, dimensions.len());
                     } else {
-                        analysis_information.environment.add_intermediate(name, dimensions.len());
+                        analysis_information
+                            .environment
+                            .add_intermediate(name, dimensions.len());
                     }
                 }
-                VariableType::Var => {
-                    analysis_information.environment.add_variable(name, dimensions.len())
-                }
+                VariableType::Var => analysis_information
+                    .environment
+                    .add_variable(name, dimensions.len()),
                 VariableType::Component => analysis_information
                     .environment
                     .add_component(name, (meta.component_inference.clone(), dimensions.len())),
             }
         }
-        Substitution { var, access, op, rhe, meta, .. } => {
+        Substitution {
+            var,
+            access,
+            op,
+            rhe,
+            meta,
+            ..
+        } => {
             let rhe_response = type_expression(rhe, program_archive, analysis_information);
             let rhe_type = if let Ok(r_type) = rhe_response {
                 r_type
@@ -273,7 +303,12 @@ fn type_statement(
                 );
             }
         }
-        IfThenElse { cond, if_case, else_case, .. } => {
+        IfThenElse {
+            cond,
+            if_case,
+            else_case,
+            ..
+        } => {
             let cond_response = type_expression(cond, program_archive, analysis_information);
             type_statement(if_case, program_archive, analysis_information);
             if let Some(else_stmt) = else_case {
@@ -388,7 +423,12 @@ fn type_expression(
                 Ok(FoldedType::arithmetic_type(0))
             }
         }
-        TernaryOp { cond, if_true, if_false, .. } => {
+        TernaryOp {
+            cond,
+            if_true,
+            if_false,
+            ..
+        } => {
             let cond_response = type_expression(cond, program_archive, analysis_information);
             let if_true_response = type_expression(if_true, program_archive, analysis_information);
             let if_false_response =
@@ -422,7 +462,9 @@ fn type_expression(
             }
             Ok(if_true_type)
         }
-        Variable { name, access, meta, .. } => {
+        Variable {
+            name, access, meta, ..
+        } => {
             debug_assert!(analysis_information.environment.has_symbol(name));
             let access_information =
                 treat_access(access, meta, program_archive, analysis_information)?;
@@ -493,8 +535,14 @@ fn type_expression(
             let previous_environment =
                 std::mem::replace(&mut analysis_information.environment, new_environment);
             let returned_type = if program_archive.contains_function(id) {
-                type_function(id, &concrete_types, meta, analysis_information, program_archive)
-                    .map(FoldedType::arithmetic_type)
+                type_function(
+                    id,
+                    &concrete_types,
+                    meta,
+                    analysis_information,
+                    program_archive,
+                )
+                .map(FoldedType::arithmetic_type)
             } else {
                 let r_val =
                     type_template(id, &concrete_types, analysis_information, program_archive);
@@ -581,11 +629,19 @@ fn apply_access_to_symbol(
     program_archive: &ProgramArchive,
 ) -> Result<SymbolInformation, ()> {
     let (current_template, mut current_dim) = if environment.has_component(symbol) {
-        environment.get_component_or_break(symbol, file!(), line!()).clone()
+        environment
+            .get_component_or_break(symbol, file!(), line!())
+            .clone()
     } else if environment.has_signal(symbol) {
-        (None, *environment.get_signal_or_break(symbol, file!(), line!()))
+        (
+            None,
+            *environment.get_signal_or_break(symbol, file!(), line!()),
+        )
     } else {
-        (None, *environment.get_variable_or_break(symbol, file!(), line!()))
+        (
+            None,
+            *environment.get_variable_or_break(symbol, file!(), line!()),
+        )
     };
 
     if access_information.0 > current_dim {
@@ -598,9 +654,12 @@ fn apply_access_to_symbol(
         add_report_and_end(ReportCode::InvalidSignalAccess, meta, reports)
     } else if let Some((signal_name, dims_accessed)) = access_information.1 {
         let template_name = current_template.unwrap();
-        let input = program_archive.get_template_data(&template_name).get_input_info(&signal_name);
-        let output =
-            program_archive.get_template_data(&template_name).get_output_info(&signal_name);
+        let input = program_archive
+            .get_template_data(&template_name)
+            .get_input_info(&signal_name);
+        let output = program_archive
+            .get_template_data(&template_name)
+            .get_output_info(&signal_name);
         current_dim = match (input, output) {
             (Some((d, _)), _) | (_, Some((d, _))) => *d,
             _ => {
@@ -653,9 +712,13 @@ fn prepare_environment_for_call(
     reports: &mut ReportCollection,
 ) -> Result<TypingEnvironment, ()> {
     let args_names = if program_archive.contains_function(call_id) {
-        program_archive.get_function_data(call_id).get_name_of_params()
+        program_archive
+            .get_function_data(call_id)
+            .get_name_of_params()
     } else {
-        program_archive.get_template_data(call_id).get_name_of_params()
+        program_archive
+            .get_template_data(call_id)
+            .get_name_of_params()
     };
     if args_dims.len() != args_names.len() {
         let error_code = ReportCode::WrongNumberOfArguments(args_names.len(), args_dims.len());
@@ -675,8 +738,14 @@ fn type_template(
     program_archive: &ProgramArchive,
 ) -> String {
     debug_assert!(program_archive.contains_template(call_id));
-    if analysis_information.registered_calls.get_instance(call_id, args_dims).is_none() {
-        analysis_information.registered_calls.add_instance(call_id, args_dims.to_vec(), 0);
+    if analysis_information
+        .registered_calls
+        .get_instance(call_id, args_dims)
+        .is_none()
+    {
+        analysis_information
+            .registered_calls
+            .add_instance(call_id, args_dims.to_vec(), 0);
         let stmts = program_archive.get_template_data(call_id).get_body_as_vec();
         treat_sequence_of_statements(stmts, program_archive, analysis_information);
     }
@@ -691,12 +760,17 @@ fn type_function(
     program_archive: &ProgramArchive,
 ) -> Result<ArithmeticType, ()> {
     debug_assert!(program_archive.contains_function(call_id));
-    if let Some(instance) = analysis_information.registered_calls.get_instance(call_id, args_dims) {
+    if let Some(instance) = analysis_information
+        .registered_calls
+        .get_instance(call_id, args_dims)
+    {
         return Ok(*instance.returns());
     }
     let mut given_type = type_given_function(call_id, program_archive.get_functions(), args_dims);
     if let Some(raw) = &given_type {
-        analysis_information.registered_calls.add_instance(call_id, args_dims.to_vec(), *raw);
+        analysis_information
+            .registered_calls
+            .add_instance(call_id, args_dims.to_vec(), *raw);
     } else {
         return add_report_and_end(
             ReportCode::UnableToTypeFunction,

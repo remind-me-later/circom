@@ -1,9 +1,9 @@
 use super::ir_interface::*;
 use crate::hir::very_concrete_program::*;
-use constant_tracking::ConstantTracker;
-use num_bigint_dig::BigInt;
 use circom_ast::*;
 use circom_error::file_definition::FileLibrary;
+use constant_tracking::ConstantTracker;
+use num_bigint_dig::BigInt;
 use program_structure::utils::environment::VarEnvironment;
 use std::collections::HashMap;
 
@@ -161,8 +161,10 @@ fn initialize_parameters(state: &mut State, params: Vec<Param>) {
             is_parallel: state.is_parallel,
         };
         let address_instruction = address_instruction.allocate();
-        let symbol_info =
-            SymbolInfo { dimensions: lengths, access_instruction: address_instruction.clone() };
+        let symbol_info = SymbolInfo {
+            dimensions: lengths,
+            access_instruction: address_instruction.clone(),
+        };
         state.environment.add_variable(&p.name, symbol_info);
     }
 }
@@ -181,8 +183,10 @@ fn initialize_constants(state: &mut State, constants: Vec<Argument>) {
             is_parallel: state.is_parallel,
         }
         .allocate();
-        let symbol_info =
-            SymbolInfo { access_instruction: address_instruction.clone(), dimensions };
+        let symbol_info = SymbolInfo {
+            access_instruction: address_instruction.clone(),
+            dimensions,
+        };
         state.environment.add_variable(&arg.name, symbol_info);
 
         for (index, value) in arg.values.into_iter().enumerate() {
@@ -220,7 +224,10 @@ fn initialize_constants(state: &mut State, constants: Vec<Argument>) {
                 message_id: 0,
                 dest_is_output: false,
                 dest_address_type: AddressType::Variable,
-                dest: LocationRule::Indexed { location: full_address, template_header: None },
+                dest: LocationRule::Indexed {
+                    location: full_address,
+                    template_header: None,
+                },
                 context: InstrContext { size: 1 },
                 src: content,
             }
@@ -243,7 +250,10 @@ fn initialize_signals(state: &mut State, signals: Vec<Signal>) {
             is_parallel: state.is_parallel,
         }
         .allocate();
-        let info = SymbolInfo { access_instruction: instruction, dimensions: signal.lengths };
+        let info = SymbolInfo {
+            access_instruction: instruction,
+            dimensions: signal.lengths,
+        };
         state.environment.add_variable(&signal.name, info);
         state.signal_to_type.insert(signal.name, signal.xtype);
     }
@@ -262,7 +272,10 @@ fn initialize_components(state: &mut State, components: Vec<Component>) {
             is_parallel: state.is_parallel,
         }
         .allocate();
-        let info = SymbolInfo { access_instruction: instruction, dimensions: component.lengths };
+        let info = SymbolInfo {
+            access_instruction: instruction,
+            dimensions: component.lengths,
+        };
         state.environment.add_variable(&component.name, info);
     }
 }
@@ -271,7 +284,9 @@ fn initialize_components(state: &mut State, components: Vec<Component>) {
 fn create_components(state: &mut State, triggers: &[Trigger], clusters: Vec<TriggerCluster>) {
     use ClusterType::*;
     for trigger in triggers {
-        state.component_to_instance.insert(trigger.component_name.clone(), trigger.template_id);
+        state
+            .component_to_instance
+            .insert(trigger.component_name.clone(), trigger.template_id);
     }
     for cluster in clusters {
         match cluster.xtype.clone() {
@@ -298,11 +313,20 @@ fn create_uniform_components(state: &mut State, triggers: &[Trigger], cluster: T
         jump
     }
     use ClusterType::Uniform;
-    if let Uniform { offset_jump, component_offset_jump, .. } = cluster.xtype {
+    if let Uniform {
+        offset_jump,
+        component_offset_jump,
+        ..
+    } = cluster.xtype
+    {
         let id = state.reserve_component_ids(offset_jump);
         let first = cluster.slice.start;
         let c_info = &triggers[first];
-        let symbol = state.environment.get_variable(&c_info.component_name).unwrap().clone();
+        let symbol = state
+            .environment
+            .get_variable(&c_info.component_name)
+            .unwrap()
+            .clone();
         let creation_instr = CreateCmpBucket {
             line: 0,
             is_parallel: state.is_parallel,
@@ -347,7 +371,11 @@ fn create_mixed_components(state: &mut State, triggers: &[Trigger], cluster: Tri
     for index in cluster.slice {
         let id = state.reserve_component_ids(1);
         let c_info = &triggers[index];
-        let symbol = state.environment.get_variable(&c_info.component_name).unwrap().clone();
+        let symbol = state
+            .environment
+            .get_variable(&c_info.component_name)
+            .unwrap()
+            .clone();
         let value_jump = compute_jump(&symbol.dimensions, &c_info.indexed_with);
         let jump = ValueBucket {
             line: 0,
@@ -375,11 +403,14 @@ fn create_mixed_components(state: &mut State, triggers: &[Trigger], cluster: Tri
             name_subcomponent: format!(
                 "{}{}",
                 c_info.component_name.clone(),
-                c_info.indexed_with.iter().fold(String::new(), |acc, &num| format!(
-                    "{}[{}]",
-                    acc,
-                    &num.to_string()
-                ))
+                c_info
+                    .indexed_with
+                    .iter()
+                    .fold(String::new(), |acc, &num| format!(
+                        "{}[{}]",
+                        acc,
+                        &num.to_string()
+                    ))
             ),
             defined_positions: vec![0],
             dimensions: symbol.dimensions,
@@ -402,9 +433,14 @@ fn translate_statement(stmt: Statement, state: &mut State, context: &Context) {
     use Statement::*;
     match stmt {
         Declaration { name, meta, .. } => {
-            let starts_at =
-                context.files.get_line(meta.get_start(), meta.unwrap_file_id()).unwrap();
-            let dimensions = meta.get_memory_knowledge().get_concrete_dimensions().to_vec();
+            let starts_at = context
+                .files
+                .get_line(meta.get_start(), meta.unwrap_file_id())
+                .unwrap();
+            let dimensions = meta
+                .get_memory_knowledge()
+                .get_concrete_dimensions()
+                .to_vec();
             let size = dimensions.iter().fold(1, |p, c| p * (*c));
             let address = state.reserve_variable(size);
             let instruction = ValueBucket {
@@ -416,14 +452,29 @@ fn translate_statement(stmt: Statement, state: &mut State, context: &Context) {
                 is_parallel: state.is_parallel,
             }
             .allocate();
-            let info = SymbolInfo { access_instruction: instruction, dimensions };
+            let info = SymbolInfo {
+                access_instruction: instruction,
+                dimensions,
+            };
             state.environment.add_variable(&name, info);
         }
-        Substitution { meta, var, access, rhe, .. } => {
+        Substitution {
+            meta,
+            var,
+            access,
+            rhe,
+            ..
+        } => {
             debug_assert!(!meta.get_type_knowledge().is_component());
-            let def = SymbolDef { meta, symbol: var, acc: access };
-            let str_info =
-                StoreInfo { prc_symbol: ProcessedSymbol::new(def, state, context), src: rhe };
+            let def = SymbolDef {
+                meta,
+                symbol: var,
+                acc: access,
+            };
+            let str_info = StoreInfo {
+                prc_symbol: ProcessedSymbol::new(def, state, context),
+                src: rhe,
+            };
 
             let store_instruction = if let Expression::Call { id, args, .. } = str_info.src {
                 // Translate call
@@ -446,9 +497,17 @@ fn translate_statement(stmt: Statement, state: &mut State, context: &Context) {
             state.environment.remove_variable_block();
             state.variable_stack = save_variable_address;
         }
-        IfThenElse { meta, cond, if_case, else_case, .. } => {
-            let starts_at =
-                context.files.get_line(meta.get_start(), meta.unwrap_file_id()).unwrap();
+        IfThenElse {
+            meta,
+            cond,
+            if_case,
+            else_case,
+            ..
+        } => {
+            let starts_at = context
+                .files
+                .get_line(meta.get_start(), meta.unwrap_file_id())
+                .unwrap();
             let main_program = std::mem::take(&mut state.code);
             let cond_translation = translate_expression(cond, state, context);
             translate_statement(*if_case, state, context);
@@ -468,9 +527,13 @@ fn translate_statement(stmt: Statement, state: &mut State, context: &Context) {
             .allocate();
             state.code.push(branch_instruction);
         }
-        While { meta, cond, stmt, .. } => {
-            let starts_at =
-                context.files.get_line(meta.get_start(), meta.unwrap_file_id()).unwrap();
+        While {
+            meta, cond, stmt, ..
+        } => {
+            let starts_at = context
+                .files
+                .get_line(meta.get_start(), meta.unwrap_file_id())
+                .unwrap();
             let main_program = std::mem::take(&mut state.code);
             let cond_translation = translate_expression(cond, state, context);
             translate_statement(*stmt, state, context);
@@ -486,15 +549,24 @@ fn translate_statement(stmt: Statement, state: &mut State, context: &Context) {
             state.code.push(loop_instruction);
         }
         Assert { meta, arg, .. } => {
-            let line = context.files.get_line(meta.get_start(), meta.unwrap_file_id()).unwrap();
+            let line = context
+                .files
+                .get_line(meta.get_start(), meta.unwrap_file_id())
+                .unwrap();
             let code = translate_expression(arg, state, context);
-            let assert =
-                AssertBucket { line, message_id: state.message_id, evaluate: code }.allocate();
+            let assert = AssertBucket {
+                line,
+                message_id: state.message_id,
+                evaluate: code,
+            }
+            .allocate();
             state.code.push(assert);
         }
         ConstraintEquality { meta, lhe, rhe } => {
-            let starts_at =
-                context.files.get_line(meta.get_start(), meta.unwrap_file_id()).unwrap();
+            let starts_at = context
+                .files
+                .get_line(meta.get_start(), meta.unwrap_file_id())
+                .unwrap();
             let lhe_pointer = translate_expression(lhe, state, context);
             let rhe_pointer = translate_expression(rhe, state, context);
             let stack = vec![lhe_pointer, rhe_pointer];
@@ -507,16 +579,22 @@ fn translate_statement(stmt: Statement, state: &mut State, context: &Context) {
                 stack,
             }
             .allocate();
-            let assert_instruction =
-                AssertBucket { line: starts_at, message_id: state.message_id, evaluate: equality }
-                    .allocate();
+            let assert_instruction = AssertBucket {
+                line: starts_at,
+                message_id: state.message_id,
+                evaluate: equality,
+            }
+            .allocate();
             state.code.push(assert_instruction);
         }
         Return { meta, value, .. } => {
             let return_type = context.functions.get(&context.translating).unwrap();
             let return_bucket = ReturnBucket {
                 is_parallel: state.is_parallel,
-                line: context.files.get_line(meta.get_start(), meta.unwrap_file_id()).unwrap(),
+                line: context
+                    .files
+                    .get_line(meta.get_start(), meta.unwrap_file_id())
+                    .unwrap(),
                 message_id: state.message_id,
                 with_size: return_type.iter().fold(1, |p, c| p * (*c)),
                 value: translate_expression(value, state, context),
@@ -525,7 +603,10 @@ fn translate_statement(stmt: Statement, state: &mut State, context: &Context) {
             state.code.push(return_bucket);
         }
         LogCall { meta, arg, .. } => {
-            let line = context.files.get_line(meta.get_start(), meta.unwrap_file_id()).unwrap();
+            let line = context
+                .files
+                .get_line(meta.get_start(), meta.unwrap_file_id())
+                .unwrap();
             let code = translate_expression(arg, state, context);
             let log = LogBucket {
                 line,
@@ -555,12 +636,21 @@ fn translate_expression(
 ) -> InstructionPointer {
     use Expression::*;
     match expression {
-        InfixOp { meta, infix_op, rhe, lhe, .. } => {
+        InfixOp {
+            meta,
+            infix_op,
+            rhe,
+            lhe,
+            ..
+        } => {
             let lhi = translate_expression(*lhe, state, context);
             let rhi = translate_expression(*rhe, state, context);
             ComputeBucket {
                 is_parallel: state.is_parallel,
-                line: context.files.get_line(meta.get_start(), meta.unwrap_file_id()).unwrap(),
+                line: context
+                    .files
+                    .get_line(meta.get_start(), meta.unwrap_file_id())
+                    .unwrap(),
                 message_id: state.message_id,
                 op: translate_infix_operator(infix_op),
                 op_aux_no: 0,
@@ -568,11 +658,19 @@ fn translate_expression(
             }
             .allocate()
         }
-        PrefixOp { meta, prefix_op, rhe, .. } => {
+        PrefixOp {
+            meta,
+            prefix_op,
+            rhe,
+            ..
+        } => {
             let rhi = translate_expression(*rhe, state, context);
             ComputeBucket {
                 is_parallel: state.is_parallel,
-                line: context.files.get_line(meta.get_start(), meta.unwrap_file_id()).unwrap(),
+                line: context
+                    .files
+                    .get_line(meta.get_start(), meta.unwrap_file_id())
+                    .unwrap(),
                 message_id: state.message_id,
                 op_aux_no: 0,
                 op: translate_prefix_operator(prefix_op),
@@ -580,14 +678,23 @@ fn translate_expression(
             }
             .allocate()
         }
-        Variable { meta, name, access, .. } => {
-            let def = SymbolDef { meta, symbol: name, acc: access };
+        Variable {
+            meta, name, access, ..
+        } => {
+            let def = SymbolDef {
+                meta,
+                symbol: name,
+                acc: access,
+            };
             ProcessedSymbol::new(def, state, context).into_load(state)
         }
         Number { meta, value } => {
             let cid = bigint_to_cid(&mut state.field_tracker, &value);
             ValueBucket {
-                line: context.files.get_line(meta.get_start(), meta.unwrap_file_id()).unwrap(),
+                line: context
+                    .files
+                    .get_line(meta.get_start(), meta.unwrap_file_id())
+                    .unwrap(),
                 message_id: state.message_id,
                 op_aux_no: 0,
                 parse_as: ValueType::BigInt,
@@ -600,7 +707,10 @@ fn translate_expression(
             let args_inst = translate_call_arguments(args, state, context);
             CallBucket {
                 is_parallel: state.is_parallel,
-                line: context.files.get_line(meta.get_start(), meta.unwrap_file_id()).unwrap(),
+                line: context
+                    .files
+                    .get_line(meta.get_start(), meta.unwrap_file_id())
+                    .unwrap(),
                 message_id: state.message_id,
                 symbol: id,
                 argument_types: args_inst.argument_data,
@@ -670,13 +780,23 @@ fn build_signal_location(
         Mixed { tmp_name } => {
             let signal_code = TemplateDB::get_signal_id(database, tmp_name, signal);
             let indexes = indexing_instructions_filter(indexes, state);
-            LocationRule::Mapped { signal_code, indexes }
+            LocationRule::Mapped {
+                signal_code,
+                indexes,
+            }
         }
-        Uniform { instance_id, header, .. } => {
+        Uniform {
+            instance_id,
+            header,
+            ..
+        } => {
             let env = TemplateDB::get_instance_addresses(database, *instance_id);
             let location = env.get_variable(signal).unwrap().clone();
             let full_address = compute_full_address(state, location, indexes);
-            LocationRule::Indexed { location: full_address, template_header: Some(header.clone()) }
+            LocationRule::Indexed {
+                location: full_address,
+                template_header: Some(header.clone()),
+            }
         }
     }
 }
@@ -704,7 +824,11 @@ impl ProcessedSymbol {
         use Access::*;
         let symbol_name = definition.symbol;
         let meta = definition.meta;
-        let symbol_info = state.environment.get_variable(&symbol_name).unwrap().clone();
+        let symbol_info = state
+            .environment
+            .get_variable(&symbol_name)
+            .unwrap()
+            .clone();
         let mut lengths = symbol_info.dimensions.clone();
         lengths.reverse();
         let mut with_length = symbol_info.dimensions.iter().fold(1, |r, c| r * (*c));
@@ -735,7 +859,10 @@ impl ProcessedSymbol {
         });
         ProcessedSymbol {
             xtype: meta.get_type_knowledge().get_reduces_to(),
-            line: context.files.get_line(meta.get_start(), meta.unwrap_file_id()).unwrap(),
+            line: context
+                .files
+                .get_line(meta.get_start(), meta.unwrap_file_id())
+                .unwrap(),
             message_id: state.message_id,
             length: with_length,
             symbol: symbol_info,
@@ -753,7 +880,9 @@ impl ProcessedSymbol {
                 cmp_address: compute_full_address(state, self.symbol, self.before_signal),
                 is_output: self.signal_type.unwrap() == SignalType::Output,
                 input_information: match self.signal_type.unwrap() {
-                    SignalType::Input => InputInformation::Input { status: StatusInput::Unknown },
+                    SignalType::Input => InputInformation::Input {
+                        status: StatusInput::Unknown,
+                    },
                     _ => InputInformation::NoInput,
                 },
             };
@@ -773,7 +902,10 @@ impl ProcessedSymbol {
                 context: InstrContext { size: self.length },
                 dest_is_output: self.signal_type.map_or(false, |t| t == SignalType::Output),
                 dest_address_type: xtype,
-                dest: LocationRule::Indexed { location: address, template_header: None },
+                dest: LocationRule::Indexed {
+                    location: address,
+                    template_header: None,
+                },
             }
         };
         CallBucket {
@@ -796,7 +928,9 @@ impl ProcessedSymbol {
                 cmp_address: compute_full_address(state, self.symbol, self.before_signal),
                 is_output: self.signal_type.unwrap() == SignalType::Output,
                 input_information: match self.signal_type.unwrap() {
-                    SignalType::Input => InputInformation::Input { status: StatusInput::Unknown },
+                    SignalType::Input => InputInformation::Input {
+                        status: StatusInput::Unknown,
+                    },
                     _ => InputInformation::NoInput,
                 },
             };
@@ -823,7 +957,10 @@ impl ProcessedSymbol {
                 dest_address_type: xtype,
                 message_id: self.message_id,
                 dest_is_output: self.signal_type.map_or(false, |t| t == SignalType::Output),
-                dest: LocationRule::Indexed { location: address, template_header: None },
+                dest: LocationRule::Indexed {
+                    location: address,
+                    template_header: None,
+                },
                 context: InstrContext { size: self.length },
                 is_parallel: state.is_parallel,
             }
@@ -838,7 +975,9 @@ impl ProcessedSymbol {
                 cmp_address: compute_full_address(state, self.symbol, self.before_signal),
                 is_output: self.signal_type.unwrap() == SignalType::Output,
                 input_information: match self.signal_type.unwrap() {
-                    SignalType::Input => InputInformation::Input { status: StatusInput::Unknown },
+                    SignalType::Input => InputInformation::Input {
+                        status: StatusInput::Unknown,
+                    },
                     _ => InputInformation::NoInput,
                 },
             };
@@ -861,7 +1000,10 @@ impl ProcessedSymbol {
                 line: self.line,
                 address_type: xtype,
                 message_id: self.message_id,
-                src: LocationRule::Indexed { location: address, template_header: None },
+                src: LocationRule::Indexed {
+                    location: address,
+                    template_header: None,
+                },
             }
             .allocate()
         }
@@ -914,7 +1056,7 @@ fn indexing_instructions_filter(
     indexing: Vec<InstructionPointer>,
     state: &State,
 ) -> Vec<InstructionPointer> {
-    use Instruction::{Value, Compute};
+    use Instruction::{Compute, Value};
     let mut index_stack = vec![];
     for i in indexing {
         match *i {
@@ -983,7 +1125,10 @@ fn translate_call_arguments(
     state: &mut State,
     context: &Context,
 ) -> ArgData {
-    let mut info = ArgData { argument_data: vec![], arguments: InstructionList::new() };
+    let mut info = ArgData {
+        argument_data: vec![],
+        arguments: InstructionList::new(),
+    };
     for arg in args {
         let length = arg
             .get_meta()

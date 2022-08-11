@@ -1,9 +1,9 @@
 use super::type_definitions::*;
 use circom_algebra::algebra::ArithmeticExpression;
+use circom_ast::{SignalType, Statement};
 use compiler::hir::very_concrete_program::*;
 use dag::DAG;
 use num_bigint::BigInt;
-use circom_ast::{SignalType, Statement};
 use std::collections::{HashMap, HashSet};
 
 struct Connexion {
@@ -82,15 +82,18 @@ impl ExecutedTemplate {
     }
 
     pub fn add_input(&mut self, input_name: &str, dimensions: &[usize]) {
-        self.inputs.push((input_name.to_string(), dimensions.to_vec()));
+        self.inputs
+            .push((input_name.to_string(), dimensions.to_vec()));
     }
 
     pub fn add_output(&mut self, output_name: &str, dimensions: &[usize]) {
-        self.outputs.push((output_name.to_string(), dimensions.to_vec()));
+        self.outputs
+            .push((output_name.to_string(), dimensions.to_vec()));
     }
 
     pub fn add_intermediate(&mut self, intermediate_name: &str, dimensions: &[usize]) {
-        self.intermediates.push((intermediate_name.to_string(), dimensions.to_vec()));
+        self.intermediates
+            .push((intermediate_name.to_string(), dimensions.to_vec()));
     }
 
     pub fn add_ordered_signal(&mut self, signal_name: &str, dimensions: &[usize]) {
@@ -119,7 +122,8 @@ impl ExecutedTemplate {
     }
 
     pub fn add_component(&mut self, component_name: &str, dimensions: &[usize]) {
-        self.components.push((component_name.to_string(), dimensions.to_vec()));
+        self.components
+            .push((component_name.to_string(), dimensions.to_vec()));
         self.number_of_components += dimensions.iter().fold(1, |p, c| p * (*c));
     }
 
@@ -173,27 +177,55 @@ impl ExecutedTemplate {
 
     fn build_signals(&self, dag: &mut DAG) {
         for (name, dim) in self.outputs() {
-            let state = State { name: name.clone(), dim: 0 };
-            let config = SignalConfig { signal_type: 1, dimensions: dim, is_public: false };
+            let state = State {
+                name: name.clone(),
+                dim: 0,
+            };
+            let config = SignalConfig {
+                signal_type: 1,
+                dimensions: dim,
+                is_public: false,
+            };
             generate_symbols(dag, state, &config);
         }
         for (name, dim) in self.inputs() {
             if self.public_inputs.contains(name) {
-                let state = State { name: name.clone(), dim: 0 };
-                let config = SignalConfig { signal_type: 0, dimensions: dim, is_public: true };
+                let state = State {
+                    name: name.clone(),
+                    dim: 0,
+                };
+                let config = SignalConfig {
+                    signal_type: 0,
+                    dimensions: dim,
+                    is_public: true,
+                };
                 generate_symbols(dag, state, &config);
             }
         }
         for (name, dim) in self.inputs() {
             if !self.public_inputs.contains(name) {
-                let state = State { name: name.clone(), dim: 0 };
-                let config = SignalConfig { signal_type: 0, dimensions: dim, is_public: false };
+                let state = State {
+                    name: name.clone(),
+                    dim: 0,
+                };
+                let config = SignalConfig {
+                    signal_type: 0,
+                    dimensions: dim,
+                    is_public: false,
+                };
                 generate_symbols(dag, state, &config);
             }
         }
         for (name, dim) in self.intermediates() {
-            let state = State { name: name.clone(), dim: 0 };
-            let config = SignalConfig { signal_type: 2, dimensions: dim, is_public: false };
+            let state = State {
+                name: name.clone(),
+                dim: 0,
+            };
+            let config = SignalConfig {
+                signal_type: 2,
+                dimensions: dim,
+                is_public: false,
+            };
             generate_symbols(dag, state, &config);
         }
     }
@@ -264,7 +296,11 @@ impl ExecutedTemplate {
             let mut arguments = vec![];
             for (name, data) in parameter_instances {
                 let (dim, value) = data.destruct();
-                let argument = Argument { name, lengths: dim, values: as_big_int(value) };
+                let argument = Argument {
+                    name,
+                    lengths: dim,
+                    values: as_big_int(value),
+                };
                 arguments.push(argument);
             }
             arguments
@@ -303,25 +339,49 @@ impl ExecutedTemplate {
         let mut local_id = 0;
         let mut dag_local_id = 1;
         for (name, lengths) in self.outputs {
-            let signal = Signal { name, lengths, local_id, dag_local_id, xtype: Output };
+            let signal = Signal {
+                name,
+                lengths,
+                local_id,
+                dag_local_id,
+                xtype: Output,
+            };
             local_id += signal.size();
             dag_local_id += signal.size();
             instance.add_signal(signal);
         }
         for (name, lengths) in public {
-            let signal = Signal { name, lengths, local_id, dag_local_id, xtype: Input };
+            let signal = Signal {
+                name,
+                lengths,
+                local_id,
+                dag_local_id,
+                xtype: Input,
+            };
             local_id += signal.size();
             dag_local_id += signal.size();
             instance.add_signal(signal);
         }
         for (name, lengths) in not_public {
-            let signal = Signal { name, lengths, local_id, dag_local_id, xtype: Input };
+            let signal = Signal {
+                name,
+                lengths,
+                local_id,
+                dag_local_id,
+                xtype: Input,
+            };
             local_id += signal.size();
             dag_local_id += signal.size();
             instance.add_signal(signal);
         }
         for (name, lengths) in self.intermediates {
-            let signal = Signal { name, lengths, local_id, dag_local_id, xtype: Intermediate };
+            let signal = Signal {
+                name,
+                lengths,
+                local_id,
+                dag_local_id,
+                xtype: Intermediate,
+            };
             local_id += signal.size();
             dag_local_id += signal.size();
             instance.add_signal(signal);
@@ -351,8 +411,10 @@ fn generate_symbols(dag: &mut DAG, state: State, config: &SignalConfig) {
     } else {
         let mut index = 0;
         while index < config.dimensions[state.dim] {
-            let new_state =
-                State { name: format!("{}[{}]", state.name, index), dim: state.dim + 1 };
+            let new_state = State {
+                name: format!("{}[{}]", state.name, index),
+                dim: state.dim + 1,
+            };
             generate_symbols(dag, new_state, config);
             index += 1;
         }

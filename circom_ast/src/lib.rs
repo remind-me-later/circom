@@ -1,16 +1,16 @@
 pub mod ast_shortcuts;
 
-mod knowledge;
-mod expression;
-mod statement;
-mod meta;
 mod definition;
+mod expression;
+mod knowledge;
+mod meta;
+mod statement;
 
-pub use knowledge::{TypeKnowledge, MemoryKnowledge, TypeReduction};
-pub use expression::{Expression, ExpressionPrefixOpcode, ExpressionInfixOpcode};
-pub use statement::*;
-pub use meta::{Meta, FillMeta};
 pub use definition::Definition;
+pub use expression::{Expression, ExpressionInfixOpcode, ExpressionPrefixOpcode};
+pub use knowledge::{MemoryKnowledge, TypeKnowledge, TypeReduction};
+pub use meta::{FillMeta, Meta};
+pub use statement::*;
 
 #[derive(Clone)]
 pub struct MainComponent {
@@ -20,7 +20,10 @@ pub struct MainComponent {
 
 impl MainComponent {
     pub fn new(public_inputs: Vec<String>, initial_template_call: Expression) -> Self {
-        Self { public_inputs, initial_template_call }
+        Self {
+            public_inputs,
+            initial_template_call,
+        }
     }
 }
 
@@ -33,7 +36,11 @@ pub struct Version {
 
 impl Version {
     pub fn new(major: usize, minor: usize, patch: usize) -> Self {
-        Self { major, minor, patch }
+        Self {
+            major,
+            minor,
+            patch,
+        }
     }
 
     pub fn major(&self) -> usize {
@@ -70,7 +77,13 @@ impl AST {
         main_component: Option<MainComponent>,
     ) -> AST {
         let custom_gates_declared = definitions.iter().any(|definition| {
-            matches!(definition, Definition::Template { is_custom_gate: true, .. })
+            matches!(
+                definition,
+                Definition::Template {
+                    is_custom_gate: true,
+                    ..
+                }
+            )
         });
         AST {
             meta,
@@ -97,7 +110,19 @@ impl AST {
 
     pub fn decompose(
         self,
-    ) -> (Meta, Option<Version>, Vec<String>, Vec<Definition>, Option<MainComponent>) {
-        (self.meta, self.compiler_version, self.includes, self.definitions, self.main_component)
+    ) -> (
+        Meta,
+        Option<Version>,
+        Vec<String>,
+        Vec<Definition>,
+        Option<MainComponent>,
+    ) {
+        (
+            self.meta,
+            self.compiler_version,
+            self.includes,
+            self.definitions,
+            self.main_component,
+        )
     }
 }

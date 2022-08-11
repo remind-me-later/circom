@@ -1,10 +1,10 @@
 use crate::environment_utils::environment::ExecutionEnvironment as EE;
 use crate::environment_utils::slice_types::AExpressionSlice;
 use circom_algebra::algebra::ArithmeticExpression;
-use compiler::hir::very_concrete_program::{Argument, TemplateInstance};
-use num_bigint::BigInt;
 use circom_ast::{Expression, Meta, Statement};
 use circom_error::error_definition::ReportCollection;
+use compiler::hir::very_concrete_program::{Argument, TemplateInstance};
+use num_bigint::BigInt;
 use program_structure::program_archive::ProgramArchive;
 use std::collections::HashMap;
 
@@ -26,8 +26,11 @@ pub fn manage_functions(
     for (name, data) in program_archive.get_functions() {
         let mut code = data.get_body().clone();
         let environment = EE::new();
-        let context =
-            Context { program_archive, inside_template: false, environment: &environment };
+        let context = Context {
+            program_archive,
+            inside_template: false,
+            environment: &environment,
+        };
         treat_statement(&mut code, &context, &mut reports, flag_verbose, prime);
         processed.insert(name.clone(), code);
     }
@@ -50,8 +53,18 @@ pub fn compute_vct(
     let mut reports = vec![];
     for instance in instances {
         let environment = transform_header_into_environment(&instance.header);
-        let context = Context { program_archive, inside_template: true, environment: &environment };
-        treat_statement(&mut instance.code, &context, &mut reports, flag_verbose, prime);
+        let context = Context {
+            program_archive,
+            inside_template: true,
+            environment: &environment,
+        };
+        treat_statement(
+            &mut instance.code,
+            &context,
+            &mut reports,
+            flag_verbose,
+            prime,
+        );
     }
     if reports.is_empty() {
         Ok(())
@@ -72,8 +85,11 @@ fn transform_header_into_environment(header: &[Argument]) -> EE {
 
 fn argument_into_slice(argument: &Argument) -> AExpressionSlice {
     use ArithmeticExpression::Number;
-    let arithmetic_expressions: Vec<ArithmeticExpression<String>> =
-        argument.values.iter().map(|v| Number { value: v.clone() }).collect();
+    let arithmetic_expressions: Vec<ArithmeticExpression<String>> = argument
+        .values
+        .iter()
+        .map(|v| Number { value: v.clone() })
+        .collect();
     let dimensions = argument.lengths.clone();
     AExpressionSlice::new_array(dimensions, arithmetic_expressions)
 }
@@ -87,7 +103,9 @@ fn treat_statement(
 ) {
     use Statement::*;
     match stmt {
-        InitializationBlock { initializations, .. } => {
+        InitializationBlock {
+            initializations, ..
+        } => {
             for init in initializations {
                 if matches!(init, Declaration { .. }) {
                     treat_declaration(init, context, reports, flag_verbose, prime)
@@ -99,7 +117,9 @@ fn treat_statement(
                 .iter_mut()
                 .for_each(|s| treat_statement(s, context, reports, flag_verbose, prime));
         }
-        IfThenElse { if_case, else_case, .. } => {
+        IfThenElse {
+            if_case, else_case, ..
+        } => {
             treat_statement(if_case, context, reports, flag_verbose, prime);
             if let Some(s) = else_case {
                 treat_statement(s, context, reports, flag_verbose, prime);
@@ -118,7 +138,10 @@ fn treat_declaration(
     prime: &String,
 ) {
     use Statement::Declaration;
-    if let Declaration { meta, dimensions, .. } = stmt {
+    if let Declaration {
+        meta, dimensions, ..
+    } = stmt
+    {
         let mut concrete_dimensions = vec![];
         for d in dimensions.iter_mut() {
             let execution_response = treat_dimension(d, context, reports, flag_verbose, prime);
@@ -128,7 +151,8 @@ fn treat_declaration(
                 report_invalid_dimension(meta, reports);
             }
         }
-        meta.get_mut_memory_knowledge().set_concrete_dimensions(concrete_dimensions);
+        meta.get_mut_memory_knowledge()
+            .set_concrete_dimensions(concrete_dimensions);
     } else {
         unreachable!()
     }

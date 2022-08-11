@@ -10,15 +10,15 @@ mod execution_data;
 
 use ansi_term::Colour;
 use circom_algebra::algebra::{ArithmeticError, ArithmeticExpression};
+use circom_error::error_code::ReportCode;
+use circom_error::error_definition::{Report, ReportCollection};
+use circom_error::file_definition::FileID;
 use compiler::hir::very_concrete_program::VCP;
 use constraint_list::ConstraintList;
 use constraint_writers::ConstraintExporter;
 use dag::DAG;
 use execution_data::executed_program::ExportResult;
 use execution_data::ExecutedProgram;
-use circom_error::error_code::ReportCode;
-use circom_error::error_definition::{Report, ReportCollection};
-use circom_error::file_definition::FileID;
 use program_structure::program_archive::ProgramArchive;
 use std::rc::Rc;
 

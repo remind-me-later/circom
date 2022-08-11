@@ -63,7 +63,12 @@ fn extend_statement(stmt: &mut Statement, state: &mut State, context: &Context) 
             *cond = expr.pop().unwrap();
             expands
         }
-        IfThenElse { cond, if_case, else_case, .. } => {
+        IfThenElse {
+            cond,
+            if_case,
+            else_case,
+            ..
+        } => {
             let mut expands = vec![];
             expands.append(&mut extend_statement(if_case, state, context));
             if let Some(s) = else_case {
@@ -97,7 +102,9 @@ fn extend_expression(
 ) -> ExtendedSyntax {
     use Expression::*;
     match expr {
-        Number { .. } => ExtendedSyntax { initializations: vec![] },
+        Number { .. } => ExtendedSyntax {
+            initializations: vec![],
+        },
         Variable { access, .. } => {
             let mut initializations = vec![];
             for acc in access {
@@ -127,7 +134,9 @@ fn extend_expression(
                 inits.append(&mut extended.initializations);
             }
             sugar_filter(args, state, &mut inits);
-            ExtendedSyntax { initializations: inits }
+            ExtendedSyntax {
+                initializations: inits,
+            }
         }
         PrefixOp { rhe, .. } => {
             let mut extended = extend_expression(rhe, state, context);
@@ -140,7 +149,9 @@ fn extend_expression(
             let mut lh_expand = extend_expression(lhe, state, context);
             let mut rh_expand = extend_expression(rhe, state, context);
 
-            lh_expand.initializations.append(&mut rh_expand.initializations);
+            lh_expand
+                .initializations
+                .append(&mut rh_expand.initializations);
             let mut extended = lh_expand;
             let mut expr = vec![*lhe.clone(), *rhe.clone()];
             sugar_filter(&mut expr, state, &mut extended.initializations);
@@ -148,11 +159,15 @@ fn extend_expression(
             *lhe = Box::new(expr.pop().unwrap());
             extended
         }
-        TernaryOp { if_true, if_false, .. } => {
+        TernaryOp {
+            if_true, if_false, ..
+        } => {
             let mut true_expand = extend_expression(if_true, state, context);
             let mut false_expand = extend_expression(if_false, state, context);
 
-            true_expand.initializations.append(&mut false_expand.initializations);
+            true_expand
+                .initializations
+                .append(&mut false_expand.initializations);
             let mut extended = true_expand;
             let mut expr = vec![*if_true.clone(), *if_false.clone()];
             sugar_filter(&mut expr, state, &mut extended.initializations);
@@ -187,9 +202,15 @@ fn rmv_sugar(fresh_variable: &str, expr: Expression, buffer: &mut Vec<Statement>
     let mut declaration_meta = expr.get_meta().clone();
     let mut variable_meta = expr.get_meta().clone();
     let mut initialization_meta = expr.get_meta().clone();
-    declaration_meta.get_mut_type_knowledge().set_reduces_to(TypeReduction::Variable);
-    variable_meta.get_mut_type_knowledge().set_reduces_to(TypeReduction::Variable);
-    initialization_meta.get_mut_type_knowledge().set_reduces_to(TypeReduction::Variable);
+    declaration_meta
+        .get_mut_type_knowledge()
+        .set_reduces_to(TypeReduction::Variable);
+    variable_meta
+        .get_mut_type_knowledge()
+        .set_reduces_to(TypeReduction::Variable);
+    initialization_meta
+        .get_mut_type_knowledge()
+        .set_reduces_to(TypeReduction::Variable);
     let declaration = Declaration {
         meta: declaration_meta,
         is_constant: true,
@@ -204,8 +225,11 @@ fn rmv_sugar(fresh_variable: &str, expr: Expression, buffer: &mut Vec<Statement>
         op: AssignOp::AssignVar,
         rhe: expr,
     };
-    let new_arg =
-        Variable { meta: variable_meta, name: fresh_variable.to_string(), access: vec![] };
+    let new_arg = Variable {
+        meta: variable_meta,
+        name: fresh_variable.to_string(),
+        access: vec![],
+    };
     buffer.push(declaration);
     buffer.push(initialization);
     new_arg
@@ -226,7 +250,10 @@ fn map_init_blocks(stmts: &mut Vec<Statement>) {
     let work = std::mem::take(stmts);
     for w in work {
         match w {
-            InitializationBlock { mut initializations, .. } => stmts.append(&mut initializations),
+            InitializationBlock {
+                mut initializations,
+                ..
+            } => stmts.append(&mut initializations),
             _ => stmts.push(w),
         }
     }
@@ -249,9 +276,16 @@ fn map_returns(stmts: &mut Vec<Statement>, mut fresh_id: usize) -> usize {
     for w in work {
         let should_split = matches!(
             w,
-            Return { value: Expression::ArrayInLine { .. }, .. }
-                | Return { value: Expression::TernaryOp { .. }, .. }
-                | Return { value: Expression::Call { .. }, .. }
+            Return {
+                value: Expression::ArrayInLine { .. },
+                ..
+            } | Return {
+                value: Expression::TernaryOp { .. },
+                ..
+            } | Return {
+                value: Expression::Call { .. },
+                ..
+            }
         );
 
         if should_split {
@@ -279,20 +313,37 @@ fn split_return(stmt: Statement, id: usize) -> ReturnSplit {
     use Expression::{Number, Variable};
     use Statement::{Declaration, Return, Substitution};
     if let Return { value, meta } = stmt {
-        let lengths = value.get_meta().get_memory_knowledge().get_concrete_dimensions().to_vec();
+        let lengths = value
+            .get_meta()
+            .get_memory_knowledge()
+            .get_concrete_dimensions()
+            .to_vec();
         let expr_lengths: Vec<Expression> = lengths
             .iter()
-            .map(|v| Number { meta: meta.clone(), value: BigInt::from(*v) })
+            .map(|v| Number {
+                meta: meta.clone(),
+                value: BigInt::from(*v),
+            })
             .collect();
         let mut declaration_meta = meta.clone();
         let mut substitution_meta = meta.clone();
         let mut variable_meta = meta.clone();
         let return_meta = meta;
-        declaration_meta.get_mut_memory_knowledge().set_concrete_dimensions(lengths.clone());
-        declaration_meta.get_mut_type_knowledge().set_reduces_to(TypeReduction::Variable);
-        substitution_meta.get_mut_type_knowledge().set_reduces_to(TypeReduction::Variable);
-        variable_meta.get_mut_memory_knowledge().set_concrete_dimensions(lengths);
-        variable_meta.get_mut_type_knowledge().set_reduces_to(TypeReduction::Variable);
+        declaration_meta
+            .get_mut_memory_knowledge()
+            .set_concrete_dimensions(lengths.clone());
+        declaration_meta
+            .get_mut_type_knowledge()
+            .set_reduces_to(TypeReduction::Variable);
+        substitution_meta
+            .get_mut_type_knowledge()
+            .set_reduces_to(TypeReduction::Variable);
+        variable_meta
+            .get_mut_memory_knowledge()
+            .set_concrete_dimensions(lengths);
+        variable_meta
+            .get_mut_type_knowledge()
+            .set_reduces_to(TypeReduction::Variable);
         let declaration = Declaration {
             meta: declaration_meta,
             xtype: VariableType::Var,
@@ -307,23 +358,45 @@ fn split_return(stmt: Statement, id: usize) -> ReturnSplit {
             op: AssignOp::AssignVar,
             rhe: value,
         };
-        let returned_variable =
-            Variable { meta: variable_meta, name: id.to_string(), access: vec![] };
-        let final_return = Return { meta: return_meta, value: returned_variable };
-        ReturnSplit { declaration, substitution, final_return }
+        let returned_variable = Variable {
+            meta: variable_meta,
+            name: id.to_string(),
+            access: vec![],
+        };
+        let final_return = Return {
+            meta: return_meta,
+            value: returned_variable,
+        };
+        ReturnSplit {
+            declaration,
+            substitution,
+            final_return,
+        }
     } else {
         unreachable!()
     }
 }
 
 fn into_single_substitution(stmt: Statement, stmts: &mut Vec<Statement>) {
-    use Statement::Substitution;
     use num_bigint_dig::BigInt;
     use Expression::{ArrayInLine, Number, TernaryOp};
+    use Statement::Substitution;
     use Statement::{Block, IfThenElse};
 
     match stmt {
-        Substitution { var, access, op, rhe: TernaryOp { cond, if_true, if_false, .. }, meta } => {
+        Substitution {
+            var,
+            access,
+            op,
+            rhe:
+                TernaryOp {
+                    cond,
+                    if_true,
+                    if_false,
+                    ..
+                },
+            meta,
+        } => {
             let mut if_assigns = vec![];
             let sub_if = Substitution {
                 meta: meta.clone(),
@@ -335,11 +408,23 @@ fn into_single_substitution(stmt: Statement, stmts: &mut Vec<Statement>) {
             if_assigns.push(sub_if);
 
             let mut else_assigns = vec![];
-            let sub_else = Substitution { op, var, access, meta: meta.clone(), rhe: *if_false };
+            let sub_else = Substitution {
+                op,
+                var,
+                access,
+                meta: meta.clone(),
+                rhe: *if_false,
+            };
             else_assigns.push(sub_else);
 
-            let if_body = Block { stmts: if_assigns, meta: meta.clone() };
-            let else_body = Block { stmts: else_assigns, meta: meta.clone() };
+            let if_body = Block {
+                stmts: if_assigns,
+                meta: meta.clone(),
+            };
+            let else_body = Block {
+                stmts: else_assigns,
+                meta: meta.clone(),
+            };
             let stmt = IfThenElse {
                 meta,
                 cond: *cond,
@@ -349,11 +434,22 @@ fn into_single_substitution(stmt: Statement, stmts: &mut Vec<Statement>) {
 
             stmts.push(stmt);
         }
-        Substitution { var, access, op, rhe: ArrayInLine { values, .. }, meta } => {
+        Substitution {
+            var,
+            access,
+            op,
+            rhe: ArrayInLine { values, .. },
+            meta,
+        } => {
             for (index, v) in values.into_iter().enumerate() {
                 let mut index_meta = meta.clone();
-                index_meta.get_mut_memory_knowledge().set_concrete_dimensions(vec![]);
-                let expr_index = Number { meta: index_meta, value: BigInt::from(index) };
+                index_meta
+                    .get_mut_memory_knowledge()
+                    .set_concrete_dimensions(vec![]);
+                let expr_index = Number {
+                    meta: index_meta,
+                    value: BigInt::from(index),
+                };
                 let as_access = Access::ArrayAccess(expr_index);
                 let mut accessed_with = access.clone();
                 accessed_with.push(as_access);

@@ -37,7 +37,10 @@ impl ToString for LogBucket {
         let line = self.line.to_string();
         let template_id = self.message_id.to_string();
         let print = self.print.to_string();
-        format!("LOG(line: {},template_id: {},evaluate: {})", line, template_id, print)
+        format!(
+            "LOG(line: {},template_id: {},evaluate: {})",
+            line, template_id, print
+        )
     }
 }
 
@@ -66,8 +69,10 @@ impl WriteC for LogBucket {
         let to_string_call = build_call("Fr_element2str".to_string(), vec![argument_result]);
         let temp_var = "temp".to_string();
         let into_temp = format!("char* temp = {}", to_string_call);
-        let print_c =
-            build_call("printf".to_string(), vec!["\"%s\\n\"".to_string(), temp_var.clone()]);
+        let print_c = build_call(
+            "printf".to_string(),
+            vec!["\"%s\\n\"".to_string(), temp_var.clone()],
+        );
         let delete_temp = format!("delete [] {}", temp_var);
         let mut log_c = argument_code;
         log_c.push("{".to_string());

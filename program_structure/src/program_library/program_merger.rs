@@ -1,9 +1,9 @@
+use super::function_data::{FunctionData, FunctionInfo};
+use super::template_data::{TemplateData, TemplateInfo};
 use circom_ast::Definition;
 use circom_error::error_code::ReportCode;
 use circom_error::error_definition::Report;
 use circom_error::file_definition::FileID;
-use super::function_data::{FunctionData, FunctionInfo};
-use super::template_data::{TemplateData, TemplateInfo};
 
 #[derive(Default)]
 pub struct Merger {
@@ -52,7 +52,13 @@ impl Merger {
                         (None, meta)
                     }
                 }
-                Definition::Function { name, body, args, arg_location, meta } => {
+                Definition::Function {
+                    name,
+                    body,
+                    args,
+                    arg_location,
+                    meta,
+                } => {
                     if self.contains_function(&name) || self.contains_template(&name) {
                         (Some(name), meta)
                     } else {

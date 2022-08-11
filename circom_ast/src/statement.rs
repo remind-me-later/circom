@@ -1,4 +1,4 @@
-use crate::{Expression, Meta, FillMeta};
+use crate::{Expression, FillMeta, Meta};
 
 #[derive(Clone)]
 pub enum Statement {
@@ -71,7 +71,11 @@ impl Statement {
     }
 
     pub fn build_while_block(meta: Meta, cond: Expression, stmt: Statement) -> Statement {
-        Statement::While { meta, cond, stmt: Box::new(stmt) }
+        Statement::While {
+            meta,
+            cond,
+            stmt: Box::new(stmt),
+        }
     }
 
     pub fn build_initialization_block(
@@ -79,7 +83,11 @@ impl Statement {
         xtype: VariableType,
         initializations: Vec<Statement>,
     ) -> Statement {
-        Statement::InitializationBlock { meta, xtype, initializations }
+        Statement::InitializationBlock {
+            meta,
+            xtype,
+            initializations,
+        }
     }
 
     pub fn build_block(meta: Meta, stmts: Vec<Statement>) -> Statement {
@@ -97,7 +105,13 @@ impl Statement {
         dimensions: Vec<Expression>,
     ) -> Statement {
         let is_constant = true;
-        Statement::Declaration { meta, xtype, name, dimensions, is_constant }
+        Statement::Declaration {
+            meta,
+            xtype,
+            name,
+            dimensions,
+            is_constant,
+        }
     }
 
     pub fn build_substitution(
@@ -107,7 +121,13 @@ impl Statement {
         op: AssignOp,
         rhe: Expression,
     ) -> Statement {
-        Statement::Substitution { meta, var, access, op, rhe }
+        Statement::Substitution {
+            meta,
+            var,
+            access,
+            op,
+            rhe,
+        }
     }
 
     pub fn build_constraint_equality(meta: Meta, lhe: Expression, rhe: Expression) -> Statement {
@@ -163,7 +183,12 @@ impl FillMeta for Statement {
         self.get_mut_meta().set_file_id(file_id);
 
         match self {
-            IfThenElse { cond, if_case, else_case, .. } => {
+            IfThenElse {
+                cond,
+                if_case,
+                else_case,
+                ..
+            } => {
                 cond.fill(file_id, element_id);
                 if_case.fill(file_id, element_id);
 
@@ -178,11 +203,17 @@ impl FillMeta for Statement {
             Return { value, .. } => {
                 value.fill(file_id, element_id);
             }
-            InitializationBlock { initializations, .. } => {
-                initializations.iter_mut().for_each(|init| init.fill(file_id, element_id));
+            InitializationBlock {
+                initializations, ..
+            } => {
+                initializations
+                    .iter_mut()
+                    .for_each(|init| init.fill(file_id, element_id));
             }
             Declaration { dimensions, .. } => {
-                dimensions.iter_mut().for_each(|d| d.fill(file_id, element_id));
+                dimensions
+                    .iter_mut()
+                    .for_each(|d| d.fill(file_id, element_id));
             }
             Substitution { access, rhe, .. } => {
                 rhe.fill(file_id, element_id);
@@ -256,6 +287,9 @@ pub enum AssignOp {
 
 impl AssignOp {
     pub fn is_signal_operator(self) -> bool {
-        matches!(self, AssignOp::AssignConstraintSignal | AssignOp::AssignSignal)
+        matches!(
+            self,
+            AssignOp::AssignConstraintSignal | AssignOp::AssignSignal
+        )
     }
 }

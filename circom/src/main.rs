@@ -16,7 +16,10 @@ fn main() -> ExitCode {
         eprintln!("{}", Colour::Red.paint("previous errors were found"));
         ExitCode::FAILURE
     } else {
-        println!("{}", Colour::Green.paint("Everything went okay, circom safe"));
+        println!(
+            "{}",
+            Colour::Green.paint("Everything went okay, circom safe")
+        );
         ExitCode::SUCCESS
     }
 }

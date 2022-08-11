@@ -3,7 +3,7 @@ use num_bigint_dig::{BigInt, Sign};
 use serde_json::json;
 use std::fs::File;
 use std::io::Write;
-use std::path::{Path};
+use std::path::Path;
 
 // Types
 const T_U64: &str = "u64";
@@ -36,7 +36,10 @@ const G_TEMPLATE_MESSAGES: &str = "listOfTemplateMessages"; // type string[T]
 // Local to functions
 pub const L_INTERMEDIATE_COMPUTATIONS_STACK: &str = "expaux"; // type PFrElements[]
 pub fn declare_expaux(size: usize) -> CInstruction {
-    format!("{} {}[{}]", T_FR_ELEMENT, L_INTERMEDIATE_COMPUTATIONS_STACK, size)
+    format!(
+        "{} {}[{}]",
+        T_FR_ELEMENT, L_INTERMEDIATE_COMPUTATIONS_STACK, size
+    )
 }
 pub fn expaux(at: CInstruction) -> CInstruction {
     format!("{}[{}]", L_INTERMEDIATE_COMPUTATIONS_STACK, at)
@@ -176,7 +179,10 @@ pub fn my_component_name() -> CInstruction {
 
 pub const MY_FATHER: &str = "myFather";
 pub fn declare_my_father() -> CInstruction {
-    format!("u64 {} = {}->componentMemory[{}].idFather", MY_FATHER, CIRCOM_CALC_WIT, CTX_INDEX)
+    format!(
+        "u64 {} = {}->componentMemory[{}].idFather",
+        MY_FATHER, CIRCOM_CALC_WIT, CTX_INDEX
+    )
 }
 pub fn my_father() -> CInstruction {
     MY_FATHER.to_string()
@@ -197,7 +203,10 @@ pub fn function_table() -> CInstruction {
 
 pub const SIGNAL_VALUES: &str = "signalValues";
 pub fn declare_signal_values() -> CInstruction {
-    format!("FrElement* {} = {}->{}", SIGNAL_VALUES, CIRCOM_CALC_WIT, SIGNAL_VALUES)
+    format!(
+        "FrElement* {} = {}->{}",
+        SIGNAL_VALUES, CIRCOM_CALC_WIT, SIGNAL_VALUES
+    )
 }
 pub fn signal_values(at: CInstruction) -> CInstruction {
     format!("{}[{} + {}]", SIGNAL_VALUES, MY_SIGNAL_START, at)
@@ -274,7 +283,10 @@ pub fn my_subcomponents() -> CInstruction {
 
 pub const CIRCUIT_CONSTANTS: &str = "circuitConstants";
 pub fn declare_circuit_constants() -> CInstruction {
-    format!("FrElement* {} = {}->{}", CIRCUIT_CONSTANTS, CIRCOM_CALC_WIT, CIRCUIT_CONSTANTS)
+    format!(
+        "FrElement* {} = {}->{}",
+        CIRCUIT_CONSTANTS, CIRCOM_CALC_WIT, CIRCUIT_CONSTANTS
+    )
 }
 pub fn circuit_constants(at: CInstruction) -> CInstruction {
     format!("{}[{}]", CIRCUIT_CONSTANTS, at)
@@ -285,7 +297,10 @@ pub fn store_circuit_constants(at: CInstruction, value: CInstruction) -> CInstru
 pub const FREE_IN_COMPONENT_MEM_MUTEX: &str = "freePositionInComponentMemoryMutex"; // type u32
 pub const FREE_IN_COMPONENT_MEM: &str = "freePositionInComponentMemory"; // type u32
 pub fn declare_free_position_in_component_memory() -> CInstruction {
-    format!("u32 {} = {}->{}", FREE_IN_COMPONENT_MEM, CIRCOM_CALC_WIT, FREE_IN_COMPONENT_MEM)
+    format!(
+        "u32 {} = {}->{}",
+        FREE_IN_COMPONENT_MEM, CIRCOM_CALC_WIT, FREE_IN_COMPONENT_MEM
+    )
 }
 pub fn free_position_in_component_memory() -> CInstruction {
     FREE_IN_COMPONENT_MEM.to_string()
@@ -558,7 +573,11 @@ pub fn generate_dat_io_signals_info(
             let mut v: Vec<u8> = l32.to_be_bytes().to_vec();
             v.reverse();
             io_signals_info.append(&mut v);
-            let n32 = if !s.lengths.is_empty() { (s.lengths.len() - 1) as u32 } else { 0 };
+            let n32 = if !s.lengths.is_empty() {
+                (s.lengths.len() - 1) as u32
+            } else {
+                0
+            };
             // println!("dims-1: {}",n32);
             let mut v: Vec<u8> = n32.to_be_bytes().to_vec();
             v.reverse();
@@ -647,7 +666,9 @@ pub fn generate_function_list(_producer: &CProducer, list: &TemplateList) -> Str
     if !list.is_empty() {
         write!(func_list, ",\n{}_run", list[0]).unwrap();
 
-        list.iter().skip(1).for_each(|l| write!(func_list, ",\n{}_run", l).unwrap());
+        list.iter()
+            .skip(1)
+            .for_each(|l| write!(func_list, ",\n{}_run", l).unwrap());
     }
 
     func_list
@@ -662,7 +683,10 @@ pub fn generate_message_list_def(_producer: &CProducer, message_list: &MessageLi
     if !message_list.is_empty() {
         instructions.push(format!("\"{}\"", message_list[0]));
 
-        message_list.iter().skip(1).for_each(|m| instructions.push(format!(",\n\"{}\"", m)));
+        message_list
+            .iter()
+            .skip(1)
+            .for_each(|m| instructions.push(format!(",\n\"{}\"", m)));
 
         instructions.push("\n".to_string());
     }
@@ -880,7 +904,10 @@ pub fn generate_c_file(name: String, producer: &CProducer) -> std::io::Result<()
         generate_function_list(producer, producer.get_template_instance_list())
     ));
 
-    code.push(format!("uint get_size_of_input_hashmap() {{return {};}}\n", len));
+    code.push(format!(
+        "uint get_size_of_input_hashmap() {{return {};}}\n",
+        len
+    ));
     code.push(format!(
         "uint get_size_of_witness() {{return {};}}\n",
         producer.get_witness_to_signal_list().len()
@@ -889,7 +916,10 @@ pub fn generate_c_file(name: String, producer: &CProducer) -> std::io::Result<()
         "uint get_size_of_constants() {{return {};}}\n",
         producer.get_field_constant_list().len()
     ));
-    code.push(format!("uint get_size_of_io_map() {{return {};}}\n", producer.get_io_map().len()));
+    code.push(format!(
+        "uint get_size_of_io_map() {{return {};}}\n",
+        producer.get_io_map().len()
+    ));
 
     // let mut ml_def = generate_message_list_def(producer, producer.get_message_list());
     // code.append(&mut ml_def);

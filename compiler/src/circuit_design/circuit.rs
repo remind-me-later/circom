@@ -319,7 +319,10 @@ impl WriteC for Circuit {
             "uint get_number_of_components() {{return {};}}\n",
             producer.get_number_of_components()
         ));
-        code.push(format!("uint get_size_of_input_hashmap() {{return {};}}\n", SIZE_INPUT_HASHMAP));
+        code.push(format!(
+            "uint get_size_of_input_hashmap() {{return {};}}\n",
+            SIZE_INPUT_HASHMAP
+        ));
         code.push(format!(
             "uint get_size_of_witness() {{return {};}}\n",
             producer.get_witness_to_signal_list().len()

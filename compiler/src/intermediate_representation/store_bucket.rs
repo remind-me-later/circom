@@ -62,7 +62,10 @@ impl WriteWasm for StoreBucket {
             instructions.push(";; getting dest".to_string());
         }
         match &self.dest {
-            LocationRule::Indexed { location, template_header } => {
+            LocationRule::Indexed {
+                location,
+                template_header,
+            } => {
                 let mut instructions_dest = location.produce_wasm(producer);
                 instructions.append(&mut instructions_dest);
                 let size = producer.get_size_32_bits_in_memory() * 4;
@@ -99,7 +102,10 @@ impl WriteWasm for StoreBucket {
                 }
                 instructions.push(add32());
             }
-            LocationRule::Mapped { signal_code, indexes } => {
+            LocationRule::Mapped {
+                signal_code,
+                indexes,
+            } => {
                 match &self.dest_address_type {
                     AddressType::SubcmpSignal { cmp_address, .. } => {
                         if producer.needs_comments() {
@@ -122,7 +128,9 @@ impl WriteWasm for StoreBucket {
                         instructions.push(set_constant("4")); //size in byte of i32
                         instructions.push(mul32());
                         instructions.push(load32(Some(
-                            &producer.get_template_instance_to_io_signal_start().to_string(),
+                            &producer
+                                .get_template_instance_to_io_signal_start()
+                                .to_string(),
                         ))); // get position in component io signal to info list
                         let signal_code_in_bytes = signal_code * 4; //position in the list of the signal code
                         instructions.push(load32(Some(&signal_code_in_bytes.to_string()))); // get where the info of this signal is
@@ -220,19 +228,27 @@ impl WriteWasm for StoreBucket {
             }
             instructions.push(get_local(producer.get_sub_cmp_tag())); // to update input signal counter
             instructions.push(get_local(producer.get_sub_cmp_tag())); // to read input signal counter
-            instructions
-                .push(load32(Some(&producer.get_input_counter_address_in_component().to_string()))); //remaining inputs to be set
+            instructions.push(load32(Some(
+                &producer
+                    .get_input_counter_address_in_component()
+                    .to_string(),
+            ))); //remaining inputs to be set
             instructions.push(set_constant(&self.context.size.to_string()));
             instructions.push(sub32());
             instructions.push(store32(Some(
-                &producer.get_input_counter_address_in_component().to_string(),
+                &producer
+                    .get_input_counter_address_in_component()
+                    .to_string(),
             ))); // update remaining inputs to be set
             if producer.needs_comments() {
                 instructions.push(";; check if run is needed".to_string());
             }
             instructions.push(get_local(producer.get_sub_cmp_tag()));
-            instructions
-                .push(load32(Some(&producer.get_input_counter_address_in_component().to_string())));
+            instructions.push(load32(Some(
+                &producer
+                    .get_input_counter_address_in_component()
+                    .to_string(),
+            )));
             instructions.push(eqz32());
             instructions.push(add_if());
             if producer.needs_comments() {
@@ -277,53 +293,59 @@ impl WriteC for StoreBucket {
             prologue.push("{".to_string());
             prologue.push(format!("uint {} = {};", cmp_index_ref, cmp_index));
         }
-        let ((mut dest_prologue, dest_index), my_template_header) =
-            if let LocationRule::Indexed { location, template_header } = &self.dest {
-                (location.produce_c(producer), template_header.clone())
-            } else if let LocationRule::Mapped { signal_code, indexes } = &self.dest {
-                //if Mapped must be SubcmpSignal
-                let mut map_prologue = vec![];
-                let sub_component_pos_in_memory =
-                    format!("{}[{}]", MY_SUBCOMPONENTS, cmp_index_ref);
-                let mut map_access = format!(
-                    "{}->{}[{}].defs[{}].offset",
-                    circom_calc_wit(),
-                    template_ins_2_io_info(),
-                    template_id_in_component(sub_component_pos_in_memory.clone()),
-                    signal_code
-                );
-                if !indexes.is_empty() {
-                    map_prologue.push("{".to_string());
-                    map_prologue.push(format!("uint map_index_aux[{}];", indexes.len()));
-                    let (mut index_code_0, mut map_index) = indexes[0].produce_c(producer);
-                    map_prologue.append(&mut index_code_0);
-                    map_prologue.push(format!("map_index_aux[0]={};", map_index));
-                    map_index = "map_index_aux[0]".to_string();
-                    for (i, idx) in indexes.iter().enumerate().skip(1) {
-                        let (mut index_code, index_exp) = idx.produce_c(producer);
-                        map_prologue.append(&mut index_code);
-                        map_prologue.push(format!("map_index_aux[{}]={};", i, index_exp));
-                        map_index = format!(
-                            "({})*{}->{}[{}].defs[{}].lengths[{}]+map_index_aux[{}]",
-                            map_index,
-                            circom_calc_wit(),
-                            template_ins_2_io_info(),
-                            template_id_in_component(sub_component_pos_in_memory.clone()),
-                            signal_code,
-                            (i - 1),
-                            i
-                        );
-                    }
-                    map_access = format!("{}+{}", map_access, map_index);
+        let ((mut dest_prologue, dest_index), my_template_header) = if let LocationRule::Indexed {
+            location,
+            template_header,
+        } = &self.dest
+        {
+            (location.produce_c(producer), template_header.clone())
+        } else if let LocationRule::Mapped {
+            signal_code,
+            indexes,
+        } = &self.dest
+        {
+            //if Mapped must be SubcmpSignal
+            let mut map_prologue = vec![];
+            let sub_component_pos_in_memory = format!("{}[{}]", MY_SUBCOMPONENTS, cmp_index_ref);
+            let mut map_access = format!(
+                "{}->{}[{}].defs[{}].offset",
+                circom_calc_wit(),
+                template_ins_2_io_info(),
+                template_id_in_component(sub_component_pos_in_memory.clone()),
+                signal_code
+            );
+            if !indexes.is_empty() {
+                map_prologue.push("{".to_string());
+                map_prologue.push(format!("uint map_index_aux[{}];", indexes.len()));
+                let (mut index_code_0, mut map_index) = indexes[0].produce_c(producer);
+                map_prologue.append(&mut index_code_0);
+                map_prologue.push(format!("map_index_aux[0]={};", map_index));
+                map_index = "map_index_aux[0]".to_string();
+                for (i, idx) in indexes.iter().enumerate().skip(1) {
+                    let (mut index_code, index_exp) = idx.produce_c(producer);
+                    map_prologue.append(&mut index_code);
+                    map_prologue.push(format!("map_index_aux[{}]={};", i, index_exp));
+                    map_index = format!(
+                        "({})*{}->{}[{}].defs[{}].lengths[{}]+map_index_aux[{}]",
+                        map_index,
+                        circom_calc_wit(),
+                        template_ins_2_io_info(),
+                        template_id_in_component(sub_component_pos_in_memory.clone()),
+                        signal_code,
+                        (i - 1),
+                        i
+                    );
                 }
-                (
-                    (map_prologue, map_access),
-                    Some(template_id_in_component(sub_component_pos_in_memory)),
-                )
-            } else {
-                panic!();
-                //((vec![], "".to_string()), None)
-            };
+                map_access = format!("{}+{}", map_access, map_index);
+            }
+            (
+                (map_prologue, map_access),
+                Some(template_id_in_component(sub_component_pos_in_memory)),
+            )
+        } else {
+            panic!();
+            //((vec![], "".to_string()), None)
+        };
         prologue.append(&mut dest_prologue);
         // Build dest
         let dest = match &self.dest_address_type {
@@ -338,7 +360,10 @@ impl WriteC for StoreBucket {
                     "{}->componentMemory[{}[{}]].signalStart",
                     CIRCOM_CALC_WIT, MY_SUBCOMPONENTS, cmp_index_ref
                 );
-                format!("&{}->signalValues[{} + {}]", CIRCOM_CALC_WIT, sub_cmp_start, dest_index)
+                format!(
+                    "&{}->signalValues[{} + {}]",
+                    CIRCOM_CALC_WIT, sub_cmp_start, dest_index
+                )
             }
         };
         //keep dest_index in an auxiliar if parallel and out put
@@ -360,11 +385,17 @@ impl WriteC for StoreBucket {
         std::mem::drop(src_prologue);
         if self.context.size > 1 {
             let copy_arguments = vec![aux_dest, src, self.context.size.to_string()];
-            prologue.push(format!("{};", build_call("Fr_copyn".to_string(), copy_arguments)));
+            prologue.push(format!(
+                "{};",
+                build_call("Fr_copyn".to_string(), copy_arguments)
+            ));
             if let AddressType::Signal = &self.dest_address_type {
                 if self.is_parallel && self.dest_is_output {
                     prologue.push("{".to_string());
-                    prologue.push(format!("for (int i = 0; i < {}; i++) {{", self.context.size));
+                    prologue.push(format!(
+                        "for (int i = 0; i < {}; i++) {{",
+                        self.context.size
+                    ));
                     prologue.push(format!(
                         "{}->componentMemory[{}].mutexes[{}+i].lock();",
                         CIRCOM_CALC_WIT, CTX_INDEX, aux_dest_index
@@ -388,7 +419,10 @@ impl WriteC for StoreBucket {
             }
         } else {
             let copy_arguments = vec![aux_dest, src];
-            prologue.push(format!("{};", build_call("Fr_copy".to_string(), copy_arguments)));
+            prologue.push(format!(
+                "{};",
+                build_call("Fr_copy".to_string(), copy_arguments)
+            ));
             if let AddressType::Signal = &self.dest_address_type {
                 if self.is_parallel && self.dest_is_output {
                     prologue.push(format!(
@@ -412,8 +446,11 @@ impl WriteC for StoreBucket {
             }
         }
         prologue.push("}".to_string());
-        if let AddressType::SubcmpSignal { is_parallel, input_information, .. } =
-            &self.dest_address_type
+        if let AddressType::SubcmpSignal {
+            is_parallel,
+            input_information,
+            ..
+        } = &self.dest_address_type
         {
             // if subcomponent input check if run needed
             let sub_cmp_counter_decrease = format!(
@@ -454,7 +491,10 @@ impl WriteC for StoreBucket {
                         ));
                         thread_call_instr
                     } else {
-                        vec![format!("{};", build_call(sub_cmp_call_name, sub_cmp_call_arguments))]
+                        vec![format!(
+                            "{};",
+                            build_call(sub_cmp_call_name, sub_cmp_call_arguments)
+                        )]
                     };
                     if let StatusInput::Unknown = status {
                         let sub_cmp_counter_decrease_andcheck =

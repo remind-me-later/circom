@@ -69,9 +69,7 @@ pub fn check_types(
 
 fn program_level_analyses(program_archive: &ProgramArchive, reports: &mut ReportCollection) {
     let symbols_in_body_well_defined_result = check_naming_correctness(program_archive);
-    if let Err(mut symbols_in_body_well_defined_reports) =
-        symbols_in_body_well_defined_result
-    {
+    if let Err(mut symbols_in_body_well_defined_reports) = symbols_in_body_well_defined_result {
         reports.append(&mut symbols_in_body_well_defined_reports);
     }
 }
@@ -133,11 +131,13 @@ fn semantic_analyses(
         {
             errors.append(&mut unknown_known_report);
         }
-        if let Err(mut tag_analysis_reports) = tag_analysis(template_name, program_archive)
-        {
+        if let Err(mut tag_analysis_reports) = tag_analysis(template_name, program_archive) {
             errors.append(&mut tag_analysis_reports);
         }
-        if program_archive.get_template_data(template_name).is_custom_gate() {
+        if program_archive
+            .get_template_data(template_name)
+            .is_custom_gate()
+        {
             let body = program_archive.get_template_data(template_name).get_body();
             match custom_gate_analysis(template_name, body) {
                 Ok(mut custom_gate_report) => warnings.append(&mut custom_gate_report),

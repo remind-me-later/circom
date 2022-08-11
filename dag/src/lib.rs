@@ -1,5 +1,3 @@
-#![allow(clippy::result_unit_err)]
-
 mod constraint_correctness_analysis;
 mod json_porting;
 mod map_to_constraint_list;
@@ -7,12 +5,15 @@ mod r1cs_porting;
 mod sym_porting;
 mod witness_producer;
 use circom_algebra::num_bigint::BigInt;
+use circom_error::error_definition::ReportCollection;
 use constraint_list::ConstraintList;
 use constraint_writers::debug_writer::DebugWriter;
 use constraint_writers::ConstraintExporter;
 use program_structure::constants::UsefulConstants;
-use circom_error::error_definition::ReportCollection;
-use std::collections::{HashMap, HashSet};
+use std::{
+    collections::{HashMap, HashSet},
+    io,
+};
 type Signal = usize;
 type Constraint = circom_algebra::algebra::Constraint<usize>;
 type Substitution = circom_algebra::algebra::Substitution<usize>;
@@ -43,8 +44,12 @@ impl<'a> Tree<'a> {
         let constraints = root.constraints.clone();
         let mut id_to_name = HashMap::new();
         let mut signals: Vec<_> = Vec::new();
-        let forbidden: HashSet<_> =
-            root.forbidden_if_main.iter().cloned().map(|s| s + offset).collect();
+        let forbidden: HashSet<_> = root
+            .forbidden_if_main
+            .iter()
+            .cloned()
+            .map(|s| s + offset)
+            .collect();
         for (name, id) in root.correspondence() {
             if root.is_local_signal(*id) {
                 Vec::push(&mut signals, *id + offset);
@@ -52,7 +57,17 @@ impl<'a> Tree<'a> {
             }
         }
         signals.sort();
-        Tree { field, dag, path, offset, node_id, signals, forbidden, id_to_name, constraints }
+        Tree {
+            field,
+            dag,
+            path,
+            offset,
+            node_id,
+            signals,
+            forbidden,
+            id_to_name,
+            constraints,
+        }
     }
 
     pub fn go_to_subtree(current: &'a Tree, edge: &Edge) -> Tree<'a> {
@@ -78,7 +93,17 @@ impl<'a> Tree<'a> {
             .filter(|c| !c.is_empty())
             .map(|c| Constraint::apply_offset(c, offset))
             .collect();
-        Tree { field, dag, path, offset, node_id, signals, forbidden, id_to_name, constraints }
+        Tree {
+            field,
+            dag,
+            path,
+            offset,
+            node_id,
+            signals,
+            forbidden,
+            id_to_name,
+            constraints,
+        }
     }
 
     pub fn get_edges(tree: &'a Tree) -> &'a Vec<Edge> {
@@ -297,22 +322,27 @@ pub struct DAG {
 }
 
 impl ConstraintExporter for DAG {
-    fn r1cs(&self, out: &str) -> Result<(), ()> {
+    fn r1cs(&self, out: &str) -> io::Result<()> {
         DAG::generate_r1cs_output(self, out)
     }
 
-    fn json_constraints(&self, writer: &DebugWriter) -> Result<(), ()> {
+    fn json_constraints(&self, writer: &DebugWriter) -> io::Result<()> {
         DAG::generate_json_constraints(self, writer)
     }
 
-    fn sym(&self, out: &str) -> Result<(), ()> {
+    fn sym(&self, out: &str) -> io::Result<()> {
         DAG::generate_sym_output(self, out)
     }
 }
 
 impl DAG {
     pub fn new(prime: &str) -> DAG {
-        DAG { prime: prime.to_string(), one_signal: 0, nodes: Vec::new(), adjacency: Vec::new() }
+        DAG {
+            prime: prime.to_string(),
+            one_signal: 0,
+            nodes: Vec::new(),
+            adjacency: Vec::new(),
+        }
     }
 
     pub fn add_edge(&mut self, to: usize, label: &str) -> Option<&Edge> {
@@ -452,15 +482,15 @@ impl DAG {
         }
     }
 
-    pub fn generate_r1cs_output(&self, output_file: &str) -> Result<(), ()> {
+    pub fn generate_r1cs_output(&self, output_file: &str) -> io::Result<()> {
         r1cs_porting::write(self, output_file)
     }
 
-    pub fn generate_sym_output(&self, output_file: &str) -> Result<(), ()> {
+    pub fn generate_sym_output(&self, output_file: &str) -> io::Result<()> {
         sym_porting::write(self, output_file)
     }
 
-    pub fn generate_json_constraints(&self, debug: &DebugWriter) -> Result<(), ()> {
+    pub fn generate_json_constraints(&self, debug: &DebugWriter) -> io::Result<()> {
         json_porting::port_constraints(self, debug)
     }
 

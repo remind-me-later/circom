@@ -3,7 +3,7 @@ use crate::SignalMap;
 use circom_algebra::num_bigint::BigInt;
 use constraint_writers::debug_writer::DebugWriter;
 use json::JsonValue;
-use std::collections::HashMap;
+use std::{collections::HashMap, io};
 
 pub fn transform_constraint_to_json(constraint: &C) -> JsonValue {
     JsonValue::Array(vec![
@@ -36,7 +36,7 @@ pub fn port_constraints(
     storage: &ConstraintStorage,
     map: &SignalMap,
     debug: &DebugWriter,
-) -> Result<(), ()> {
+) -> io::Result<()> {
     let mut writer = debug.build_constraints_file()?;
     for c_id in storage.get_ids() {
         let constraint = storage.read_constraint(c_id).unwrap();

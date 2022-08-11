@@ -17,8 +17,11 @@ const NO_OUTPUT_CODE: ReportCode = ReportCode::NoOutputInInstance;
 struct UnconstrainedSignal;
 
 impl UnconstrainedSignal {
-    pub fn new(signal: &str, template: &str) -> Report {
-        let msg = format!("In template \"{}\". {} \"{}\"", template, UNCONSTRAINED_SIGNAL, signal);
+    pub fn report(signal: &str, template: &str) -> Report {
+        let msg = format!(
+            "In template \"{}\". {} \"{}\"",
+            template, UNCONSTRAINED_SIGNAL, signal
+        );
         let hint = format!("Maybe use: {}*0 === 0", signal);
         let mut report = Report::warning(msg, UNCONSTRAINED_SIGNAL_CODE);
         report.add_note(hint);
@@ -28,9 +31,11 @@ impl UnconstrainedSignal {
 
 struct OneConstraintIntermediate;
 impl OneConstraintIntermediate {
-    pub fn new(signal: &str, template: &str) -> Report {
-        let msg =
-            format!("In template \"{}\". {} \"{}\"", template, ONE_CONSTRAINT_INTERMEDIATE, signal);
+    pub fn report(signal: &str, template: &str) -> Report {
+        let msg = format!(
+            "In template \"{}\". {} \"{}\"",
+            template, ONE_CONSTRAINT_INTERMEDIATE, signal
+        );
         let hint = format!("Maybe use: {}*0 === 0", signal);
         let mut report = Report::warning(msg, ONE_CONSTRAINT_INTERMEDIATE_CODE);
         report.add_note(hint);
@@ -40,7 +45,7 @@ impl OneConstraintIntermediate {
 
 struct NoOutputInNode;
 impl NoOutputInNode {
-    pub fn new(template: &str) -> Report {
+    pub fn report(template: &str) -> Report {
         let msg = format!("In template \"{}\". {}.", template, NO_OUTPUT);
         Report::warning(msg, NO_OUTPUT_CODE)
     }
@@ -62,13 +67,17 @@ fn analysis_interpretation(analysis: Analysis, result: &mut AnalysisResult) {
     let tmp_name = analysis.template_name;
     let stats = analysis.signal_stats;
     if analysis.no_outputs == 0 {
-        result.warnings.push(NoOutputInNode::new(&tmp_name));
+        result.warnings.push(NoOutputInNode::report(&tmp_name));
     }
     for (name, xtype, no_appearances) in stats {
         if no_appearances == 0 {
-            result.warnings.push(UnconstrainedSignal::new(&name, &tmp_name));
+            result
+                .warnings
+                .push(UnconstrainedSignal::report(&name, &tmp_name));
         } else if SignalType::Intermediate == xtype && no_appearances < 2 {
-            result.warnings.push(OneConstraintIntermediate::new(&name, &tmp_name));
+            result
+                .warnings
+                .push(OneConstraintIntermediate::report(&name, &tmp_name));
         }
     }
 }
@@ -122,7 +131,10 @@ pub struct AnalysisResult {
     pub warnings: ReportCollection,
 }
 pub fn analyse(nodes: &mut [Node]) -> AnalysisResult {
-    let mut result = AnalysisResult { errors: vec![], warnings: vec![] };
+    let mut result = AnalysisResult {
+        errors: vec![],
+        warnings: vec![],
+    };
     for node in nodes {
         let analysis = visit_node(node);
         analysis_interpretation(analysis, &mut result);
