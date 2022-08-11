@@ -1,15 +1,15 @@
-[package]
-name = "compiler"
-version = "2.0.1"
-authors = ["hermeGarcia <hermegarcianavarro@gmail.com>"]
-edition = "2018"
-
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
-
-[dependencies]
-constant_tracking = { path = "../constant_tracking" }
-program_structure = { path = "../program_structure" }
-code_producers = { path = "../code_producers" }
-num-bigint-dig = "0.6.0"
-circom_error = { path = "../circom_error" }
-circom_ast = { path = "../circom_ast" }
+[workspace]
+members = [
+    "parser",
+    "circom",
+    "compiler",
+    "type_analysis",
+    "circom_algebra",
+    "constraint_list",
+    "program_structure",
+    "constraint_generation",
+    "constraint_writers",
+    "constant_tracking",
+    "code_producers",
+    "dag"
+]
