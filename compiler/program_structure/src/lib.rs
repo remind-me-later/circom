@@ -1,6 +1,3 @@
-extern crate num_bigint_dig as num_bigint;
-extern crate num_traits;
-
 pub mod program_library;
 pub mod utils;
 

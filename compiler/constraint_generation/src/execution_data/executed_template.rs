@@ -3,7 +3,7 @@ use circom_algebra::algebra::ArithmeticExpression;
 use circom_ast::{SignalType, Statement};
 use compiler::hir::very_concrete_program::*;
 use dag::DAG;
-use num_bigint::BigInt;
+use num_bigint_dig::BigInt;
 use std::collections::{HashMap, HashSet};
 
 struct Connexion {

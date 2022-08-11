@@ -4,7 +4,7 @@ use circom_algebra::algebra::ArithmeticExpression;
 use circom_ast::{Expression, Meta, Statement};
 use circom_error::error_definition::ReportCollection;
 use compiler::hir::very_concrete_program::{Argument, TemplateInstance};
-use num_bigint::BigInt;
+use num_bigint_dig::BigInt;
 use program_structure::program_archive::ProgramArchive;
 use std::collections::HashMap;
 
@@ -186,7 +186,7 @@ fn treat_dimension(
 }
 
 fn transform_big_int_to_usize(v: BigInt) -> Option<usize> {
-    use num_bigint::Sign;
+    use num_bigint_dig::Sign;
     let (sign, bytes) = v.to_bytes_le();
     if sign == Sign::Minus || bytes.len() > 8 {
         return None;

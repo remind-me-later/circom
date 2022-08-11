@@ -4,7 +4,7 @@ use circom_error::error_definition::Report;
 use program_structure::program_archive::ProgramArchive;
 
 pub fn parse_project(input_info: &Input) -> Result<ProgramArchive, ()> {
-    let initial_file = input_info.input_file().to_string();
+    let initial_file = input_info.input_file();
     let result_program_archive = parser::run_parser(initial_file, VERSION);
     match result_program_archive {
         Err((file_library, report_collection)) => {

@@ -10,13 +10,14 @@ pub struct FileStack {
 }
 
 impl FileStack {
-    pub fn new(src: PathBuf) -> FileStack {
-        let mut location = src.clone();
+    pub fn new(src: &str) -> FileStack {
+        let mut location = PathBuf::from(src);
         location.pop();
+
         FileStack {
             current_location: location,
             black_paths: HashSet::new(),
-            stack: vec![src],
+            stack: vec![PathBuf::from(src)],
         }
     }
 

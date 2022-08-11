@@ -1,4 +1,4 @@
-#![allow(dead_code, clippy::result_unit_err)]
+#![allow(dead_code)]
 
 mod circuit_design;
 mod intermediate_representation;

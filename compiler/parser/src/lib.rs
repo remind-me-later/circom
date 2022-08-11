@@ -1,36 +1,32 @@
-extern crate num_bigint_dig as num_bigint;
-extern crate num_traits;
-#[macro_use]
-extern crate lalrpop_util;
-
-lalrpop_mod!(pub lang);
-
 mod errors;
 mod include_logic;
 mod parser_logic;
+
+lalrpop_mod!(pub lang);
+
 use circom_ast::Version;
 use circom_error::error_code::ReportCode;
 use circom_error::error_definition::{Report, ReportCollection};
 use circom_error::file_definition::FileLibrary;
 use include_logic::{FileStack, IncludesGraph};
+use lalrpop_util::lalrpop_mod;
 use program_structure::program_archive::ProgramArchive;
-use std::path::PathBuf;
+use std::path::Path;
 use std::str::FromStr;
 
 pub fn run_parser(
-    file: String,
+    file: &str,
     version: &str,
 ) -> Result<(ProgramArchive, ReportCollection), (FileLibrary, ReportCollection)> {
     let mut file_library = FileLibrary::new();
     let mut definitions = Vec::new();
     let mut main_components = Vec::new();
-    let mut file_stack = FileStack::new(PathBuf::from(file));
+    let mut file_stack = FileStack::new(file);
     let mut includes_graph = IncludesGraph::new();
     let mut warnings = Vec::new();
 
     while let Some(crr_file) = FileStack::take_next(&mut file_stack) {
-        let (path, src) =
-            open_file(crr_file.clone()).map_err(|e| (file_library.clone(), vec![e]))?;
+        let (path, src) = open_file(&crr_file).map_err(|e| (file_library.clone(), vec![e]))?;
         let file_id = file_library.add_file(path.clone(), src.clone());
         let program =
             parser_logic::parse_file(&src, file_id).map_err(|e| (file_library.clone(), vec![e]))?;
@@ -53,7 +49,7 @@ pub fn run_parser(
         }
         warnings.append(
             &mut check_number_version(
-                path,
+                &path,
                 program.compiler_version,
                 parse_number_version(version),
             )
@@ -95,14 +91,14 @@ pub fn run_parser(
     }
 }
 
-fn open_file(path: PathBuf) -> Result<(String, String), Report> /* path, src */ {
+fn open_file(path: &Path) -> Result<(String, String), Report> /* path, src */ {
     use errors::FileOsError;
     use std::fs::read_to_string;
-    let path_str = format!("{:?}", path);
+
     read_to_string(path)
-        .map(|contents| (path_str.clone(), contents))
+        .map(|contents| (path.as_os_str().to_str().unwrap().to_string(), contents))
         .map_err(|_| FileOsError {
-            path: path_str.clone(),
+            path: path.as_os_str().to_str().unwrap().to_string(),
         })
         .map_err(FileOsError::produce_report)
 }
@@ -117,7 +113,7 @@ fn parse_number_version(version: &str) -> Version {
 }
 
 fn check_number_version(
-    file_path: String,
+    file_path: &str,
     version_file: Option<Version>,
     version_compiler: Version,
 ) -> Result<ReportCollection, Report> {
@@ -131,7 +127,7 @@ fn check_number_version(
             Ok(vec![])
         } else {
             let report = CompilerVersionError::produce_report(CompilerVersionError {
-                path: file_path,
+                path: file_path.to_string(),
                 required_version,
                 version: version_compiler,
             });
@@ -139,7 +135,7 @@ fn check_number_version(
         }
     } else {
         let report = NoCompilerVersionWarning::produce_report(NoCompilerVersionWarning {
-            path: file_path,
+            path: file_path.to_string(),
             version: version_compiler,
         });
         Ok(vec![report])

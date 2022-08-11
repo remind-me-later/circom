@@ -1,5 +1,5 @@
 use circom_algebra::algebra;
-use num_bigint::BigInt;
+use num_bigint_dig::BigInt;
 
 type AExpr = algebra::ArithmeticExpression<String>;
 
