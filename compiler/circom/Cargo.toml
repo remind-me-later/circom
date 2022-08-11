@@ -5,9 +5,9 @@ authors = ["Costa Group UCM & iden3"]
 edition = "2021"
 
 [dependencies]
-clap = "2.33.0"
-ansi_term = "0.12.1"
-wast = "39.0.0"
+clap = "3"
+ansi_term = "0.12"
+wast = "45"
 
 # Internal
 circom_error = { path = "../circom_error" }

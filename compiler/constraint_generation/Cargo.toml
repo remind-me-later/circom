@@ -5,8 +5,8 @@ authors = ["hermeGarcia <hermegarcianavarro@gmail.com>"]
 edition = "2021"
 
 [dependencies]
-ansi_term = "0.12.1"
-num-bigint-dig = "0.6.0"
+ansi_term = "0.12"
+num-bigint-dig = "0.8"
 
 # Internal
 dag = { path = "../dag" }

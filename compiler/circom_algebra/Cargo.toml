@@ -5,8 +5,8 @@ authors = ["hermeGarcia <hermegarcianavarro@gmail.com>"]
 edition = "2021"
 
 [dependencies]
-num-bigint-dig = "0.6.0"
-num-traits = "0.2.6"
+num-bigint-dig = "0.8"
+num-traits = "0.2"
 
 # Internal
 constant_tracking = { path = "../constant_tracking" }

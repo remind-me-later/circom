@@ -4,5 +4,5 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-codespan = "0.9.0"
-codespan-reporting = "0.9.0"
+codespan = "0.11"
+codespan-reporting = "0.11"

@@ -312,7 +312,7 @@ mod input_processing {
         }
     }
 
-    pub fn view() -> ArgMatches<'static> {
+    pub fn view() -> ArgMatches {
         App::new("circom compiler")
             .version(VERSION)
             .author("IDEN3")
@@ -347,7 +347,7 @@ mod input_processing {
             )
             .arg(
                 Arg::with_name("output")
-                    .short("o")
+                    .short('o')
                     .long("output")
                     .takes_value(true)
                     .default_value(".")
@@ -406,7 +406,7 @@ mod input_processing {
             .arg(
                 Arg::with_name("print_c")
                     .long("c")
-                    .short("c")
+                    .short('c')
                     .takes_value(false)
                     .help("Compiles the circuit to c"),
             )
@@ -432,7 +432,6 @@ mod input_processing {
             )
             .arg (
                 Arg::with_name("prime")
-                    .short("prime")
                     .long("prime")
                     .takes_value(true)
                     .default_value("bn128")

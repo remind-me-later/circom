@@ -4,7 +4,7 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-num-bigint-dig = "0.6.0"
+num-bigint-dig = "0.8"
 
 # Internal
 circom_error = { path = "../circom_error" }

@@ -142,7 +142,7 @@ fn wat_to_wasm(wat_file: &str, wasm_file: &str) -> Result<(), Report> {
             ))
         }
         Ok(mut wat) => {
-            let wasm_contents = wat.module.encode();
+            let wasm_contents = wat.encode();
             match wasm_contents {
                 Err(error) => {
                     Err(Report::error(

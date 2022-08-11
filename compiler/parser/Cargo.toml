@@ -6,13 +6,15 @@ edition = "2021"
 build = "build.rs"
 
 [build-dependencies]
-lalrpop = { version = "0.18.1", features = ["lexer"] }
-num-bigint-dig = "0.6.0"
+lalrpop = { version = "0.19", features = ["lexer"] }
+num-bigint-dig = "0.8"
 
 [dependencies]
-lalrpop-util = "0.18.1"
-num-bigint-dig = "0.6.0"
-num-traits = "0.2.6"
+lalrpop-util = "0.19"
+num-bigint-dig = "0.8"
+num-traits = "0.2"
+
+# Internal
 program_structure = { path = "../program_structure" }
 circom_ast = { path = "../circom_ast" }
 circom_error = { path = "../circom_error" }

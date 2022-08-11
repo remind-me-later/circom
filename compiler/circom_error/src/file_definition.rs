@@ -30,7 +30,10 @@ impl FileLibrary {
     }
 
     pub fn get_line(&self, start: usize, file_id: FileID) -> Option<usize> {
-        self.files.line_index(file_id, start).map(|lines| lines + 1)
+        self.files
+            .line_index(file_id, start)
+            .map(|lines| lines + 1)
+            .ok()
     }
 
     pub fn get_files(&self) -> &FileStorage {
