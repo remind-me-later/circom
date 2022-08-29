@@ -8,6 +8,7 @@ use circom_ast::Version;
 use circom_error::error_code::ReportCode;
 use circom_error::error_definition::{Report, ReportCollection};
 use circom_error::file_definition::FileLibrary;
+use errors::Error;
 use include_logic::{FileStack, IncludesGraph};
 use lalrpop_util::lalrpop_mod;
 use program_structure::program_archive::ProgramArchive;
@@ -29,7 +30,8 @@ pub fn run_parser(
         let (path, src) = open_file(&crr_file).map_err(|e| (file_library.clone(), vec![e]))?;
         let file_id = file_library.add_file(path.clone(), src.clone());
         let program =
-            parser_logic::parse_file(&src, file_id).map_err(|e| (file_library.clone(), vec![e]))?;
+            parser_logic::parse_file(&src, file_id).map_err(|e| (file_library.clone(), e))?;
+
         if let Some(main) = program.main_component {
             main_components.push((file_id, main));
         }
@@ -58,10 +60,10 @@ pub fn run_parser(
     }
 
     if main_components.is_empty() {
-        let report = errors::NoMainError::produce_report();
+        let report = Error::NoMain.produce_report();
         Err((file_library, vec![report]))
     } else if main_components.len() > 1 {
-        let report = errors::MultipleMainError::produce_report();
+        let report = Error::MultipleMain.produce_report();
         Err((file_library, vec![report]))
     } else {
         let errors: ReportCollection = includes_graph
@@ -92,15 +94,14 @@ pub fn run_parser(
 }
 
 fn open_file(path: &Path) -> Result<(String, String), Report> /* path, src */ {
-    use errors::FileOsError;
     use std::fs::read_to_string;
 
     read_to_string(path)
         .map(|contents| (path.as_os_str().to_str().unwrap().to_string(), contents))
-        .map_err(|_| FileOsError {
+        .map_err(|_| Error::FileOs {
             path: path.as_os_str().to_str().unwrap().to_string(),
         })
-        .map_err(FileOsError::produce_report)
+        .map_err(Error::produce_report)
 }
 
 fn parse_number_version(version: &str) -> Version {
@@ -117,7 +118,7 @@ fn check_number_version(
     version_file: Option<Version>,
     version_compiler: Version,
 ) -> Result<ReportCollection, Report> {
-    use errors::{CompilerVersionError, NoCompilerVersionWarning};
+    use errors::NoCompilerVersionWarning;
     if let Some(required_version) = version_file {
         if required_version.major() == version_compiler.major()
             && (required_version.minor() < version_compiler.minor()
@@ -126,12 +127,12 @@ fn check_number_version(
         {
             Ok(vec![])
         } else {
-            let report = CompilerVersionError::produce_report(CompilerVersionError {
+            Err(Error::CompilerVersion {
                 path: file_path.to_string(),
                 required_version,
                 version: version_compiler,
-            });
-            Err(report)
+            }
+            .produce_report())
         }
     } else {
         let report = NoCompilerVersionWarning::produce_report(NoCompilerVersionWarning {

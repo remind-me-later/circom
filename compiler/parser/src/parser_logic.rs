@@ -1,10 +1,11 @@
-use super::errors::{ParsingError, UnclosedCommentError};
+use crate::errors::Error;
+
 use super::lang;
 use circom_ast::AST;
-use circom_error::error_definition::Report;
+use circom_error::error_definition::ReportCollection;
 use circom_error::file_definition::FileID;
 
-pub fn preprocess(expr: &str, file_id: FileID) -> Result<String, Report> {
+pub fn preprocess(expr: &str, file_id: FileID) -> Result<String, ReportCollection> {
     let mut pp = String::new();
     let mut state = 0;
     let mut loc = 0;
@@ -74,41 +75,51 @@ pub fn preprocess(expr: &str, file_id: FileID) -> Result<String, Report> {
         }
     }
     if state == 2 {
-        let error = UnclosedCommentError {
+        Err(vec![Error::UnclosedComment {
             location: block_start..block_start,
             file_id,
-        };
-        Err(UnclosedCommentError::produce_report(error))
+        }
+        .produce_report()])
     } else {
         Ok(pp)
     }
 }
 
-pub fn parse_file(src: &str, file_id: FileID) -> Result<AST, Report> {
+pub fn parse_file(src: &str, file_id: FileID) -> Result<AST, ReportCollection> {
     use lalrpop_util::ParseError::*;
-    lang::ParseAstParser::new()
-        .parse(&preprocess(src, file_id)?)
+    let mut errors = Vec::new();
+
+    let preprocess = preprocess(src, file_id)?;
+    let ast = lang::ParseAstParser::new()
+        .parse(&mut errors, &preprocess)
         .map_err(|parse_error| match parse_error {
-            InvalidToken { location } => ParsingError {
+            InvalidToken { location } => Error::GenericParsing {
                 file_id,
                 msg: format!("{:?}", parse_error),
                 location: location..location,
             },
-            UnrecognizedToken { ref token, .. } => ParsingError {
+            UnrecognizedToken { ref token, .. } => Error::GenericParsing {
                 file_id,
                 msg: format!("{:?}", parse_error),
                 location: token.0..token.2,
             },
-            ExtraToken { ref token } => ParsingError {
+            ExtraToken { ref token } => Error::GenericParsing {
                 file_id,
                 msg: format!("{:?}", parse_error),
                 location: token.0..token.2,
             },
-            _ => ParsingError {
+            _ => Error::GenericParsing {
                 file_id,
                 msg: format!("{:?}", parse_error),
                 location: 0..0,
             },
         })
-        .map_err(ParsingError::produce_report)
+        .map_err(Error::produce_report)
+        .map_err(|e| vec![e])?;
+
+    if !errors.is_empty() {
+        return Err(errors.into_iter().map(|e| e.produce_report()).collect());
+    }
+
+    Ok(ast)
 }

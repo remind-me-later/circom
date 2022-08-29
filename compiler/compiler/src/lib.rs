@@ -1,4 +1,5 @@
 #![allow(dead_code)]
+#![allow(clippy::result_unit_err)]
 
 mod circuit_design;
 mod intermediate_representation;

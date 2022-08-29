@@ -3,80 +3,75 @@ use circom_error::error_code::ReportCode;
 use circom_error::error_definition::Report;
 use circom_error::file_definition::{FileID, LocationInFile};
 
-pub struct UnclosedCommentError {
-    pub location: LocationInFile,
-    pub file_id: FileID,
+pub enum Error {
+    UnclosedComment {
+        location: LocationInFile,
+        file_id: FileID,
+    },
+    GenericParsing {
+        location: LocationInFile,
+        file_id: FileID,
+        msg: String,
+    },
+    FileOs {
+        path: String,
+    },
+    NoMain,
+    MultipleMain,
+    CompilerVersion {
+        path: String,
+        required_version: Version,
+        version: Version,
+    },
+    MissingSemicolon,
 }
 
-impl UnclosedCommentError {
-    pub fn produce_report(error: Self) -> Report {
-        let mut report = Report::error("unterminated /* */".to_string(), ReportCode::ParseFail);
-        report.add_primary(
-            error.location,
-            error.file_id,
-            "Comment starts here".to_string(),
-        );
-        report
-    }
-}
-
-pub struct ParsingError {
-    pub location: LocationInFile,
-    pub file_id: FileID,
-    pub msg: String,
-}
-
-impl ParsingError {
-    pub fn produce_report(error: Self) -> Report {
-        let mut report = Report::error(error.msg, ReportCode::ParseFail);
-        report.add_primary(error.location, error.file_id, "Invalid syntax".to_string());
-        report
-    }
-}
-
-pub struct FileOsError {
-    pub path: String,
-}
-impl FileOsError {
-    pub fn produce_report(error: Self) -> Report {
-        Report::error(
-            format!("Could not open file {}", error.path),
-            ReportCode::ParseFail,
-        )
-    }
-}
-
-pub struct NoMainError;
-impl NoMainError {
-    pub fn produce_report() -> Report {
-        Report::error(
-            "No main specified in the project structure".to_string(),
-            ReportCode::NoMainFoundInProject,
-        )
-    }
-}
-
-pub struct MultipleMainError;
-impl MultipleMainError {
-    pub fn produce_report() -> Report {
-        Report::error(
-            "Multiple main components in the project structure".to_string(),
-            ReportCode::MultipleMainInComponent,
-        )
-    }
-}
-
-pub struct CompilerVersionError {
-    pub path: String,
-    pub required_version: Version,
-    pub version: Version,
-}
-impl CompilerVersionError {
-    pub fn produce_report(error: Self) -> Report {
-        Report::error(
-            format!("File {} requires pragma version {:?} that is not supported by the compiler (version {:?})", error.path, error.required_version, error.version ),
-            ReportCode::CompilerVersionError,
-        )
+impl Error {
+    pub fn produce_report(self) -> Report {
+        match self {
+            Error::UnclosedComment { location, file_id } => {
+                let mut report =
+                    Report::error("unterminated /* */".to_string(), ReportCode::ParseFail);
+                report.add_primary(location, file_id, "Comment starts here".to_string());
+                report
+            }
+            Error::GenericParsing {
+                location,
+                file_id,
+                msg,
+            } => {
+                let mut report = Report::error(msg, ReportCode::ParseFail);
+                report.add_primary(location, file_id, "Invalid syntax".to_string());
+                report
+            }
+            Error::FileOs { path } => Report::error(
+                format!("Could not open file {}", path),
+                ReportCode::ParseFail,
+            ),
+            Error::NoMain => Report::error(
+                "No main specified in the project structure".to_string(),
+                ReportCode::NoMainFoundInProject,
+            ),
+            Error::MultipleMain =>{
+                Report::error(
+                    "Multiple main components in the project structure".to_string(),
+                    ReportCode::MultipleMainInComponent,
+                )
+            }
+            Error::CompilerVersion {
+                path,
+                required_version,
+                version,
+            } => {
+                Report::error(
+                    format!("File {} requires pragma version {:?} that is not supported by the compiler (version {:?})", path, required_version, version ),
+                    ReportCode::CompilerVersionError,
+                )
+            }
+            Error::MissingSemicolon =>{
+                Report::error("missing semicolon".to_owned(), ReportCode::ParseFail)
+            }
+        }
     }
 }
 
@@ -84,6 +79,7 @@ pub struct NoCompilerVersionWarning {
     pub path: String,
     pub version: Version,
 }
+
 impl NoCompilerVersionWarning {
     pub fn produce_report(error: Self) -> Report {
         Report::warning(

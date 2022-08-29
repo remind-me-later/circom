@@ -1,4 +1,4 @@
-use super::errors::FileOsError;
+use super::errors::Error;
 use circom_error::error_definition::Report;
 use std::collections::{HashMap, HashSet};
 use std::path::PathBuf;
@@ -25,8 +25,8 @@ impl FileStack {
         let mut crr = f_stack.current_location.clone();
         crr.push(path.clone());
         let path = std::fs::canonicalize(crr)
-            .map_err(|_| FileOsError { path: path.clone() })
-            .map_err(FileOsError::produce_report)?;
+            .map_err(|_| Error::FileOs { path: path.clone() })
+            .map_err(Error::produce_report)?;
         if !f_stack.black_paths.contains(&path) {
             f_stack.stack.push(path);
         }
@@ -83,8 +83,8 @@ impl IncludesGraph {
         crr.pop();
         crr.push(path.clone());
         let path = std::fs::canonicalize(crr)
-            .map_err(|_| FileOsError { path })
-            .map_err(FileOsError::produce_report)?;
+            .map_err(|_| Error::FileOs { path })
+            .map_err(Error::produce_report)?;
         let edges = self.adjacency.entry(path).or_insert(vec![]);
         edges.push(self.nodes.len() - 1);
         Ok(())

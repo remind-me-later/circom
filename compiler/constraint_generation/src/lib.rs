@@ -1,3 +1,5 @@
+#![allow(clippy::result_unit_err)]
+
 mod compute_constants;
 mod environment_utils;
 mod execute;

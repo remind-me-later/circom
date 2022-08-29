@@ -170,7 +170,7 @@ impl FillMeta for Expression {
     }
 }
 
-#[derive(Copy, Clone, PartialEq)]
+#[derive(Copy, Clone, PartialEq, Eq)]
 pub enum ExpressionInfixOpcode {
     Mul,
     Div,
@@ -194,7 +194,7 @@ pub enum ExpressionInfixOpcode {
     BitXor,
 }
 
-#[derive(Copy, Clone, PartialEq)]
+#[derive(Copy, Clone, PartialEq, Eq)]
 pub enum ExpressionPrefixOpcode {
     Sub,
     BoolNot,

@@ -2,8 +2,9 @@ use num_bigint_dig::BigInt;
 use circom_ast::*;
 use circom_ast::ast_shortcuts::{self,Symbol};
 use std::str::FromStr;
+use crate::errors::Error;
 
-grammar;
+grammar<'err>(errors: &'err mut Vec<Error>);
 
 // ====================================================================
 // Body
@@ -18,22 +19,27 @@ IdentifierListDef : Vec<String> = {
     }
 };
 
+SemiColon : () = {
+    ";" => (),
+    <!> => errors.push(Error::MissingSemicolon)
+}
+
 // Pragma is included at the start of the file.
 // Their structure is the following: pragma circom "version of the compiler"
 ParsePragma : Version = { // maybe change to usize instead of BigInt
-    "pragma" "circom" <version: Version>  ";"
+    "pragma" "circom" <version: Version> SemiColon
     => version,
 };
 
 // Pragma to indicate that we are allowing the definition of custom gates.
 ParseCustomGates : () = {
-    "pragma" "custom_templates" ";" => ()
+    "pragma" "custom_templates" SemiColon => ()
 }
 
 // Includes are added at the start of the file.
 // Their structure is the following: #include "path to the file"
 ParseInclude : String = {
-    "include" <file: STRING>  ";"
+    "include" <file: STRING> SemiColon
     => file,
 };
 
@@ -59,7 +65,7 @@ ParsePublicList : Vec<String> = {
 };
 
 pub ParseMainComponent : MainComponent = {
-    <s:@L> "component" "main" <public_list: ParsePublicList?> "=" <init: ParseExpression> ";" <e:@L>
+    <s:@L> "component" "main" <public_list: ParsePublicList?> "=" <init: ParseExpression> SemiColon <e:@L>
     => match public_list {
         None => MainComponent::new(vec![],init),
         Some(list) => MainComponent::new(list,init)
@@ -302,26 +308,26 @@ ParseStatement2 : Statement = {
     <s:@L>"while" "(" <cond: ParseExpression> ")" <stmt: ParseStatement2> <e:@R>
     => Statement::build_while_block(Meta::new(s,e),cond,stmt),
 
-    <s:@L> "return" <value: ParseExpression> ";"<e:@R>
+    <s:@L> "return" <value: ParseExpression> SemiColon <e:@R>
     => Statement::build_return(Meta::new(s,e),value),
 
-    <subs: ParseSubstitution> ";"
+    <subs: ParseSubstitution> SemiColon
     => subs,
 
-    <s:@L> <lhe: ParseExpression> "===" <rhe: ParseExpression> ";" <e:@R>
+    <s:@L> <lhe: ParseExpression> "===" <rhe: ParseExpression> SemiColon <e:@R>
     => Statement::build_constraint_equality(Meta::new(s,e),lhe,rhe),
 
-    <s:@L> "log" "(" <arg: ParseExpression> ")" ";" <e:@R>
+    <s:@L> "log" "(" <arg: ParseExpression> ")" SemiColon <e:@R>
     => Statement::build_log_call(Meta::new(s,e),arg),
 
-    <s:@L> "assert" "(" <arg: ParseExpression> ")" ";" <e:@R>
+    <s:@L> "assert" "(" <arg: ParseExpression> ")" SemiColon <e:@R>
     => Statement::build_assert(Meta::new(s,e),arg),
 
     ParseBlock
 };
 
 ParseStatement3 : Statement = {
-    <dec: ParseDeclaration> ";"
+    <dec: ParseDeclaration> SemiColon
     => dec,
 
     ParseStatement
