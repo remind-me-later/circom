@@ -24,6 +24,9 @@ pub enum Error {
         version: Version,
     },
     MissingSemicolon,
+    EmptyInclude,
+    MissingVersion,
+    EmptyPragma,
 }
 
 impl Error {
@@ -68,9 +71,14 @@ impl Error {
                     ReportCode::CompilerVersionError,
                 )
             }
-            Error::MissingSemicolon =>{
+            Error::MissingSemicolon => {
                 Report::error("missing semicolon".to_owned(), ReportCode::ParseFail)
             }
+            Error::EmptyInclude => {
+                Report::error("empty include".to_owned(), ReportCode::ParseFail)
+            }
+            Error::MissingVersion => Report::error("missing version in pragma circom".to_owned(), ReportCode::ParseFail),
+            Error::EmptyPragma => Report::error("empty pragma".to_owned(), ReportCode::ParseFail),
         }
     }
 }

@@ -34,6 +34,13 @@ pub struct Version {
     patch: usize,
 }
 
+#[derive(Clone, Debug)]
+pub enum Pragma {
+    Version(Version),
+    CustomGates,
+    Empty,
+}
+
 impl Version {
     pub fn new(major: usize, minor: usize, patch: usize) -> Self {
         Self {
@@ -70,12 +77,29 @@ pub struct AST {
 impl AST {
     pub fn new(
         meta: Meta,
-        compiler_version: Option<Version>,
-        custom_gates: bool,
+        pragmas: Vec<Pragma>,
         includes: Vec<String>,
         definitions: Vec<Definition>,
         main_component: Option<MainComponent>,
     ) -> AST {
+        let mut custom_gates = None;
+        let mut compiler_version = None;
+
+        for p in pragmas {
+            match p {
+                Pragma::Version(ver) => match compiler_version {
+                    Some(_) => panic!("multiple circom pragmas"),
+                    None => compiler_version = Some(ver),
+                },
+                Pragma::CustomGates => match custom_gates {
+                    Some(_) => panic!("multiple custom gates pragmas"),
+                    None => custom_gates = Some(true),
+                },
+                // should be caught in parser
+                _ => unreachable!(),
+            }
+        }
+
         let custom_gates_declared = definitions.iter().any(|definition| {
             matches!(
                 definition,
@@ -85,10 +109,11 @@ impl AST {
                 }
             )
         });
+
         AST {
             meta,
             compiler_version,
-            custom_gates,
+            custom_gates: custom_gates.unwrap_or(false),
             custom_gates_declared,
             includes,
             definitions,
