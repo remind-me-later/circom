@@ -38,7 +38,7 @@ pub struct Version {
 pub enum Pragma {
     Version(Version),
     CustomGates,
-    Empty,
+    Unrecognized,
 }
 
 impl Version {
@@ -95,8 +95,8 @@ impl AST {
                     Some(_) => panic!("multiple custom gates pragmas"),
                     None => custom_gates = Some(true),
                 },
-                // should be caught in parser
-                _ => unreachable!(),
+                // unrecognized
+                _ => (),
             }
         }
 

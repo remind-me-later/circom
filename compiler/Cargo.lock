@@ -93,15 +93,15 @@ name = "circom"
 version = "2.0.6"
 dependencies = [
  "ansi_term",
+ "circom_compiler",
+ "circom_constraint_generation",
+ "circom_constraint_writers",
+ "circom_dag",
  "circom_error",
+ "circom_parser",
+ "circom_program_structure",
+ "circom_type_analysis",
  "clap",
- "compiler",
- "constraint_generation",
- "constraint_writers",
- "dag",
- "parser",
- "program_structure",
- "type_analysis",
  "wast",
 ]
 
@@ -109,7 +109,7 @@ dependencies = [
 name = "circom_algebra"
 version = "2.0.0"
 dependencies = [
- "constant_tracking",
+ "circom_constant_tracking",
  "num-bigint-dig",
  "num-traits",
 ]
@@ -123,11 +123,116 @@ dependencies = [
 ]
 
 [[package]]
+name = "circom_code_producers"
+version = "2.0.1"
+dependencies = [
+ "handlebars",
+ "lz_fnv",
+ "num-bigint-dig",
+ "serde_json",
+]
+
+[[package]]
+name = "circom_compiler"
+version = "2.0.1"
+dependencies = [
+ "circom_ast",
+ "circom_code_producers",
+ "circom_constant_tracking",
+ "circom_error",
+ "circom_program_structure",
+ "num-bigint-dig",
+]
+
+[[package]]
+name = "circom_constant_tracking"
+version = "2.0.0"
+
+[[package]]
+name = "circom_constraint_generation"
+version = "2.0.1"
+dependencies = [
+ "ansi_term",
+ "circom_algebra",
+ "circom_ast",
+ "circom_compiler",
+ "circom_constraint_list",
+ "circom_constraint_writers",
+ "circom_dag",
+ "circom_error",
+ "circom_program_structure",
+ "num-bigint-dig",
+]
+
+[[package]]
+name = "circom_constraint_list"
+version = "2.0.0"
+dependencies = [
+ "circom_algebra",
+ "circom_constraint_writers",
+ "circom_program_structure",
+ "num_cpus",
+ "serde_json",
+ "threadpool",
+]
+
+[[package]]
+name = "circom_constraint_writers"
+version = "2.0.1"
+dependencies = [
+ "circom_algebra",
+]
+
+[[package]]
+name = "circom_dag"
+version = "2.0.1"
+dependencies = [
+ "circom_algebra",
+ "circom_constraint_list",
+ "circom_constraint_writers",
+ "circom_error",
+ "circom_program_structure",
+ "serde_json",
+]
+
+[[package]]
 name = "circom_error"
 version = "0.1.0"
 dependencies = [
  "codespan",
  "codespan-reporting",
+]
+
+[[package]]
+name = "circom_parser"
+version = "2.0.1"
+dependencies = [
+ "circom_ast",
+ "circom_error",
+ "circom_program_structure",
+ "lalrpop",
+ "lalrpop-util",
+ "num-bigint-dig",
+ "num-traits",
+]
+
+[[package]]
+name = "circom_program_structure"
+version = "2.0.1"
+dependencies = [
+ "circom_ast",
+ "circom_error",
+ "num-bigint-dig",
+]
+
+[[package]]
+name = "circom_type_analysis"
+version = "2.0.0"
+dependencies = [
+ "circom_ast",
+ "circom_error",
+ "circom_program_structure",
+ "num-bigint-dig",
 ]
 
 [[package]]
@@ -155,16 +260,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "code_producers"
-version = "2.0.1"
-dependencies = [
- "handlebars",
- "lz_fnv",
- "num-bigint-dig",
- "serde_json",
-]
-
-[[package]]
 name = "codespan"
 version = "0.11.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -181,57 +276,6 @@ checksum = "3538270d33cc669650c4b093848450d380def10c331d38c768e34cac80576e6e"
 dependencies = [
  "termcolor",
  "unicode-width",
-]
-
-[[package]]
-name = "compiler"
-version = "2.0.1"
-dependencies = [
- "circom_ast",
- "circom_error",
- "code_producers",
- "constant_tracking",
- "num-bigint-dig",
- "program_structure",
-]
-
-[[package]]
-name = "constant_tracking"
-version = "2.0.0"
-
-[[package]]
-name = "constraint_generation"
-version = "2.0.1"
-dependencies = [
- "ansi_term",
- "circom_algebra",
- "circom_ast",
- "circom_error",
- "compiler",
- "constraint_list",
- "constraint_writers",
- "dag",
- "num-bigint-dig",
- "program_structure",
-]
-
-[[package]]
-name = "constraint_list"
-version = "2.0.0"
-dependencies = [
- "circom_algebra",
- "constraint_writers",
- "num_cpus",
- "program_structure",
- "serde_json",
- "threadpool",
-]
-
-[[package]]
-name = "constraint_writers"
-version = "2.0.1"
-dependencies = [
- "circom_algebra",
 ]
 
 [[package]]
@@ -257,18 +301,6 @@ checksum = "1bfb12502f3fc46cca1bb51ac28df9d618d813cdc3d2f25b9fe775a34af26bb3"
 dependencies = [
  "generic-array",
  "typenum",
-]
-
-[[package]]
-name = "dag"
-version = "2.0.1"
-dependencies = [
- "circom_algebra",
- "circom_error",
- "constraint_list",
- "constraint_writers",
- "program_structure",
- "serde_json",
 ]
 
 [[package]]
@@ -593,19 +625,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "parser"
-version = "2.0.1"
-dependencies = [
- "circom_ast",
- "circom_error",
- "lalrpop",
- "lalrpop-util",
- "num-bigint-dig",
- "num-traits",
- "program_structure",
-]
-
-[[package]]
 name = "pest"
 version = "2.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -693,15 +712,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "0a2ca2c61bc9f3d74d2886294ab7b9853abd9c1ad903a3ac7815c58989bb7bab"
 dependencies = [
  "unicode-ident",
-]
-
-[[package]]
-name = "program_structure"
-version = "2.0.1"
-dependencies = [
- "circom_ast",
- "circom_error",
- "num-bigint-dig",
 ]
 
 [[package]]
@@ -936,16 +946,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "2c9d3793400a45f954c52e73d068316d76b6f4e36977e3fcebb13a2721e80237"
 dependencies = [
  "crunchy",
-]
-
-[[package]]
-name = "type_analysis"
-version = "2.0.0"
-dependencies = [
- "circom_ast",
- "circom_error",
- "num-bigint-dig",
- "program_structure",
 ]
 
 [[package]]

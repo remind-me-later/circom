@@ -1,8 +1,8 @@
 use ansi_term::Colour;
-use compiler::hir::very_concrete_program::VCP;
-use constraint_writers::debug_writer::DebugWriter;
-use constraint_writers::ConstraintExporter;
-use program_structure::program_archive::ProgramArchive;
+use circom_compiler::hir::very_concrete_program::VCP;
+use circom_constraint_writers::debug_writer::DebugWriter;
+use circom_constraint_writers::ConstraintExporter;
+use circom_program_structure::program_archive::ProgramArchive;
 
 pub struct ExecutionConfig {
     pub r1cs: String,
@@ -25,7 +25,7 @@ pub fn execute_project(
     program_archive: ProgramArchive,
     config: ExecutionConfig,
 ) -> Result<VCP, ()> {
-    use constraint_generation::{build_circuit, BuildConfig};
+    use circom_constraint_generation::{build_circuit, BuildConfig};
     let debug = DebugWriter::new(config.json_constraints).unwrap();
     let build_config = BuildConfig {
         no_rounds: config.no_rounds,

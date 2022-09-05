@@ -1,0 +1,15 @@
+[package]
+name = "circom_dag"
+version = "2.0.1"
+authors = ["hermeGarcia <hermegarcianavarro@gmail.com>"]
+edition = "2021"
+
+[dependencies]
+serde_json = "1"
+
+# Internal
+circom_constraint_list = { path = "../circom_constraint_list" }
+circom_constraint_writers = { path = "../circom_constraint_writers" }
+circom_algebra = { path = "../circom_algebra" }
+circom_program_structure = { path = "../circom_program_structure" }
+circom_error = { path = "../circom_error" }

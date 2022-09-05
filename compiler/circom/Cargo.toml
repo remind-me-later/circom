@@ -11,10 +11,10 @@ wast = "45"
 
 # Internal
 circom_error = { path = "../circom_error" }
-parser = { path = "../parser" }
-program_structure = { path = "../program_structure" }
-type_analysis = { path = "../type_analysis" }
-constraint_generation = { path = "../constraint_generation" }
-constraint_writers = { path = "../constraint_writers" }
-compiler = { path = "../compiler" }
-dag = { path = "../dag" }
+circom_parser = { path = "../circom_parser" }
+circom_program_structure = { path = "../circom_program_structure" }
+circom_type_analysis = { path = "../circom_type_analysis" }
+circom_constraint_generation = { path = "../circom_constraint_generation" }
+circom_constraint_writers = { path = "../circom_constraint_writers" }
+circom_compiler = { path = "../circom_compiler" }
+circom_dag = { path = "../circom_dag" }

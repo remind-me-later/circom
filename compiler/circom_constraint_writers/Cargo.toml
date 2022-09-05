@@ -1,0 +1,10 @@
+[package]
+name = "circom_constraint_writers"
+version = "2.0.1"
+authors = ["hermeGarcia <hermegarcianavarro@gmail.com>"]
+edition = "2021"
+
+[dependencies]
+
+# Internal
+circom_algebra = { path = "../circom_algebra" }

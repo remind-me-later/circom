@@ -1,0 +1,20 @@
+[package]
+name = "circom_parser"
+version = "2.0.1"
+authors = ["Hermenegildo <hermegar@ucm.es>"]
+edition = "2021"
+build = "build.rs"
+
+[build-dependencies]
+lalrpop = { version = "0.19", features = ["lexer"] }
+num-bigint-dig = "0.8"
+
+[dependencies]
+lalrpop-util = "0.19"
+num-bigint-dig = "0.8"
+num-traits = "0.2"
+
+# Internal
+circom_program_structure = { path = "../circom_program_structure" }
+circom_ast = { path = "../circom_ast" }
+circom_error = { path = "../circom_error" }

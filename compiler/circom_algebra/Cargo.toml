@@ -9,4 +9,4 @@ num-bigint-dig = "0.8"
 num-traits = "0.2"
 
 # Internal
-constant_tracking = { path = "../constant_tracking" }
+circom_constant_tracking = { path = "../circom_constant_tracking" }

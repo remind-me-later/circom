@@ -1,6 +1,6 @@
 use circom_error::error_definition::Report;
-use program_structure::program_archive::ProgramArchive;
-use type_analysis::check_types::check_types;
+use circom_program_structure::program_archive::ProgramArchive;
+use circom_type_analysis::check_types::check_types;
 
 pub fn analyse_project(program_archive: &mut ProgramArchive) -> Result<(), ()> {
     let analysis_result = check_types(program_archive);

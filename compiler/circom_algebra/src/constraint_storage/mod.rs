@@ -1,6 +1,6 @@
 use crate::algebra::Constraint;
 use crate::num_bigint::BigInt;
-use constant_tracking::{ConstantTracker, CID};
+use circom_constant_tracking::{ConstantTracker, CID};
 use std::collections::LinkedList;
 
 mod logic;

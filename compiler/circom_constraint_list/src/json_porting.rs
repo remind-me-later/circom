@@ -1,0 +1,48 @@
+use super::{ConstraintStorage, C, S};
+use crate::SignalMap;
+use circom_algebra::num_bigint::BigInt;
+use circom_constraint_writers::debug_writer::DebugWriter;
+use serde_json::Value;
+use std::{collections::HashMap, io};
+
+pub fn transform_constraint_to_json(constraint: &C) -> Value {
+    Value::Array(vec![
+        hashmap_as_json(constraint.a()),
+        hashmap_as_json(constraint.b()),
+        hashmap_as_json(constraint.c()),
+    ])
+}
+
+fn hashmap_as_json(values: &HashMap<usize, BigInt>) -> Value {
+    let mut order: Vec<&usize> = values.keys().collect();
+    order.sort();
+    let mut correspondence = serde_json::Value::Object(serde_json::Map::new());
+    for i in order {
+        let (key, value) = values.get_key_value(i).unwrap();
+        let value = value.to_str_radix(10);
+        correspondence[format!("{}", key)] = value.as_str().into();
+    }
+    correspondence
+}
+
+#[allow(unused)]
+pub fn port_substitution(sub: &S) -> (String, String) {
+    let to = hashmap_as_json(sub.to()).to_string();
+    let from = sub.from().to_string();
+    (from, to)
+}
+
+pub fn port_constraints(
+    storage: &ConstraintStorage,
+    map: &SignalMap,
+    debug: &DebugWriter,
+) -> io::Result<()> {
+    let mut writer = debug.build_constraints_file()?;
+    for c_id in storage.get_ids() {
+        let constraint = storage.read_constraint(c_id).unwrap();
+        let constraint = C::apply_correspondence(&constraint, map);
+        let json_value = transform_constraint_to_json(&constraint);
+        writer.write_constraint(&json_value.to_string())?;
+    }
+    writer.end()
+}
