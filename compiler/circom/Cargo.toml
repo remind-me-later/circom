@@ -14,7 +14,7 @@ repository = "https://github.com/iden3/circom"
 [dependencies]
 clap = "3"
 ansi_term = "0.12"
-wast = "45"
+wast = "46"
 
 # Internal
 circom_error = { path = "../circom_error", version = "2" }
