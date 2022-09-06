@@ -116,7 +116,7 @@ dependencies = [
 
 [[package]]
 name = "circom_ast"
-version = "0.1.0"
+version = "2.0.0"
 dependencies = [
  "circom_error",
  "num-bigint-dig",
@@ -197,7 +197,7 @@ dependencies = [
 
 [[package]]
 name = "circom_error"
-version = "0.1.0"
+version = "2.0.0"
 dependencies = [
  "codespan",
  "codespan-reporting",

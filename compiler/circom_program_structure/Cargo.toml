@@ -8,5 +8,5 @@ edition = "2021"
 num-bigint-dig = "0.8"
 
 # Internal
-circom_ast = { path = "../circom_ast" }
-circom_error = { path = "../circom_error" }
+circom_ast = { path = "../circom_ast", version = "2"  }
+circom_error = { path = "../circom_error", version = "2"  }

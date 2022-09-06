@@ -8,8 +8,8 @@ edition = "2021"
 serde_json = "1"
 
 # Internal
-circom_constraint_list = { path = "../circom_constraint_list" }
-circom_constraint_writers = { path = "../circom_constraint_writers" }
-circom_algebra = { path = "../circom_algebra" }
-circom_program_structure = { path = "../circom_program_structure" }
-circom_error = { path = "../circom_error" }
+circom_constraint_list = { path = "../circom_constraint_list", version = "2"  }
+circom_constraint_writers = { path = "../circom_constraint_writers", version = "2"  }
+circom_algebra = { path = "../circom_algebra", version = "2"  }
+circom_program_structure = { path = "../circom_program_structure", version = "2"  }
+circom_error = { path = "../circom_error", version = "2"  }

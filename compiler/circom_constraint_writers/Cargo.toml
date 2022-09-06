@@ -7,4 +7,4 @@ edition = "2021"
 [dependencies]
 
 # Internal
-circom_algebra = { path = "../circom_algebra" }
+circom_algebra = { path = "../circom_algebra", version = "2"  }

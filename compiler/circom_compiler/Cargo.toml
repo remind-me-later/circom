@@ -8,8 +8,8 @@ edition = "2021"
 num-bigint-dig = "0.8"
 
 # Internal
-circom_error = { path = "../circom_error" }
-circom_ast = { path = "../circom_ast" }
-circom_constant_tracking = { path = "../circom_constant_tracking" }
-circom_program_structure = { path = "../circom_program_structure" }
-circom_code_producers = { path = "../circom_code_producers" }
+circom_error = { path = "../circom_error", version = "2"  }
+circom_ast = { path = "../circom_ast", version = "2"  }
+circom_constant_tracking = { path = "../circom_constant_tracking", version = "2"  }
+circom_program_structure = { path = "../circom_program_structure", version = "2"  }
+circom_code_producers = { path = "../circom_code_producers", version = "2"  }

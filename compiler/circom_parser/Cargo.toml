@@ -15,6 +15,6 @@ num-bigint-dig = "0.8"
 num-traits = "0.2"
 
 # Internal
-circom_program_structure = { path = "../circom_program_structure" }
-circom_ast = { path = "../circom_ast" }
-circom_error = { path = "../circom_error" }
+circom_program_structure = { path = "../circom_program_structure", version = "2"  }
+circom_ast = { path = "../circom_ast", version = "2"  }
+circom_error = { path = "../circom_error", version = "2"  }

@@ -9,11 +9,11 @@ ansi_term = "0.12"
 num-bigint-dig = "0.8"
 
 # Internal
-circom_dag = { path = "../circom_dag" }
-circom_ast = { path = "../circom_ast" }
-circom_error = { path = "../circom_error" }
-circom_compiler = { path = "../circom_compiler" }
-circom_algebra = { path = "../circom_algebra" }
-circom_program_structure = { path = "../circom_program_structure" }
-circom_constraint_writers = { path = "../circom_constraint_writers" }
-circom_constraint_list = { path = "../circom_constraint_list" }
+circom_dag = { path = "../circom_dag", version = "2"  }
+circom_ast = { path = "../circom_ast", version = "2"  }
+circom_error = { path = "../circom_error", version = "2"  }
+circom_compiler = { path = "../circom_compiler", version = "2"  }
+circom_algebra = { path = "../circom_algebra", version = "2"  }
+circom_program_structure = { path = "../circom_program_structure", version = "2"  }
+circom_constraint_writers = { path = "../circom_constraint_writers", version = "2"  }
+circom_constraint_list = { path = "../circom_constraint_list", version = "2"  }
