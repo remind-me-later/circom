@@ -8,6 +8,8 @@ edition = "2021"
 homepage = "https://docs.circom.io/"
 license = "GPL-3.0-only"
 repository = "https://github.com/iden3/circom"
+# TODO: keywords = []
+# TODO: categories = []
 
 [dependencies]
 clap = "3"

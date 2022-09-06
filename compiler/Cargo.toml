@@ -11,5 +11,10 @@ members = [
     "circom_constraint_writers",
     "circom_constant_tracking",
     "circom_code_producers",
-    "circom_dag"
+    "circom_dag",
 ]
+
+[profile.release]
+opt-level = 3
+lto = true
+strip = true
