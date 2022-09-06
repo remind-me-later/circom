@@ -1,8 +1,13 @@
 [package]
 name = "circom"
+description = "CIRCUIT COMPILER FOR ZK PROVING SYSTEMS"
+readme = "../README.md"
 version = "2.0.6"
 authors = ["Costa Group UCM & iden3"]
 edition = "2021"
+homepage = "https://docs.circom.io/"
+license = "GPL-3.0-only"
+repository = "https://github.com/iden3/circom"
 
 [dependencies]
 clap = "3"
@@ -10,11 +15,11 @@ ansi_term = "0.12"
 wast = "45"
 
 # Internal
-circom_error = { path = "../circom_error", version = "2"  }
-circom_parser = { path = "../circom_parser", version = "2"  }
-circom_program_structure = { path = "../circom_program_structure", version = "2"  }
-circom_type_analysis = { path = "../circom_type_analysis", version = "2"  }
-circom_constraint_generation = { path = "../circom_constraint_generation", version = "2"  }
-circom_constraint_writers = { path = "../circom_constraint_writers", version = "2"  }
-circom_compiler = { path = "../circom_compiler", version = "2"  }
-circom_dag = { path = "../circom_dag", version = "2"  }
+circom_error = { path = "../circom_error", version = "2" }
+circom_parser = { path = "../circom_parser", version = "2" }
+circom_program_structure = { path = "../circom_program_structure", version = "2" }
+circom_type_analysis = { path = "../circom_type_analysis", version = "2" }
+circom_constraint_generation = { path = "../circom_constraint_generation", version = "2" }
+circom_constraint_writers = { path = "../circom_constraint_writers", version = "2" }
+circom_compiler = { path = "../circom_compiler", version = "2" }
+circom_dag = { path = "../circom_dag", version = "2" }

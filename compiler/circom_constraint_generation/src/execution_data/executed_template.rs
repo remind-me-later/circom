@@ -1,8 +1,8 @@
 use super::type_definitions::*;
 use circom_algebra::algebra::ArithmeticExpression;
 use circom_ast::{SignalType, Statement};
-use circom_dag::DAG;
 use circom_compiler::hir::very_concrete_program::*;
+use circom_dag::DAG;
 use num_bigint_dig::BigInt;
 use std::collections::{HashMap, HashSet};
 

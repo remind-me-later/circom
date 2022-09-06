@@ -1,7 +1,7 @@
 use circom_ast::{SignalType, Statement};
 use circom_error::file_definition::FileLibrary;
-use num_bigint_dig::BigInt;
 use circom_program_structure::program_archive::ProgramArchive;
+use num_bigint_dig::BigInt;
 use std::collections::HashMap;
 use std::ops::Range;
 use std::rc::Rc;

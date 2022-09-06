@@ -1,9 +1,9 @@
 use super::analysis::Analysis;
 use super::executed_template::ExecutedTemplate;
 use super::type_definitions::*;
-use circom_error::error_definition::ReportCollection;
 use circom_compiler::hir::very_concrete_program::{Stats, VCPConfig, VCP};
 use circom_dag::DAG;
+use circom_error::error_definition::ReportCollection;
 use circom_program_structure::program_archive::ProgramArchive;
 use std::collections::HashMap;
 

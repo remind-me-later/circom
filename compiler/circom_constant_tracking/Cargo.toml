@@ -3,5 +3,6 @@ name = "circom_constant_tracking"
 version = "2.0.0"
 authors = ["hermeGarcia <hermegarcianavarro@gmail.com>"]
 edition = "2021"
-
-[dependencies]
+homepage = "https://docs.circom.io/"
+license = "GPL-3.0-only"
+repository = "https://github.com/iden3/circom"

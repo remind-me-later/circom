@@ -4,6 +4,9 @@ version = "2.0.1"
 authors = ["Hermenegildo <hermegar@ucm.es>"]
 edition = "2021"
 build = "build.rs"
+homepage = "https://docs.circom.io/"
+license = "GPL-3.0-only"
+repository = "https://github.com/iden3/circom"
 
 [build-dependencies]
 lalrpop = { version = "0.19", features = ["lexer"] }
@@ -15,6 +18,6 @@ num-bigint-dig = "0.8"
 num-traits = "0.2"
 
 # Internal
-circom_program_structure = { path = "../circom_program_structure", version = "2"  }
-circom_ast = { path = "../circom_ast", version = "2"  }
-circom_error = { path = "../circom_error", version = "2"  }
+circom_program_structure = { path = "../circom_program_structure", version = "2" }
+circom_ast = { path = "../circom_ast", version = "2" }
+circom_error = { path = "../circom_error", version = "2" }

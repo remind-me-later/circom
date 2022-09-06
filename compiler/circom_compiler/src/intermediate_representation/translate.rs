@@ -1,10 +1,10 @@
 use super::ir_interface::*;
 use crate::hir::very_concrete_program::*;
 use circom_ast::*;
-use circom_error::file_definition::FileLibrary;
 use circom_constant_tracking::ConstantTracker;
-use num_bigint_dig::BigInt;
+use circom_error::file_definition::FileLibrary;
 use circom_program_structure::utils::environment::VarEnvironment;
+use num_bigint_dig::BigInt;
 use std::collections::HashMap;
 
 type Length = usize;

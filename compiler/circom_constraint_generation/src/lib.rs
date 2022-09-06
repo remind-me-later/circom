@@ -7,16 +7,16 @@ mod execution_data;
 
 use ansi_term::Colour;
 use circom_algebra::algebra::{ArithmeticError, ArithmeticExpression};
-use circom_error::error_code::ReportCode;
-use circom_error::error_definition::{Report, ReportCollection};
-use circom_error::file_definition::FileID;
 use circom_compiler::hir::very_concrete_program::VCP;
 use circom_constraint_list::ConstraintList;
 use circom_constraint_writers::ConstraintExporter;
 use circom_dag::DAG;
+use circom_error::error_code::ReportCode;
+use circom_error::error_definition::{Report, ReportCollection};
+use circom_error::file_definition::FileID;
+use circom_program_structure::program_archive::ProgramArchive;
 use execution_data::executed_program::ExportResult;
 use execution_data::ExecutedProgram;
-use circom_program_structure::program_archive::ProgramArchive;
 use std::rc::Rc;
 
 pub struct BuildConfig {

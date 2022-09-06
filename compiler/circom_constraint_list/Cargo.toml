@@ -3,6 +3,9 @@ name = "circom_constraint_list"
 version = "2.0.0"
 authors = ["hermeGarcia <hermegarcianavarro@gmail.com>"]
 edition = "2021"
+homepage = "https://docs.circom.io/"
+license = "GPL-3.0-only"
+repository = "https://github.com/iden3/circom"
 
 [dependencies]
 serde_json = "1"
@@ -10,6 +13,6 @@ threadpool = "1"
 num_cpus = "1"
 
 # Internal
-circom_constraint_writers = { path = "../circom_constraint_writers", version = "2"  }
-circom_algebra = { path = "../circom_algebra", version = "2"  }
-circom_program_structure = { path = "../circom_program_structure", version = "2"  }
+circom_constraint_writers = { path = "../circom_constraint_writers", version = "2" }
+circom_algebra = { path = "../circom_algebra", version = "2" }
+circom_program_structure = { path = "../circom_program_structure", version = "2" }

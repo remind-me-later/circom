@@ -4,9 +4,9 @@ use crate::circuit_design::template::TemplateCodeInfo;
 use crate::hir::very_concrete_program::*;
 use crate::intermediate_representation::translate;
 use crate::intermediate_representation::translate::{CodeInfo, FieldTracker, TemplateDB};
-use circom_error::file_definition::FileLibrary;
 use circom_code_producers::c_elements::*;
 use circom_code_producers::wasm_elements::*;
+use circom_error::file_definition::FileLibrary;
 use std::collections::HashMap;
 
 #[cfg(debug_assertions)]

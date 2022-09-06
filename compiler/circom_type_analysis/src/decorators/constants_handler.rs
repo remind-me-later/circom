@@ -1,9 +1,9 @@
 use circom_ast::*;
 use circom_error::error_code::ReportCode;
 use circom_error::error_definition::{Report, ReportCollection};
-use num_bigint_dig::BigInt;
 use circom_program_structure::utils::environment::VarEnvironment;
 use circom_program_structure::{function_data::FunctionData, template_data::TemplateData};
+use num_bigint_dig::BigInt;
 use std::collections::HashSet;
 
 type Constants = VarEnvironment<bool>;

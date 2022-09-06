@@ -24,6 +24,7 @@ Circom language reference can be found at [circom language reference](https://do
 At this time there are two available syntax highlighters: [circom Visual Studio Code highlight syntax](https://github.com/iden3/circom-highlighting-vscode) and  [circom Vim highlight syntax](https://github.com/iden3/vim-circom-syntax)
 
 # Documentation
+
 All documentation is available in [circom 2 Documentation](https://docs.circom.io/), we encourage you to read it. If you are new start with the [Getting started section](https://docs.circom.io/getting-started/installation/).
 Basic background on Zero-knowledge proofs can be found on [Background section](https://docs.circom.io/background/background/)
 
@@ -36,6 +37,7 @@ Refer to [Installation section](https://docs.circom.io/getting-started/installat
 The previous `circom 1` compiler written in Javascript is deprecated, but [circom 1 repository](https://github.com/iden3/circom_old) is still available
 
 # Community
+
 Thank you for considering contributing to the circom & snarkjs framework!
 
 As the `circom` and `snarkjs` community grows new tools, circuits, or projects have appeared. Here we link some of them:
@@ -47,8 +49,6 @@ CIRCUITS
 TOOLS
 
 + [zkREPL an online playground for zk circuits](https://zkrepl.dev)
-
-
 
 [ico-website]: https://img.shields.io/website?up_color=blue&up_message=circom&url=https%3A%2F%2Fiden3.io%2Fcircom
 [ico-telegram]: https://img.shields.io/badge/@iden3-2CA5E0.svg?style=flat-square&logo=telegram&label=Telegram

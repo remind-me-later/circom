@@ -2,9 +2,12 @@
 name = "circom_ast"
 version = "2.0.0"
 edition = "2021"
+homepage = "https://docs.circom.io/"
+license = "GPL-3.0-only"
+repository = "https://github.com/iden3/circom"
 
 [dependencies]
 num-bigint-dig = "0.8"
 
 # Internal
-circom_error = { path = "../circom_error", version = "2"  }
+circom_error = { path = "../circom_error", version = "2" }

@@ -3,6 +3,9 @@ name = "circom_code_producers"
 version = "2.0.1"
 authors = ["hermeGarcia <hermegarcianavarro@gmail.com>"]
 edition = "2021"
+homepage = "https://docs.circom.io/"
+license = "GPL-3.0-only"
+repository = "https://github.com/iden3/circom"
 
 [dependencies]
 handlebars = "4"

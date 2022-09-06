@@ -1,9 +1,9 @@
 use ansi_term::Colour;
+use circom_compiler::compiler_interface;
+use circom_compiler::compiler_interface::{Config, VCP};
 use circom_error::error_code::ReportCode;
 use circom_error::error_definition::Report;
 use circom_error::file_definition::FileLibrary;
-use circom_compiler::compiler_interface;
-use circom_compiler::compiler_interface::{Config, VCP};
 
 pub struct CompilerConfig {
     pub js_folder: String,

@@ -8,10 +8,10 @@ use circom_ast::Version;
 use circom_error::error_code::ReportCode;
 use circom_error::error_definition::{Report, ReportCollection};
 use circom_error::file_definition::FileLibrary;
+use circom_program_structure::program_archive::ProgramArchive;
 use errors::Error;
 use include_logic::{FileStack, IncludesGraph};
 use lalrpop_util::lalrpop_mod;
-use circom_program_structure::program_archive::ProgramArchive;
 use std::path::Path;
 use std::str::FromStr;
 
